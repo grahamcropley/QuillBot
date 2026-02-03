@@ -143,7 +143,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             }
           ]
           resources: {
-            cpu: 0.25
+            cpu: json('0.25')
             memory: '0.5Gi'
           }
           volumeMounts: [
@@ -179,7 +179,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             }
           ]
           resources: {
-            cpu: 0.5
+            cpu: json('0.5')
             memory: '1Gi'
           }
           volumeMounts: [
