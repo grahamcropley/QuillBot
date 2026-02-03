@@ -117,32 +117,40 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           passwordSecretRef: 'acr-password'
         }
       ]
-      secrets: [
-        {
-          name: 'acr-password'
-          value: acrCredentials.passwords[0].value
-        }
-        {
-          name: 'opencode-api-key'
-          value: opencodeApiKey
-        }
-      ]
+      secrets: concat(
+        [
+          {
+            name: 'acr-password'
+            value: acrCredentials.passwords[0].value
+          }
+        ]
+        opencodeApiKey != '' ? [
+          {
+            name: 'opencode-api-key'
+            value: opencodeApiKey
+          }
+        ] : []
+      )
     }
     template: {
       containers: [
         {
           name: 'web'
           image: webImage
-          env: [
-            {
-              name: 'OPENCODE_API_URL'
-              value: 'http://localhost:9090'
-            }
-            {
-              name: 'OPENCODE_API_KEY'
-              secretRef: 'opencode-api-key'
-            }
-          ]
+          env: concat(
+            [
+              {
+                name: 'OPENCODE_API_URL'
+                value: 'http://localhost:9090'
+              }
+            ]
+            opencodeApiKey != '' ? [
+              {
+                name: 'OPENCODE_API_KEY'
+                secretRef: 'opencode-api-key'
+              }
+            ] : []
+          )
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
@@ -165,20 +173,24 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             '--port'
             '9090'
           ]
-          env: [
-            {
-              name: 'HOME'
-              value: '/app'
-            }
-            {
-              name: 'XDG_CONFIG_HOME'
-              value: '/app/.config'
-            }
-            {
-              name: 'OPENCODE_API_KEY'
-              secretRef: 'opencode-api-key'
-            }
-          ]
+          env: concat(
+            [
+              {
+                name: 'HOME'
+                value: '/app'
+              }
+              {
+                name: 'XDG_CONFIG_HOME'
+                value: '/app/.config'
+              }
+            ]
+            opencodeApiKey != '' ? [
+              {
+                name: 'OPENCODE_API_KEY'
+                secretRef: 'opencode-api-key'
+              }
+            ] : []
+          )
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
