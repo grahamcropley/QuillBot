@@ -24,6 +24,9 @@ env:
   OPENCODE_IMAGE_NAME: ${{ vars.OPENCODE_IMAGE_NAME || 'quillbot-opencode' }}
   OPENCODE_VERSION: ${{ vars.OPENCODE_VERSION || 'latest' }}
   IMAGE_TAG: ${{ github.sha }}
+  # Easy Auth configuration (Microsoft Entra ID)
+  ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+  ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
 
 jobs:
   deploy:
@@ -91,6 +94,7 @@ jobs:
         run: |
           WEB_IMAGE="${{ steps.acr.outputs.loginServer }}/${WEB_IMAGE_NAME}:${IMAGE_TAG}"
           OPENCODE_IMAGE="${{ steps.acr.outputs.loginServer }}/${OPENCODE_IMAGE_NAME}:${IMAGE_TAG}"
+
           az deployment group create \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file infra/azure/main.bicep \
@@ -106,3 +110,35 @@ jobs:
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
               opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}"
+
+      - name: Configure Easy Auth (Microsoft Entra ID)
+        if: ${{ env.ENTRA_CLIENT_ID != '' && env.ENTRA_TENANT_ID != '' }}
+        run: |
+          echo "Configuring Easy Auth with Microsoft Entra ID..."
+
+          # Check if auth is already configured
+          AUTH_ENABLED=$(az containerapp auth show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "platform.enabled" -o tsv 2>/dev/null || echo "false")
+
+          if [ "$AUTH_ENABLED" != "true" ]; then
+            echo "Enabling Easy Auth..."
+            az containerapp auth microsoft update \
+              --name "$AZURE_APP_NAME" \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --client-id "$ENTRA_CLIENT_ID" \
+              --issuer "https://sts.windows.net/${ENTRA_TENANT_ID}/v2.0" \
+              --yes
+            
+            # Set unauthenticated action to redirect to login
+            az containerapp auth update \
+              --name "$AZURE_APP_NAME" \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --unauthenticated-client-action RedirectToLoginPage \
+              --redirect-provider azureactivedirectory
+            
+            echo "Easy Auth configured successfully"
+          else
+            echo "Easy Auth already enabled, skipping configuration"
+          fi

@@ -45,6 +45,10 @@ Create a `.env.local` file in the root directory:
 ```env
 OPENCODE_API_URL=http://localhost:9090
 OPENCODE_API_KEY=                    # Optional
+
+# Simulate Azure Easy Auth user for local development
+# Format: email|display_name
+EASY_AUTH_DEV_USER=your.email@company.com|Your Name
 ```
 
 ## Docker Deployment
@@ -88,6 +92,40 @@ An Azure Container Apps deployment pipeline is available in
 `.github/workflows/azure-container-apps.yml` with infra definitions in
 `infra/azure/main.bicep`. See `infra/azure/README.md` for required secrets,
 variables, and config upload steps.
+
+### Authentication (Azure Easy Auth)
+
+The deployed app uses **Azure Easy Auth** with Microsoft Entra ID for SSO:
+
+- **Configuration**: Managed via Azure Portal (not IaC)
+- **App Registration**: `quillbot-sso`
+- **Tenant**: LoopUp single-tenant
+
+#### How It Works
+
+1. Azure intercepts unauthenticated requests and redirects to Microsoft login
+2. After login, Azure injects user identity via HTTP headers:
+   - `X-MS-CLIENT-PRINCIPAL-NAME` - User's email
+   - `X-MS-CLIENT-PRINCIPAL-ID` - User's Entra ID object ID
+   - `X-MS-CLIENT-PRINCIPAL` - Base64-encoded claims
+3. The app reads these headers via `getEasyAuthUser()` in `src/lib/auth.ts`
+
+#### Setup After Fresh Deployment
+
+If the Container App is deleted and recreated, you must reconfigure auth:
+
+1. **Container Apps > quillbot > Settings > Authentication**
+2. Click **Add identity provider** > **Microsoft**
+3. Select **Pick an existing app registration** > `quillbot-sso`
+4. Save
+
+#### Local Development
+
+Set `EASY_AUTH_DEV_USER` in `.env.local` to simulate an authenticated user:
+
+```env
+EASY_AUTH_DEV_USER=your.email@company.com|Your Name
+```
 
 ## Usage
 

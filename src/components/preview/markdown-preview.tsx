@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Edit3, Eye, Copy, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useTheme } from "@/hooks/use-theme";
 import type { TextSelection } from "@/types";
 import { clsx } from "clsx";
 
@@ -47,6 +48,7 @@ export function MarkdownPreview({
   const [copied, setCopied] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const lastSyncedContentRef = useRef(content);
+  const theme = useTheme();
 
   const handleTextSelection = useCallback(() => {
     if (!onTextSelect || !previewRef.current) return;
@@ -122,8 +124,8 @@ export function MarkdownPreview({
   const canEdit = isEditable && !isOpenCodeBusy;
 
   return (
-    <div className="flex flex-col h-full border border-gray-200 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+    <div className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-2">
           <div className="flex gap-1">
             <button
@@ -131,8 +133,8 @@ export function MarkdownPreview({
               className={clsx(
                 "px-3 py-1.5 text-sm rounded-md transition-colors",
                 viewMode === "preview"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900",
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
               )}
             >
               <Eye className="w-4 h-4 inline mr-1" />
@@ -144,8 +146,8 @@ export function MarkdownPreview({
                 className={clsx(
                   "px-3 py-1.5 text-sm rounded-md transition-colors",
                   viewMode === "edit"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900",
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
                 )}
               >
                 <Edit3 className="w-4 h-4 inline mr-1" />
@@ -154,7 +156,7 @@ export function MarkdownPreview({
             )}
           </div>
           {hasUnsavedChanges && (
-            <span className="flex items-center gap-1 text-xs text-amber-600">
+            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
               <AlertCircle className="w-3 h-3" />
               Unsaved
             </span>
@@ -162,7 +164,7 @@ export function MarkdownPreview({
         </div>
         <div className="flex items-center gap-2">
           {lastUpdated && viewMode === "preview" && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-600">
               Updated {formatLastUpdated(lastUpdated)}
             </span>
           )}
@@ -181,14 +183,17 @@ export function MarkdownPreview({
           <div
             ref={previewRef}
             onMouseUp={handleTextSelection}
-            className="h-full overflow-y-auto p-6 prose prose-sm max-w-none"
+            className={clsx(
+              "h-full overflow-y-auto p-6 prose prose-sm max-w-none",
+              theme === "dark" && "dark",
+            )}
           >
             {content ? (
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {content}
               </ReactMarkdown>
             ) : (
-              <p className="text-gray-400 italic">
+              <p className="text-gray-400 dark:text-gray-600 italic">
                 No content yet. Start a conversation to generate content.
               </p>
             )}
@@ -198,7 +203,7 @@ export function MarkdownPreview({
             <div className="flex-1 overflow-hidden">
               <Suspense
                 fallback={
-                  <div className="h-full flex items-center justify-center text-gray-400">
+                  <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
                     Loading editor...
                   </div>
                 }
@@ -208,10 +213,11 @@ export function MarkdownPreview({
                   onChange={handleEditorChange}
                   onSave={handleSaveEdit}
                   disabled={!canEdit}
+                  theme={theme}
                 />
               </Suspense>
             </div>
-            <div className="flex justify-end gap-2 p-3 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-end gap-2 p-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
               <Button
                 variant="secondary"
                 size="sm"

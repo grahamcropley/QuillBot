@@ -14,6 +14,10 @@ param opencodeApiKey string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
 
+// NOTE: Authentication is configured via Azure Portal (Easy Auth)
+// Container Apps > Authentication > Add identity provider > Microsoft
+// This keeps auth config separate from IaC and avoids secret management
+
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
@@ -168,7 +172,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           command: [
             'opencode'
             'serve'
-            '--host'
+            '--hostname'
             '0.0.0.0'
             '--port'
             '9090'
