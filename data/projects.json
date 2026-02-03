@@ -1,0 +1,33 @@
+{
+  "projects": [
+    {
+      "id": "proj_1770037963775_xv75ars",
+      "name": "New Project",
+      "contentType": "blog",
+      "brief": "Latest news on new and upcoming features of Microsoft Teams",
+      "wordCount": 500,
+      "styleHints": "",
+      "documentContent": "",
+      "messages": [
+        {
+          "id": "msg_1770037968611_smezdww",
+          "role": "user",
+          "content": "Latest news on new and upcoming features of Microsoft Teams",
+          "timestamp": "2026-02-02T13:12:48.611Z"
+        },
+        {
+          "id": "msg_1770038002482_lvplagp",
+          "role": "assistant",
+          "content": "/write-content ## Instructions\n\nYou are working on a content authoring project. The project directory contains a `brief.md` file with the initial requirements.\n\n**Important**: As our conversation progresses and the requirements become clearer or more refined, please UPDATE the `brief.md` file to reflect the current, refined understanding of what needs to be created. This ensures the brief stays accurate and useful as a reference throughout the project.\n\n---\n\nCreate a file called \"draft.md\" in the project directory containing a blog post with approximately 500 words.\n\nBrief:\nLatest news on new and upcoming features of Microsoft TeamsDraft created at `draft.md` with ~500-word blog post and a high-level roundup. Updated `brief.md` to capture the no-dates note.\n\nNext steps you might want:\n1. Adjust tone for a specific audience (IT admins vs end users).\n2. Add a short CTA or product-specific conclusion.Draft created at `draft.md` with ~500-word blog post and a high-level roundup. Updated `brief.md` to capture the no-dates note.\n\nNext steps you might want:\n1. Adjust tone for a specific audience (IT admins vs end users).\n2. Add a short CTA or product-specific conclusion.",
+          "timestamp": "2026-02-02T13:13:22.482Z",
+          "parts": [],
+          "activities": []
+        }
+      ],
+      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770037963775_xv75ars",
+      "createdAt": "2026-02-02T13:12:43.775Z",
+      "updatedAt": "2026-02-02T13:13:26.733Z",
+      "opencodeSessionId": "ses_3e183fdcfffeze5t9QsaCudUU3"
+    }
+  ]
+}

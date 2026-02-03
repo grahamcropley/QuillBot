@@ -1,65 +1,133 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ProjectSelector } from "@/components/project-selector";
+import { StarterForm } from "@/components/starter-form";
+import { Card, CardHeader, CardContent, Input, Button } from "@/components/ui";
+import { useProjectStore } from "@/stores/project-store";
+import type { StarterFormData } from "@/types";
+
+type PageMode = "select" | "create";
+
+export default function HomePage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<PageMode>("select");
+  const [projectName, setProjectName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const projects = useProjectStore((state) => state.projects);
+  const currentProjectId = useProjectStore((state) => state.currentProjectId);
+  const isLoading = useProjectStore((state) => state.isLoading);
+  const isHydrated = useProjectStore((state) => state.isHydrated);
+  const selectProject = useProjectStore((state) => state.selectProject);
+  const createProject = useProjectStore((state) => state.createProject);
+  const fetchProjects = useProjectStore((state) => state.fetchProjects);
+  const deleteProject = useProjectStore((state) => state.deleteProject);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      fetchProjects();
+    }
+  }, [isHydrated, fetchProjects]);
+
+  const handleSelectProject = useCallback(
+    (id: string) => {
+      selectProject(id);
+      router.push(`/project/${id}`);
+    },
+    [selectProject, router],
+  );
+
+  const handleCreateNew = useCallback(() => {
+    setMode("create");
+    setProjectName("");
+    setNameError("");
+  }, []);
+
+  const handleDeleteProject = useCallback(
+    async (id: string) => {
+      if (
+        confirm(
+          "Are you sure you want to delete this project? This action cannot be undone.",
+        )
+      ) {
+        await deleteProject(id);
+      }
+    },
+    [deleteProject],
+  );
+
+  const handleFormSubmit = useCallback(
+    async (formData: StarterFormData) => {
+      if (!projectName.trim()) {
+        setNameError("Project name is required");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const projectId = await createProject(projectName.trim(), formData);
+        router.push(`/project/${projectId}`);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [projectName, createProject, router],
+  );
+
+  if (mode === "create") {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Create New Project File
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMode("select")}
+                >
+                  ← Back
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Input
+                label="Project Name"
+                placeholder="e.g., Q1 Product Launch Blog"
+                value={projectName}
+                onChange={(e) => {
+                  setProjectName(e.target.value);
+                  setNameError("");
+                }}
+                error={nameError}
+              />
+              <StarterForm
+                onSubmit={handleFormSubmit}
+                isLoading={isSubmitting}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="px-4 sm:px-6 lg:px-8 py-4">
+      <ProjectSelector
+        projects={projects}
+        selectedProjectId={currentProjectId}
+        onSelectProject={handleSelectProject}
+        onCreateNew={handleCreateNew}
+        onDeleteProject={handleDeleteProject}
+        isLoading={isLoading || !isHydrated}
+      />
     </div>
   );
 }
