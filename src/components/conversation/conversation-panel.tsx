@@ -55,7 +55,7 @@ function MessageBubble({
           questionData={message.questionData}
           onSubmit={(answers) => onAnswerQuestion?.(message.id, answers)}
         />
-        <span className="text-xs text-gray-400 mt-1 ml-4">
+        <span className="text-xs text-gray-400 dark:text-gray-600 mt-1 ml-4">
           {formatTime(message.timestamp)}
         </span>
       </div>
@@ -69,8 +69,10 @@ function MessageBubble({
       <div
         className={clsx(
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-          isUser ? "bg-blue-600" : "bg-gray-600",
-          hasError && "bg-red-600",
+          isUser
+            ? "bg-blue-600 dark:bg-blue-600"
+            : "bg-gray-600 dark:bg-gray-700",
+          hasError && "bg-red-600 dark:bg-red-600",
         )}
       >
         {hasError ? (
@@ -98,31 +100,31 @@ function MessageBubble({
           className={clsx(
             "px-4 py-2 rounded-2xl",
             hasError
-              ? "bg-red-50 border-2 border-red-300 text-red-900 rounded-br-md"
+              ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md"
               : isUser
-                ? "bg-blue-600 text-white rounded-br-md"
-                : "bg-gray-100 text-gray-900 rounded-bl-md",
+                ? "bg-blue-600 dark:bg-blue-600 text-white rounded-br-md"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md",
           )}
         >
           <p className="whitespace-pre-wrap">{message.content}</p>
           {hasError && message.errorMessage && (
-            <div className="mt-2 pt-2 border-t border-red-300 flex items-start gap-2">
-              <p className="text-sm text-red-700 flex-1">
+            <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
+              <p className="text-sm text-red-700 dark:text-red-200 flex-1">
                 Error: {message.errorMessage}
               </p>
               {onRetry && (
                 <button
                   onClick={() => onRetry(message)}
-                  className="flex-shrink-0 p-1 hover:bg-red-100 rounded transition-colors"
+                  className="flex-shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
                   title="Retry sending this message"
                 >
-                  <RefreshCw className="w-4 h-4 text-red-700" />
+                  <RefreshCw className="w-4 h-4 text-red-700 dark:text-red-200" />
                 </button>
               )}
             </div>
           )}
         </div>
-        <span className="text-xs text-gray-400 mt-1">
+        <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">
           {formatTime(message.timestamp)}
         </span>
       </div>
@@ -366,13 +368,13 @@ function getActivityItems(message: Message): ActivityItem[] {
 function ActivitySection({ item }: { item: ActivityItem }) {
   const statusLabel = item.status ? ` (${item.status})` : "";
   return (
-    <details className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-      <summary className="cursor-pointer text-sm font-medium text-gray-700">
+    <details className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2">
+      <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
         {item.title}
         {statusLabel}
       </summary>
       {item.content && (
-        <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-600">
+        <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-400">
           {item.content}
         </pre>
       )}
@@ -453,7 +455,7 @@ export function ConversationPanel({
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>
           </div>
         ) : (
@@ -480,15 +482,15 @@ export function ConversationPanel({
       )}
 
       {textSelection && (
-        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-yellow-800">
+            <span className="text-yellow-800 dark:text-yellow-200">
               Selection: &ldquo;{textSelection.text.slice(0, 50)}
               {textSelection.text.length > 50 ? "..." : ""}&rdquo;
             </span>
             <button
               onClick={onClearSelection}
-              className="text-yellow-600 hover:text-yellow-800"
+              className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300"
             >
               ×
             </button>
@@ -496,7 +498,10 @@ export function ConversationPanel({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
+      <form
+        onSubmit={handleSubmit}
+        className="p-4 border-t border-gray-200 dark:border-gray-800"
+      >
         <div className="flex w-full gap-2">
           <Textarea
             ref={textareaRef}

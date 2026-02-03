@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --border: #e5e7eb;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -16,6 +20,16 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --border: #27272a;
+    --muted: #18181b;
+    --muted-foreground: #a1a1a3;
+    color-scheme: dark;
+  }
+}
+
+html {
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
   }
 }
 
@@ -23,4 +37,60 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Prose styling for dark mode */
+.dark .prose {
+  @apply text-gray-50;
+}
+
+.dark .prose p,
+.dark .prose li,
+.dark .prose blockquote {
+  @apply text-gray-300;
+}
+
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+  @apply text-gray-50;
+}
+
+.dark .prose code {
+  @apply text-gray-300 bg-gray-900 px-1.5 py-0.5 rounded;
+}
+
+.dark .prose pre {
+  @apply bg-gray-900 border border-gray-800;
+}
+
+.dark .prose a {
+  @apply text-blue-400 hover:text-blue-300;
+}
+
+.dark .prose strong {
+  @apply text-gray-50;
+}
+
+.dark .prose em {
+  @apply text-gray-300;
+}
+
+.dark .prose table {
+  @apply border-gray-700;
+}
+
+.dark .prose thead {
+  @apply bg-gray-900 border-gray-700;
+}
+
+.dark .prose tbody {
+  @apply border-gray-700;
+}
+
+.dark .prose tbody tr:not(:last-child) {
+  @apply border-gray-700;
 }

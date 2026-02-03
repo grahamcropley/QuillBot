@@ -41,9 +41,11 @@ export function FileExplorer({
   const otherFiles = files.filter((f) => !markdownFiles.includes(f));
 
   return (
-    <div className="flex flex-col h-full border border-gray-200 rounded-lg overflow-hidden bg-white">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-        <h3 className="text-sm font-medium text-gray-900">Project Files</h3>
+    <div className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-50">
+          Project Files
+        </h3>
         {onRefresh && (
           <Button
             variant="ghost"
@@ -60,7 +62,7 @@ export function FileExplorer({
 
       <div className="flex-1 overflow-y-auto">
         {files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6 text-center">
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 p-6 text-center">
             <Folder className="w-12 h-12 mb-2 opacity-50" />
             <p className="text-sm">No files yet</p>
             <p className="text-xs mt-1">Ask OpenCode to create files</p>
@@ -69,7 +71,7 @@ export function FileExplorer({
           <div className="p-2">
             {markdownFiles.length > 0 && (
               <div className="mb-4">
-                <div className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <div className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Markdown Documents
                 </div>
                 <div className="space-y-1 mt-1">
@@ -84,20 +86,22 @@ export function FileExplorer({
                         className={clsx(
                           "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
                           isSelected
-                            ? "bg-blue-50 text-blue-900 font-medium"
-                            : "text-gray-700 hover:bg-gray-100",
+                            ? "bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-100 font-medium"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                         )}
                       >
                         <Icon
                           className={clsx(
                             "w-4 h-4 flex-shrink-0",
-                            isSelected ? "text-blue-600" : "text-gray-400",
+                            isSelected
+                              ? "text-blue-600 dark:text-blue-400"
+                              : "text-gray-400 dark:text-gray-600",
                           )}
                         />
                         <span className="flex-1 truncate text-left">
                           {file.name}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-600">
                           {formatFileSize(file.size)}
                         </span>
                       </button>
@@ -109,7 +113,7 @@ export function FileExplorer({
 
             {otherFiles.length > 0 && (
               <div>
-                <div className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <div className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Other Files
                 </div>
                 <div className="space-y-1 mt-1">
@@ -119,11 +123,11 @@ export function FileExplorer({
                     return (
                       <div
                         key={file.name}
-                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600"
+                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400"
                       >
-                        <Icon className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                        <Icon className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-600" />
                         <span className="flex-1 truncate">{file.name}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-600">
                           {file.isDirectory ? "—" : formatFileSize(file.size)}
                         </span>
                       </div>

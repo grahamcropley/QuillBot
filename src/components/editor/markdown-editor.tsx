@@ -185,7 +185,7 @@ export function MarkdownEditor({
   return (
     <div
       ref={containerRef}
-      className={`h-full overflow-hidden border border-gray-200 rounded-lg ${className}`}
+      className={`h-full overflow-hidden border border-gray-200 dark:border-gray-800 rounded-lg ${className}`}
     />
   );
 }
