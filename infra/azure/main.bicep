@@ -123,7 +123,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'acr-password'
             value: acrCredentials.passwords[0].value
           }
-        ]
+        ],
         opencodeApiKey != '' ? [
           {
             name: 'opencode-api-key'
@@ -143,7 +143,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
                 name: 'OPENCODE_API_URL'
                 value: 'http://localhost:9090'
               }
-            ]
+            ],
             opencodeApiKey != '' ? [
               {
                 name: 'OPENCODE_API_KEY'
@@ -183,7 +183,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
                 name: 'XDG_CONFIG_HOME'
                 value: '/app/.config'
               }
-            ]
+            ],
             opencodeApiKey != '' ? [
               {
                 name: 'OPENCODE_API_KEY'
