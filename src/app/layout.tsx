@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
+import { UserMenu } from "@/components/auth/user-menu";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,6 +40,7 @@ export default function RootLayout({
                     QuillBot
                   </span>
                 </div>
+                <UserMenu />
               </div>
             </div>
           </header>

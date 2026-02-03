@@ -14,6 +14,18 @@ param opencodeApiKey string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
 
+// Entra ID (Azure AD) Authentication - Easy Auth
+// Set these to enable Microsoft SSO
+@description('Entra ID tenant ID for authentication (leave empty to disable auth)')
+param entraIdTenantId string = ''
+
+@description('Entra ID client ID (app registration) for authentication')
+param entraIdClientId string = ''
+
+@secure()
+@description('Entra ID client secret for authentication')
+param entraIdClientSecret string = ''
+
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
@@ -129,6 +141,12 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'opencode-api-key'
             value: opencodeApiKey
           }
+        ] : [],
+        entraIdClientSecret != '' ? [
+          {
+            name: 'entra-client-secret'
+            value: entraIdClientSecret
+          }
         ] : []
       )
     }
@@ -228,3 +246,47 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 output webUrl string = 'https://${app.properties.configuration.ingress.fqdn}'
+
+// Easy Auth configuration - Microsoft Entra ID
+// Only created when entraIdTenantId is provided
+resource authConfig 'Microsoft.App/containerApps/authConfigs@2023-05-01' = if (entraIdTenantId != '') {
+  name: 'current'
+  parent: app
+  properties: {
+    platform: {
+      enabled: true
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'RedirectToLoginPage'
+      redirectToProvider: 'azureactivedirectory'
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: entraIdClientId
+          clientSecretSettingName: 'entra-client-secret'
+          openIdIssuer: 'https://login.microsoftonline.com/${entraIdTenantId}/v2.0'
+        }
+        validation: {
+          allowedAudiences: [
+            'api://${entraIdClientId}'
+          ]
+          defaultAuthorizationPolicy: {
+            allowedPrincipals: {}
+          }
+        }
+        login: {
+          loginParameters: [
+            'scope=openid profile email'
+          ]
+        }
+      }
+    }
+    login: {
+      tokenStore: {
+        enabled: true
+      }
+    }
+  }
+}
