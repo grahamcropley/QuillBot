@@ -87,77 +87,10 @@ jobs:
             OPENCODE_VERSION=${{ env.OPENCODE_VERSION }}
           tags: ${{ steps.acr.outputs.loginServer }}/${{ env.OPENCODE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-      # Create or update Entra ID app registration for Easy Auth
-      # This only runs if ENTRA_ID_TENANT_ID secret is set
-      - name: Setup Entra ID App Registration
-        id: entra
-        env:
-          ENTRA_TENANT_ID: ${{ secrets.ENTRA_ID_TENANT_ID }}
-        run: |
-          # Skip if tenant ID not configured
-          if [ -z "$ENTRA_TENANT_ID" ]; then
-            echo "ENTRA_ID_TENANT_ID not set, skipping auth setup"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "enabled=true" >> "$GITHUB_OUTPUT"
-          APP_NAME="${AZURE_APP_NAME}-auth"
-
-          # Check if app registration already exists
-          EXISTING_APP=$(az ad app list --display-name "$APP_NAME" --query "[0]" -o json)
-
-          if [ "$EXISTING_APP" == "null" ] || [ -z "$EXISTING_APP" ]; then
-            echo "Creating new app registration: $APP_NAME"
-            
-            # Create the app registration
-            APP_RESULT=$(az ad app create \
-              --display-name "$APP_NAME" \
-              --sign-in-audience "AzureADMyOrg" \
-              --enable-id-token-issuance true \
-              --query "{appId: appId, id: id}" -o json)
-            
-            CLIENT_ID=$(echo "$APP_RESULT" | jq -r '.appId')
-            OBJECT_ID=$(echo "$APP_RESULT" | jq -r '.id')
-            
-            echo "Created app with Client ID: $CLIENT_ID"
-          else
-            echo "App registration already exists"
-            CLIENT_ID=$(echo "$EXISTING_APP" | jq -r '.appId')
-            OBJECT_ID=$(echo "$EXISTING_APP" | jq -r '.id')
-          fi
-
-          # Get the Container App FQDN (may not exist on first deploy)
-          APP_URL="https://${AZURE_APP_NAME}.${AZURE_LOCATION}.azurecontainerapps.io"
-          REDIRECT_URI="${APP_URL}/.auth/login/aad/callback"
-
-          # Update redirect URIs
-          az ad app update --id "$CLIENT_ID" \
-            --web-redirect-uris "$REDIRECT_URI" \
-            --enable-id-token-issuance true
-
-          # Create or reset client secret
-          SECRET_RESULT=$(az ad app credential reset \
-            --id "$CLIENT_ID" \
-            --display-name "easy-auth-secret" \
-            --query "password" -o tsv)
-
-          # Output values for Bicep
-          echo "clientId=$CLIENT_ID" >> "$GITHUB_OUTPUT"
-          echo "clientSecret=$SECRET_RESULT" >> "$GITHUB_OUTPUT"
-          echo "tenantId=$ENTRA_TENANT_ID" >> "$GITHUB_OUTPUT"
-          echo "App registration configured with redirect URI: $REDIRECT_URI"
-
       - name: Deploy Container Apps
         run: |
           WEB_IMAGE="${{ steps.acr.outputs.loginServer }}/${WEB_IMAGE_NAME}:${IMAGE_TAG}"
           OPENCODE_IMAGE="${{ steps.acr.outputs.loginServer }}/${OPENCODE_IMAGE_NAME}:${IMAGE_TAG}"
-
-          # Build Entra ID parameters if configured
-          ENTRA_PARAMS=""
-          if [ "${{ steps.entra.outputs.enabled }}" == "true" ]; then
-            ENTRA_PARAMS="entraIdTenantId=${{ steps.entra.outputs.tenantId }} entraIdClientId=${{ steps.entra.outputs.clientId }} entraIdClientSecret=${{ steps.entra.outputs.clientSecret }}"
-          fi
 
           az deployment group create \
             --resource-group "$AZURE_RESOURCE_GROUP" \
@@ -173,5 +106,4 @@ jobs:
               configShareName="$CONFIG_SHARE_NAME" \
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
-              opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
-              $ENTRA_PARAMS
+              opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}"
