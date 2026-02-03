@@ -22,7 +22,7 @@ env:
   CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
   WEB_IMAGE_NAME: ${{ vars.WEB_IMAGE_NAME || 'quillbot-web' }}
   OPENCODE_IMAGE_NAME: ${{ vars.OPENCODE_IMAGE_NAME || 'quillbot-opencode' }}
-  OPENCODE_BASE_IMAGE: ${{ vars.OPENCODE_BASE_IMAGE || 'ghcr.io/ohmyopencode/opencode:latest' }}
+  OPENCODE_VERSION: ${{ vars.OPENCODE_VERSION || 'latest' }}
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -84,7 +84,7 @@ jobs:
           file: containers/opencode/Dockerfile
           push: true
           build-args: |
-            OPENCODE_IMAGE=${{ env.OPENCODE_BASE_IMAGE }}
+            OPENCODE_VERSION=${{ env.OPENCODE_VERSION }}
           tags: ${{ steps.acr.outputs.loginServer }}/${{ env.OPENCODE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
       - name: Deploy Container Apps

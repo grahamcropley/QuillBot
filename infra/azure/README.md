@@ -46,7 +46,7 @@ Optional overrides:
 - `CONFIG_SHARE_NAME` (default: `opencode-config`)
 - `WEB_IMAGE_NAME` (default: `quillbot-web`)
 - `OPENCODE_IMAGE_NAME` (default: `quillbot-opencode`)
-- `OPENCODE_BASE_IMAGE` (default: `ghcr.io/ohmyopencode/opencode:latest`)
+- `OPENCODE_VERSION` (default: `latest`)
 
 ## Config Upload (auth.json)
 
