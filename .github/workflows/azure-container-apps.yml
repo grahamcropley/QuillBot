@@ -91,8 +91,17 @@ jobs:
       # This only runs if ENTRA_ID_TENANT_ID secret is set
       - name: Setup Entra ID App Registration
         id: entra
-        if: ${{ secrets.ENTRA_ID_TENANT_ID != '' }}
+        env:
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_ID_TENANT_ID }}
         run: |
+          # Skip if tenant ID not configured
+          if [ -z "$ENTRA_TENANT_ID" ]; then
+            echo "ENTRA_ID_TENANT_ID not set, skipping auth setup"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
           APP_NAME="${AZURE_APP_NAME}-auth"
 
           # Check if app registration already exists
@@ -136,6 +145,7 @@ jobs:
           # Output values for Bicep
           echo "clientId=$CLIENT_ID" >> "$GITHUB_OUTPUT"
           echo "clientSecret=$SECRET_RESULT" >> "$GITHUB_OUTPUT"
+          echo "tenantId=$ENTRA_TENANT_ID" >> "$GITHUB_OUTPUT"
           echo "App registration configured with redirect URI: $REDIRECT_URI"
 
       - name: Deploy Container Apps
@@ -145,8 +155,8 @@ jobs:
 
           # Build Entra ID parameters if configured
           ENTRA_PARAMS=""
-          if [ -n "${{ secrets.ENTRA_ID_TENANT_ID }}" ]; then
-            ENTRA_PARAMS="entraIdTenantId=${{ secrets.ENTRA_ID_TENANT_ID }} entraIdClientId=${{ steps.entra.outputs.clientId }} entraIdClientSecret=${{ steps.entra.outputs.clientSecret }}"
+          if [ "${{ steps.entra.outputs.enabled }}" == "true" ]; then
+            ENTRA_PARAMS="entraIdTenantId=${{ steps.entra.outputs.tenantId }} entraIdClientId=${{ steps.entra.outputs.clientId }} entraIdClientSecret=${{ steps.entra.outputs.clientSecret }}"
           fi
 
           az deployment group create \
