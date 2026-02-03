@@ -1,0 +1,43 @@
+services:
+  opencode:
+    image: ${OPENCODE_IMAGE:-ghcr.io/ohmyopencode/opencode:latest}
+    command: ["opencode", "serve", "--host", "0.0.0.0", "--port", "9090"]
+    working_dir: /app
+    ports:
+      - "9090:9090"
+    environment:
+      HOME: /app
+      XDG_CONFIG_HOME: /app/.config
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+      - type: bind
+        source: ./opencode-config
+        target: /app/.config/opencode
+      - type: bind
+        source: ./.opencode
+        target: /app/.opencode
+        read_only: true
+      - type: bind
+        source: ./AGENTS.md
+        target: /app/AGENTS.md
+        read_only: true
+
+  web:
+    build:
+      context: .
+      dockerfile: containers/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      OPENCODE_API_URL: http://opencode:9090
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+    depends_on:
+      - opencode
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data

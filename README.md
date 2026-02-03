@@ -47,6 +47,48 @@ OPENCODE_API_URL=http://localhost:9090
 OPENCODE_API_KEY=                    # Optional
 ```
 
+## Docker Deployment
+
+This project ships with a two-container Docker setup:
+
+- **OpenCode headless** (`opencode`) - runs the OpenCode server
+- **Web UI** (`web`) - Next.js frontend + API routes
+
+Project metadata and generated marketing content are persisted on the host
+via a bind mount to `./data`, shared between both containers at `/app/data`.
+OpenCode config is sourced from `./opencode-config` and mounted to
+`/app/.config/opencode` for isolated authentication.
+
+### Quick Start
+
+```bash
+# Optional: choose a different OpenCode image
+export OPENCODE_IMAGE=ghcr.io/ohmyopencode/opencode:latest
+
+# Optional: API key if your OpenCode server enforces auth
+export OPENCODE_API_KEY=
+
+# Start the stack
+docker compose up --build
+```
+
+Open the UI at [http://localhost:3000](http://localhost:3000).
+
+### Notes
+
+- Bind mount location: `./data` on host → `/app/data` in both containers
+- OpenCode config: `./opencode-config` on host → `/app/.config/opencode`
+- Web Dockerfile: `containers/web/Dockerfile`
+- If your OpenCode server needs provider keys (e.g. Anthropic/OpenAI), add them
+  to the `opencode` service environment in `docker-compose.yml`.
+
+## Azure Deployment
+
+An Azure Container Apps deployment pipeline is available in
+`.github/workflows/azure-container-apps.yml` with infra definitions in
+`infra/azure/main.bicep`. See `infra/azure/README.md` for required secrets,
+variables, and config upload steps.
+
 ## Usage
 
 ### Creating a Project

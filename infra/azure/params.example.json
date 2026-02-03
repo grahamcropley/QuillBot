@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "appName": {
+      "value": "quillbot"
+    },
+    "environmentName": {
+      "value": "quillbot-env"
+    },
+    "logAnalyticsName": {
+      "value": "quillbot-logs"
+    },
+    "acrName": {
+      "value": "quillbotacr"
+    },
+    "storageAccountName": {
+      "value": "quillbotstorage"
+    },
+    "dataShareName": {
+      "value": "quillbot-data"
+    },
+    "configShareName": {
+      "value": "opencode-config"
+    },
+    "webImage": {
+      "value": "quillbotacr.azurecr.io/quillbot-web:latest"
+    },
+    "opencodeImage": {
+      "value": "quillbotacr.azurecr.io/quillbot-opencode:latest"
+    },
+    "opencodeApiKey": {
+      "value": ""
+    },
+    "minReplicas": {
+      "value": 1
+    },
+    "maxReplicas": {
+      "value": 3
+    }
+  }
+}

@@ -42,3 +42,8 @@ next-env.d.ts
 
 # project files
 /projects/
+
+# opencode config (local)
+opencode-config/*
+!opencode-config/.gitkeep
+!opencode-config/README.md
