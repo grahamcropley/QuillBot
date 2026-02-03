@@ -172,7 +172,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           command: [
             'opencode'
             'serve'
-            '--host'
+            '--hostname'
             '0.0.0.0'
             '--port'
             '9090'
