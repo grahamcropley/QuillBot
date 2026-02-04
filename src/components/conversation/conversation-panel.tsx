@@ -129,12 +129,12 @@ function MessageBubble({
             className={clsx(
               "px-4 py-2 rounded-2xl",
               hasError
-                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose prose-sm max-w-none prose-invert"
+                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose prose-compact max-w-none prose-invert"
                 : isPending || isRetrying
                   ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose prose-sm max-w-none prose-invert"
                   : isUser
-                    ? "bg-blue-500 dark:bg-blue-700 text-white dark:text-white rounded-br-md"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md prose prose-sm max-w-none dark:prose-invert",
+                    ? "bg-blue-500 dark:bg-blue-700 text-white dark:text-white rounded-br-md text-[0.8rem] leading-relaxed"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md prose prose-compact max-w-none dark:prose-invert",
             )}
           >
             {hasError ? (
@@ -142,7 +142,7 @@ function MessageBubble({
             ) : isPending || isRetrying ? (
               <div className="flex items-center gap-2">
                 <Loader className="w-4 h-4 animate-spin" />
-                <p className="text-sm">
+                <p className="text-xs">
                   {isRetrying
                     ? `Retrying... (attempt ${message.retryAttempts || 1})`
                     : "Sending..."}
@@ -155,7 +155,7 @@ function MessageBubble({
             )}
             {hasError && message.errorMessage && (
               <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
-                <p className="text-sm text-red-700 dark:text-red-200 flex-1">
+                <p className="text-xs text-red-700 dark:text-red-200 flex-1">
                   Error: {message.errorMessage}
                 </p>
                 {onRetry && (
@@ -183,12 +183,14 @@ function MessageBubble({
 
 type ActivityItem = {
   key: string;
-  title: string;
+  title: string | React.ReactNode;
   content?: string;
   status?: "pending" | "running" | "completed" | "error";
   kind:
     | "thinking"
     | "tool"
+    | "tool-web"
+    | "tool-file"
     | "delegating"
     | "system"
     | "mcp"
@@ -277,6 +279,23 @@ const ACTIVITY_KIND_STYLES: Record<
       "border-purple-200 dark:border-purple-900/60 bg-purple-50/70 dark:bg-purple-950/40",
     text: "text-purple-800 dark:text-purple-100",
     content: "text-purple-700 dark:text-purple-200",
+  },
+  "tool-web": {
+    label: "Web",
+    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
+    border:
+      "border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/70 dark:bg-cyan-950/40",
+    text: "text-cyan-800 dark:text-cyan-100",
+    content: "text-cyan-700 dark:text-cyan-200",
+  },
+  "tool-file": {
+    label: "File",
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+    border:
+      "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40",
+    text: "text-emerald-800 dark:text-emerald-100",
+    content: "text-emerald-700 dark:text-emerald-200",
   },
   delegating: {
     label: "Delegate",
@@ -420,12 +439,47 @@ function getActivityItems(message: Message): ActivityItem[] {
       const detail = output || error || inputDetails;
       const body = inputSummary ? `${inputSummary}\n\n${detail}` : detail;
 
+      // Determine kind and title based on tool type
+      let kind: ActivityItem["kind"] = "tool";
+      let title: string | React.ReactNode = `Running tool: ${part.tool}`;
+
+      if (part.tool === "webfetch" && typeof input?.url === "string") {
+        kind = "tool-web";
+        title = input.url;
+      } else if (
+        part.tool === "websearch_web_search_exa" &&
+        typeof input?.query === "string"
+      ) {
+        kind = "tool-web";
+        title = input.query;
+      } else if (
+        (part.tool === "read" || part.tool === "write") &&
+        typeof input?.filePath === "string"
+      ) {
+        kind = "tool-file";
+        // Extract filename and line count from output
+        const filename = getRelativePath(input.filePath);
+        const lineMatch =
+          typeof output === "string"
+            ? output.match(/\(total (\d+) lines?\)/)
+            : null;
+        const lineCount = lineMatch ? lineMatch[1] : null;
+        const verb = part.tool === "read" ? "Reading" : "Writing to";
+        const lineCountSuffix = lineCount ? ` (${lineCount} lines)` : "";
+        title = (
+          <>
+            {verb} <strong>{filename}</strong>
+            {lineCountSuffix}
+          </>
+        );
+      }
+
       items.push({
         key: part.id,
-        title: `Running tool: ${part.tool}`,
+        title,
         content: body,
         status,
-        kind: "tool",
+        kind,
       });
       lastToolIndex = items.length - 1;
       continue;
@@ -502,13 +556,9 @@ function getActivityItems(message: Message): ActivityItem[] {
       continue;
     }
 
+    // Patch applied notifications are dropped from visual output
     if (part.type === "patch") {
-      items.push({
-        key: part.id,
-        title: "Patch applied",
-        content: part.files.map(getRelativePath).join("\n"),
-        kind: "file",
-      });
+      continue;
     }
   }
 
@@ -587,12 +637,7 @@ function getActivityItems(message: Message): ActivityItem[] {
         });
         break;
       case "file.edited":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "File edited",
-          content: getRelativePath(String(activity.data.file ?? "")),
-          kind: "file",
-        });
+        // File edited notifications are dropped from visual output
         break;
       default:
         items.push({
@@ -609,6 +654,9 @@ function getActivityItems(message: Message): ActivityItem[] {
 
 function ActivitySection({ item }: { item: ActivityItem }) {
   const style = ACTIVITY_KIND_STYLES[item.kind] ?? ACTIVITY_KIND_STYLES.other;
+  const isTruncatable = item.kind === "tool-web";
+  const titleString = typeof item.title === "string" ? item.title : undefined;
+
   return (
     <details
       className={clsx("w-full rounded-lg border px-3 py-2", style.border)}
@@ -623,7 +671,14 @@ function ActivitySection({ item }: { item: ActivityItem }) {
           >
             {style.label}
           </span>
-          <span className={clsx("text-sm font-medium", style.text)}>
+          <span
+            className={clsx(
+              "text-xs font-medium",
+              style.text,
+              isTruncatable && "max-w-sm break-words",
+            )}
+            title={isTruncatable ? titleString : undefined}
+          >
             {item.title}
           </span>
           {item.status && (
@@ -777,7 +832,7 @@ export function ConversationPanel({
       )}
 
       {textSelection && (
-        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm">
+        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs">
           <div className="flex items-center justify-between">
             <span className="text-yellow-800 dark:text-yellow-200">
               Selection: &ldquo;{textSelection.text.slice(0, 50)}
@@ -808,8 +863,8 @@ export function ConversationPanel({
                 ? "Please answer the question above first..."
                 : "Type your message... (Shift+Enter for new line)"
             }
-            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none"
-            disabled={isLoading || hasUnansweredQuestion}
+            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
+            disabled={hasUnansweredQuestion}
           />
           <Button
             type="submit"

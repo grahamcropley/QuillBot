@@ -33,6 +33,10 @@ export default function ProjectPage() {
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
   const [serverErrorMessage, setServerErrorMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] =
+    useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [hasUnsavedEditorChanges, setHasUnsavedEditorChanges] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(0);
   const [isResizing, setIsResizing] = useState(false);
   const hasInitialized = useRef<Set<string>>(new Set());
@@ -320,6 +324,22 @@ export default function ProjectPage() {
   ]);
 
   const handleSendMessage = useCallback(
+    async (content: string, isInitialMessage = false, messageId?: string) => {
+      if (!currentProject) return;
+
+      // Check for unsaved editor changes
+      if (hasUnsavedEditorChanges) {
+        setPendingMessage(content);
+        setIsUnsavedChangesModalOpen(true);
+        return;
+      }
+
+      await sendMessageInternal(content, isInitialMessage, messageId);
+    },
+    [currentProject, hasUnsavedEditorChanges],
+  );
+
+  const sendMessageInternal = useCallback(
     async (content: string, isInitialMessage = false, messageId?: string) => {
       if (!currentProject) return;
 
@@ -632,6 +652,7 @@ export default function ProjectPage() {
                 isEditable={!isStreaming}
                 isOpenCodeBusy={isStreaming}
                 lastUpdated={syncedLastUpdated}
+                onUnsavedChangesChange={setHasUnsavedEditorChanges}
               />
             </PanelErrorBoundary>
           </div>
@@ -666,6 +687,30 @@ export default function ProjectPage() {
         onConfirm={handleConfirmDelete}
         confirmText="Delete"
         confirmVariant="danger"
+        cancelText="Cancel"
+      />
+
+      <Modal
+        isOpen={isUnsavedChangesModalOpen}
+        title="Unsaved Changes"
+        description="You have unsaved changes in the editor. Save them before sending a message, or discard them and continue."
+        onClose={() => {
+          setIsUnsavedChangesModalOpen(false);
+          setPendingMessage(null);
+        }}
+        onConfirm={() => {
+          // Save changes - user must manually discard if they don't want to save
+          setIsUnsavedChangesModalOpen(false);
+          // The save will be handled by the editor's save handler
+          // We'll need to wait for the save to complete before sending
+          setTimeout(() => {
+            if (pendingMessage) {
+              sendMessageInternal(pendingMessage);
+              setPendingMessage(null);
+            }
+          }, 100);
+        }}
+        confirmText="Save & Send"
         cancelText="Cancel"
       />
     </div>

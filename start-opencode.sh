@@ -119,4 +119,4 @@ log_success "Launching OpenCode server..."
 echo ""
 
 cd "$PROJECTS_DIR"
-opencode serve --port 9090 --hostname 0.0.0.0
+opencode serve --port 9090 --hostname 0.0.0.0 --log-level DEBUG --print-logs
