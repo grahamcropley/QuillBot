@@ -58,7 +58,7 @@ const EditorHeader = memo(function EditorHeader({
   onCopy,
 }: HeaderProps) {
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
       <div className="flex items-center gap-2">
         {hasUnsavedChanges && (
           <>
@@ -140,16 +140,18 @@ export function MarkdownPreview({
       onContentChange?.(editContent);
       lastSyncedContentRef.current = editContent;
       setHasUnsavedChanges(false);
+      onUnsavedChangesChange?.(false);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [editContent, hasUnsavedChanges, onContentChange]);
+  }, [editContent, hasUnsavedChanges, onContentChange, onUnsavedChangesChange]);
 
   const handleSaveEdit = useCallback(() => {
     onContentChange?.(editContent);
     lastSyncedContentRef.current = editContent;
     setHasUnsavedChanges(false);
-  }, [editContent, onContentChange]);
+    onUnsavedChangesChange?.(false);
+  }, [editContent, onContentChange, onUnsavedChangesChange]);
 
   const handleDiscardChanges = useCallback(() => {
     setEditContent(lastSyncedContentRef.current);
