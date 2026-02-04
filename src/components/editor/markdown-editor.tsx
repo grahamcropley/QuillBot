@@ -49,6 +49,9 @@ const baseTheme = EditorView.theme({
   "&.cm-focused": {
     outline: "none",
   },
+  "&.cm-readonly": {
+    opacity: "0.6",
+  },
 });
 
 const lightTheme = EditorView.theme({
