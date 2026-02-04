@@ -16,6 +16,11 @@ import {
   isStreamFileEdited,
   isStreamActivity,
 } from "@/types/opencode-events";
+import {
+  classifyStreamEvent,
+  createFileEditedActivity,
+  isDisplayableTextPart,
+} from "@/utils/stream-classifier";
 
 interface UseOpenCodeStreamOptions {
   projectId: string;
@@ -27,6 +32,11 @@ interface UseOpenCodeStreamOptions {
   onFileEdited?: (path: string) => void;
   onPart?: (part: Part, delta?: string) => void;
   onActivity?: (activity: StreamActivity) => void;
+  onStreamSplit?: (info: {
+    tool: string;
+    callId?: string;
+    content: string;
+  }) => void;
 }
 
 interface SendMessageOptions {
@@ -48,13 +58,6 @@ export interface UseOpenCodeStreamReturn {
   reset: () => void;
   abort: () => Promise<void>;
   resumeBufferedStream: (currentSessionId: string) => Promise<void>;
-}
-
-function extractTextFromPart(part: Part): string | null {
-  if (part.type === "text") {
-    return part.text;
-  }
-  return null;
 }
 
 function parseSSELine(line: string): StreamEvent | null {
@@ -115,6 +118,7 @@ export function useOpenCodeStream(
     onFileEdited,
     onPart,
     onActivity,
+    onStreamSplit,
   } = options;
 
   const [isStreaming, setIsStreaming] = useState(false);
@@ -192,6 +196,8 @@ export function useOpenCodeStream(
       let accumulatedContent = "";
       let currentSessionId = sessionId ?? "";
       let buffer = "";
+      let suppressText = false;
+      const splitToolCallIds = new Set<string>();
 
       try {
         const response = await fetch("/api/opencode/message", {
@@ -251,8 +257,52 @@ export function useOpenCodeStream(
             const event = parseSSELine(trimmedLine);
             if (!event) continue;
 
+            const bucket = classifyStreamEvent(event);
+
             if (isStreamMessagePartUpdated(event)) {
+              if (event.part.type === "tool") {
+                const toolPart = event.part;
+                const isToolStatusSplit =
+                  toolPart.state.status === "pending" ||
+                  toolPart.state.status === "running";
+                const isToolRunningSplitCandidate =
+                  toolPart.tool !== "question" &&
+                  isToolStatusSplit &&
+                  Boolean(accumulatedContent.trim());
+                const toolCallId = toolPart.callID;
+
+                if (
+                  isToolRunningSplitCandidate &&
+                  (!toolCallId || !splitToolCallIds.has(toolCallId))
+                ) {
+                  if (toolCallId) {
+                    splitToolCallIds.add(toolCallId);
+                  }
+                  onStreamSplit?.({
+                    tool: toolPart.tool,
+                    callId: toolCallId,
+                    content: accumulatedContent,
+                  });
+                  accumulatedContent = "";
+                  if (isMountedRef.current) {
+                    setStreamingContent("");
+                  }
+                }
+              }
+
               onPart?.(event.part, event.delta);
+
+              if (
+                event.part.type === "tool" &&
+                event.part.tool === "question" &&
+                event.part.state.status === "completed"
+              ) {
+                suppressText = false;
+                accumulatedContent = "";
+                if (isMountedRef.current) {
+                  setStreamingContent("");
+                }
+              }
 
               if (event.part.type === "reasoning") {
                 if (isMountedRef.current) {
@@ -266,14 +316,14 @@ export function useOpenCodeStream(
                   setStatusMessage(`Using tool: ${toolName}`);
                   onStatus?.(`Using tool: ${toolName}`);
                 }
-              } else if (event.part.type === "text") {
+              } else if (isDisplayableTextPart(event.part)) {
                 if (isMountedRef.current) {
                   setStatusMessage("Replying...");
                   onStatus?.("Replying...");
                 }
               }
 
-              if (event.delta && event.part.type === "text") {
+              if (!suppressText && bucket === "display" && event.delta) {
                 accumulatedContent += event.delta;
                 if (isMountedRef.current) {
                   setStreamingContent(accumulatedContent);
@@ -286,6 +336,11 @@ export function useOpenCodeStream(
                 event.data.sessionId,
                 event.data.questions,
               );
+              suppressText = true;
+              accumulatedContent = "";
+              if (isMountedRef.current) {
+                setStreamingContent("");
+              }
               onQuestion?.(questionData);
             } else if (isStreamSessionStatus(event)) {
               currentSessionId = event.sessionId;
@@ -309,6 +364,7 @@ export function useOpenCodeStream(
               }
             } else if (isStreamFileEdited(event)) {
               onFileEdited?.(event.file);
+              onActivity?.(createFileEditedActivity(event.file));
             } else if (isStreamActivity(event)) {
               onActivity?.(event);
             }
@@ -357,6 +413,7 @@ export function useOpenCodeStream(
       onFileEdited,
       onPart,
       onActivity,
+      onStreamSplit,
     ],
   );
 
@@ -367,6 +424,9 @@ export function useOpenCodeStream(
       }
 
       let lastEventIndex = 0;
+      let suppressText = false;
+      let resumedContent = "";
+      const splitToolCallIds = new Set<string>();
 
       try {
         setIsStreaming(true);
@@ -388,9 +448,55 @@ export function useOpenCodeStream(
             if (!isMountedRef.current) break;
 
             if (isStreamMessagePartUpdated(event)) {
+              if (event.part.type === "tool") {
+                const toolPart = event.part;
+                const isToolStatusSplit =
+                  toolPart.state.status === "pending" ||
+                  toolPart.state.status === "running";
+                const isToolRunningSplitCandidate =
+                  toolPart.tool !== "question" &&
+                  isToolStatusSplit &&
+                  Boolean(resumedContent.trim());
+                const toolCallId = toolPart.callID;
+
+                if (
+                  isToolRunningSplitCandidate &&
+                  (!toolCallId || !splitToolCallIds.has(toolCallId))
+                ) {
+                  if (toolCallId) {
+                    splitToolCallIds.add(toolCallId);
+                  }
+                  onStreamSplit?.({
+                    tool: toolPart.tool,
+                    callId: toolCallId,
+                    content: resumedContent,
+                  });
+                  resumedContent = "";
+                  if (isMountedRef.current) {
+                    setStreamingContent("");
+                  }
+                }
+              }
+
               onPart?.(event.part, event.delta);
 
-              if (event.delta && event.part.type === "text") {
+              if (
+                event.part.type === "tool" &&
+                event.part.tool === "question" &&
+                event.part.state.status === "completed"
+              ) {
+                suppressText = false;
+                if (isMountedRef.current) {
+                  setStreamingContent("");
+                }
+              }
+
+              if (
+                !suppressText &&
+                event.delta &&
+                isDisplayableTextPart(event.part)
+              ) {
+                resumedContent += event.delta;
                 setStreamingContent((prev) => prev + (event.delta || ""));
                 onChunk?.(event.delta);
               }
@@ -400,6 +506,11 @@ export function useOpenCodeStream(
                 event.data.sessionId,
                 event.data.questions,
               );
+              suppressText = true;
+              resumedContent = "";
+              if (isMountedRef.current) {
+                setStreamingContent("");
+              }
               onQuestion?.(questionData);
             } else if (isStreamSessionStatus(event)) {
               if (isMountedRef.current) {
@@ -420,6 +531,7 @@ export function useOpenCodeStream(
               break;
             } else if (isStreamFileEdited(event)) {
               onFileEdited?.(event.file);
+              onActivity?.(createFileEditedActivity(event.file));
             } else if (isStreamActivity(event)) {
               onActivity?.(event);
             }
@@ -456,6 +568,7 @@ export function useOpenCodeStream(
       onFileEdited,
       onPart,
       onActivity,
+      onStreamSplit,
     ],
   );
 

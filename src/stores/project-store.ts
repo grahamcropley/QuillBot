@@ -372,13 +372,25 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const project = get().projects.find((p) => p.id === currentProjectId);
     const message = project?.messages.find((m) => m.id === questionId);
     const requestId = message?.questionData?.requestId;
+    const updatedQuestionData = message?.questionData;
 
-    if (!requestId) {
+    if (!requestId || !updatedQuestionData) {
       console.error("Could not find request ID for question", questionId);
       return;
     }
 
     try {
+      await fetch(`/api/projects/${currentProjectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageUpdate: {
+            id: questionId,
+            updates: { questionData: updatedQuestionData },
+          },
+        }),
+      });
+
       const response = await fetch("/api/opencode/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

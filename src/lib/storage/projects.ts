@@ -208,6 +208,39 @@ export async function addMessageObjectToProject(
   return updated;
 }
 
+export async function updateMessageInProject(
+  id: string,
+  messageId: string,
+  updates: Partial<Message>,
+): Promise<Project | null> {
+  const data = await readProjectsFile();
+  const index = data.projects.findIndex((p) => p.id === id);
+
+  if (index === -1) return null;
+
+  const existing = hydrateProject(data.projects[index]);
+  const updatedMessages = existing.messages.map((message) => {
+    if (message.id !== messageId) return message;
+    return {
+      ...message,
+      ...updates,
+      timestamp: message.timestamp,
+      id: message.id,
+    };
+  });
+
+  const updated: Project = {
+    ...existing,
+    messages: updatedMessages,
+    updatedAt: new Date(),
+  };
+
+  data.projects[index] = serializeProject(updated);
+  await writeProjectsFile(data);
+
+  return updated;
+}
+
 export async function deleteProject(id: string): Promise<boolean> {
   const data = await readProjectsFile();
   const project = data.projects.find((p) => p.id === id);

@@ -98,6 +98,25 @@ export default function ProjectPage() {
   const [streamingActivities, setStreamingActivities] = useState<
     StreamActivity[]
   >([]);
+  const [streamingSegments, setStreamingSegments] = useState<Message[]>([]);
+  const streamingPartsRef = useRef<Part[]>([]);
+  const streamingActivitiesRef = useRef<StreamActivity[]>([]);
+  const streamingSegmentsRef = useRef<Message[]>([]);
+
+  const commitStreamingSegment = useCallback((segment: Message) => {
+    setStreamingSegments((prev) => {
+      const next = [...prev, segment];
+      streamingSegmentsRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const resetStreamingCollections = useCallback(() => {
+    setStreamingParts([]);
+    setStreamingActivities([]);
+    streamingPartsRef.current = [];
+    streamingActivitiesRef.current = [];
+  }, []);
 
   const { sendMessage, isStreaming, streamingContent, statusMessage } =
     useOpenCodeStream({
@@ -106,18 +125,56 @@ export default function ProjectPage() {
         console.log("[ProjectPage] onQuestion called with:", questionData);
         addQuestion(questionData);
       },
-      onComplete: (content) => {
-        addMessageWithDetails({
-          id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      onStreamSplit: ({ tool, content }) => {
+        const parts = streamingPartsRef.current;
+        const activities = streamingActivitiesRef.current;
+
+        if (!content.trim() && parts.length === 0 && activities.length === 0) {
+          return;
+        }
+
+        commitStreamingSegment({
+          id: `stream_split_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           role: "assistant",
           content,
           timestamp: new Date(),
-          parts: streamingParts,
-          activities: streamingActivities,
+          parts,
+          activities,
         });
 
-        setStreamingParts([]);
-        setStreamingActivities([]);
+        resetStreamingCollections();
+        console.log("[ProjectPage] Stream split at tool:", tool);
+      },
+      onComplete: (content) => {
+        const finalParts = streamingPartsRef.current;
+        const finalActivities = streamingActivitiesRef.current;
+        const segmentsToStore = [...streamingSegmentsRef.current];
+
+        if (
+          content.trim() ||
+          finalParts.length > 0 ||
+          finalActivities.length > 0
+        ) {
+          segmentsToStore.push({
+            id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            role: "assistant",
+            content,
+            timestamp: new Date(),
+            parts: finalParts,
+            activities: finalActivities,
+          });
+        }
+
+        resetStreamingCollections();
+
+        void (async () => {
+          for (const segment of segmentsToStore) {
+            await addMessageWithDetails(segment);
+          }
+
+          setStreamingSegments([]);
+          streamingSegmentsRef.current = [];
+        })();
 
         const markdownMatch = content.match(/```markdown\n([\s\S]*?)\n```/);
         if (markdownMatch) {
@@ -125,18 +182,19 @@ export default function ProjectPage() {
         }
       },
       onPart: (part) => {
-        setStreamingParts((prev) => {
-          const index = prev.findIndex((p) => p.id === part.id);
-          if (index === -1) {
-            return [...prev, part];
-          }
-          const next = [...prev];
-          next[index] = part;
-          return next;
-        });
+        const current = streamingPartsRef.current;
+        const index = current.findIndex((p) => p.id === part.id);
+        const next =
+          index === -1
+            ? [...current, part]
+            : current.map((existing, idx) => (idx === index ? part : existing));
+        streamingPartsRef.current = next;
+        setStreamingParts(next);
       },
       onActivity: (activity) => {
-        setStreamingActivities((prev) => [...prev, activity]);
+        const next = [...streamingActivitiesRef.current, activity];
+        streamingActivitiesRef.current = next;
+        setStreamingActivities(next);
       },
       onError: (error) => {
         console.error("OpenCode stream error:", error);
@@ -177,8 +235,18 @@ export default function ProjectPage() {
   const displayedMessages = useMemo(() => {
     if (!currentProject) return [] as Message[];
 
-    if (!isStreaming || !streamingContent) {
+    const hasStreamingData =
+      streamingContent ||
+      streamingParts.length > 0 ||
+      streamingActivities.length > 0;
+    const hasStreamingSegments = streamingSegments.length > 0;
+
+    if (!isStreaming && !hasStreamingSegments) {
       return currentProject.messages;
+    }
+
+    if (!hasStreamingData) {
+      return [...currentProject.messages, ...streamingSegments];
     }
 
     const streamingMessage: Message = {
@@ -190,13 +258,34 @@ export default function ProjectPage() {
       activities: streamingActivities,
     };
 
-    return [...currentProject.messages, streamingMessage];
+    const lastMessage = currentProject.messages.at(-1);
+    const hasPendingQuestion =
+      lastMessage?.role === "question" &&
+      lastMessage.questionData &&
+      !lastMessage.questionData.answered;
+    const hasStreamingText = Boolean(streamingContent.trim());
+
+    if (hasPendingQuestion && !hasStreamingText) {
+      const mergedQuestion: Message = {
+        ...lastMessage,
+        parts: [...(lastMessage.parts ?? []), ...streamingParts],
+        activities: [...(lastMessage.activities ?? []), ...streamingActivities],
+      };
+      return [
+        ...currentProject.messages.slice(0, -1),
+        mergedQuestion,
+        ...streamingSegments,
+      ];
+    }
+
+    return [...currentProject.messages, ...streamingSegments, streamingMessage];
   }, [
     currentProject,
     isStreaming,
     streamingContent,
     streamingParts,
     streamingActivities,
+    streamingSegments,
   ]);
 
   useEffect(() => {
@@ -268,8 +357,9 @@ export default function ProjectPage() {
           })
         : content;
 
-      setStreamingParts([]);
-      setStreamingActivities([]);
+      resetStreamingCollections();
+      setStreamingSegments([]);
+      streamingSegmentsRef.current = [];
 
       const result = await sendMessage({
         message: messageContent,

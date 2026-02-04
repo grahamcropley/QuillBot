@@ -65,7 +65,8 @@ export interface StreamActivity {
     | "mcp.browser.open.failed"
     | "permission.asked"
     | "permission.replied"
-    | "todo.updated";
+    | "todo.updated"
+    | "file.edited";
   data: Record<string, unknown>;
   sessionId?: string;
   messageId?: string;
