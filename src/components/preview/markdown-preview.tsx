@@ -133,6 +133,18 @@ export function MarkdownPreview({
     setHasUnsavedChanges(isDirty);
   }, []);
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const timer = setTimeout(() => {
+      onContentChange?.(editContent);
+      lastSyncedContentRef.current = editContent;
+      setHasUnsavedChanges(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [editContent, hasUnsavedChanges, onContentChange]);
+
   const handleSaveEdit = useCallback(() => {
     onContentChange?.(editContent);
     lastSyncedContentRef.current = editContent;
