@@ -24,6 +24,7 @@ import {
 
 interface UseOpenCodeStreamOptions {
   projectId: string;
+  initialSessionId?: string | null;
   onChunk?: (content: string) => void;
   onStatus?: (status: string) => void;
   onQuestion?: (question: QuestionData) => void;
@@ -110,6 +111,7 @@ export function useOpenCodeStream(
 ): UseOpenCodeStreamReturn {
   const {
     projectId,
+    initialSessionId,
     onChunk,
     onStatus,
     onQuestion,
@@ -140,6 +142,16 @@ export function useOpenCodeStream(
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!initialSessionId || initialSessionId === sessionId) {
+      return;
+    }
+
+    if (!isStreaming) {
+      setSessionId(initialSessionId);
+    }
+  }, [initialSessionId, sessionId, isStreaming]);
 
   const clearError = useCallback(() => {
     setError(null);

@@ -32,6 +32,7 @@ export default function ProjectPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
   const [serverErrorMessage, setServerErrorMessage] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(0);
   const [isResizing, setIsResizing] = useState(false);
   const hasInitialized = useRef<Set<string>>(new Set());
@@ -102,6 +103,12 @@ export default function ProjectPage() {
   const streamingPartsRef = useRef<Part[]>([]);
   const streamingActivitiesRef = useRef<StreamActivity[]>([]);
   const streamingSegmentsRef = useRef<Message[]>([]);
+  const streamSplitCounterRef = useRef(0);
+
+  const nextStreamSplitId = useCallback(() => {
+    streamSplitCounterRef.current += 1;
+    return `stream_split_${Date.now()}_${streamSplitCounterRef.current}`;
+  }, []);
 
   const commitStreamingSegment = useCallback((segment: Message) => {
     setStreamingSegments((prev) => {
@@ -121,6 +128,7 @@ export default function ProjectPage() {
   const { sendMessage, isStreaming, streamingContent, statusMessage } =
     useOpenCodeStream({
       projectId,
+      initialSessionId: currentProject?.opencodeSessionId ?? null,
       onQuestion: (questionData) => {
         console.log("[ProjectPage] onQuestion called with:", questionData);
         addQuestion(questionData);
@@ -134,7 +142,7 @@ export default function ProjectPage() {
         }
 
         commitStreamingSegment({
-          id: `stream_split_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: nextStreamSplitId(),
           role: "assistant",
           content,
           timestamp: new Date(),
@@ -246,7 +254,11 @@ export default function ProjectPage() {
     }
 
     if (!hasStreamingData) {
-      return [...currentProject.messages, ...streamingSegments];
+      const seenIds = new Set(currentProject.messages.map((msg) => msg.id));
+      const dedupedSegments = streamingSegments.filter(
+        (segment) => !seenIds.has(segment.id),
+      );
+      return [...currentProject.messages, ...dedupedSegments];
     }
 
     const streamingMessage: Message = {
@@ -278,7 +290,11 @@ export default function ProjectPage() {
       ];
     }
 
-    return [...currentProject.messages, ...streamingSegments, streamingMessage];
+    const seenIds = new Set(currentProject.messages.map((msg) => msg.id));
+    const dedupedSegments = streamingSegments.filter(
+      (segment) => !seenIds.has(segment.id),
+    );
+    return [...currentProject.messages, ...dedupedSegments, streamingMessage];
   }, [
     currentProject,
     isStreaming,
@@ -464,14 +480,13 @@ export default function ProjectPage() {
   }, []);
 
   const handleDeleteProject = useCallback(async () => {
-    if (
-      confirm(
-        "Are you sure you want to delete this project? This action cannot be undone.",
-      )
-    ) {
-      await deleteProject(projectId);
-      router.push("/");
-    }
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    setIsDeleteModalOpen(false);
+    await deleteProject(projectId);
+    router.push("/");
   }, [deleteProject, projectId, router]);
 
   if (!isHydrated) {
@@ -603,9 +618,9 @@ export default function ProjectPage() {
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview
                 content={
-                  streamingContent ||
-                  syncedContent ||
-                  currentProject.documentContent
+                  syncedFileName
+                    ? syncedContent
+                    : currentProject.documentContent
                 }
                 onContentChange={handleContentChange}
                 onTextSelect={handleTextSelect}
@@ -636,6 +651,17 @@ export default function ProjectPage() {
         confirmText="Return Home"
         cancelText=""
         confirmVariant="danger"
+      />
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        title="Delete Project"
+        description={`Are you sure you want to delete "${currentProject.name}"? This action cannot be undone.`}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete"
+        confirmVariant="danger"
+        cancelText="Cancel"
       />
     </div>
   );

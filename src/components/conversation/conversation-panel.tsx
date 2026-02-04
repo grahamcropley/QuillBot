@@ -17,6 +17,17 @@ import { QuestionPrompt } from "./question-prompt";
 import { StatusLine, parseStatusMessage } from "./status-line";
 import type { Message, TextSelection } from "@/types";
 
+function getRelativePath(filePath: string): string {
+  if (!filePath) return filePath;
+  // Match patterns like /data/projects/proj_xxx/ and remove everything before it
+  const projectMatch = filePath.match(/\/data\/projects\/[^/]+\/(.+)$/);
+  if (projectMatch) {
+    return projectMatch[1];
+  }
+  // Fallback: just get the filename or last part
+  return filePath.split("/").pop() || filePath;
+}
+
 interface ConversationPanelProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
@@ -191,6 +202,55 @@ type ActivityItem = {
     | "other";
 };
 
+function formatToolInputSummary(
+  tool: string,
+  input: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!input) return null;
+
+  const lines: string[] = [];
+
+  if (typeof input.url === "string") {
+    lines.push(`url: ${input.url}`);
+  }
+
+  if (typeof input.filePath === "string") {
+    lines.push(`file: ${getRelativePath(input.filePath)}`);
+  }
+
+  if (Array.isArray(input.paths) && input.paths.length > 0) {
+    lines.push(`paths: ${input.paths.map(getRelativePath).join(", ")}`);
+  }
+
+  if (typeof input.command === "string") {
+    lines.push(`command: ${input.command}`);
+  }
+
+  if (typeof input.query === "string") {
+    lines.push(`query: ${input.query}`);
+  }
+
+  if (typeof input.text === "string" && input.text.trim()) {
+    const trimmed = input.text.trim();
+    const preview =
+      trimmed.length > 140 ? `${trimmed.slice(0, 140)}...` : trimmed;
+    lines.push(`text: ${preview}`);
+  }
+
+  if (typeof input.element === "string") {
+    lines.push(`element: ${input.element}`);
+  }
+
+  if (!lines.length) {
+    if (tool === "webfetch" && typeof input.url !== "string") {
+      return "url: (missing)";
+    }
+    return null;
+  }
+
+  return lines.join("\n");
+}
+
 const ACTIVITY_KIND_STYLES: Record<
   ActivityItem["kind"],
   {
@@ -323,6 +383,7 @@ const STATUS_BADGES: Record<NonNullable<ActivityItem["status"]>, string> = {
 
 function getActivityItems(message: Message): ActivityItem[] {
   const items: ActivityItem[] = [];
+  let lastToolIndex: number | null = null;
 
   for (const part of message.parts ?? []) {
     if (part.type === "reasoning") {
@@ -347,12 +408,17 @@ function getActivityItems(message: Message): ActivityItem[] {
 
     if (part.type === "tool") {
       const status = part.state.status;
-      const input = JSON.stringify(part.state.input ?? {}, null, 2);
+      const input = part.state.input as Record<string, unknown> | undefined;
+      const inputSummary = formatToolInputSummary(part.tool, input);
+      const inputDetails = input
+        ? JSON.stringify(input, null, 2)
+        : "(no input)";
       const output =
         part.state.status === "completed" ? part.state.output : undefined;
       const error =
         part.state.status === "error" ? part.state.error : undefined;
-      const body = output || error || input;
+      const detail = output || error || inputDetails;
+      const body = inputSummary ? `${inputSummary}\n\n${detail}` : detail;
 
       items.push({
         key: part.id,
@@ -361,6 +427,7 @@ function getActivityItems(message: Message): ActivityItem[] {
         status,
         kind: "tool",
       });
+      lastToolIndex = items.length - 1;
       continue;
     }
 
@@ -404,29 +471,28 @@ function getActivityItems(message: Message): ActivityItem[] {
       continue;
     }
 
-    if (part.type === "step-start") {
-      items.push({
-        key: part.id,
-        title: "Step started",
-        content: part.snapshot,
-        kind: "step",
-      });
-      continue;
-    }
-
     if (part.type === "step-finish") {
       const tokens = `Tokens: input ${part.tokens.input}, output ${part.tokens.output}`;
-      items.push({
-        key: part.id,
-        title: `Step finished (${part.reason})`,
-        content: tokens,
-        kind: "step",
-      });
+      if (lastToolIndex !== null) {
+        const existing = items[lastToolIndex];
+        const suffix = `Step finished (${part.reason})\n${tokens}`;
+        const content = existing.content
+          ? `${existing.content}\n\n${suffix}`
+          : suffix;
+        items[lastToolIndex] = { ...existing, content };
+      } else {
+        items.push({
+          key: part.id,
+          title: `Step finished (${part.reason})`,
+          content: tokens,
+          kind: "step",
+        });
+      }
       continue;
     }
 
     if (part.type === "file") {
-      const fileLabel = part.filename ?? part.url;
+      const fileLabel = getRelativePath(part.filename ?? part.url ?? "");
       items.push({
         key: part.id,
         title: "File",
@@ -440,7 +506,7 @@ function getActivityItems(message: Message): ActivityItem[] {
       items.push({
         key: part.id,
         title: "Patch applied",
-        content: part.files.join("\n"),
+        content: part.files.map(getRelativePath).join("\n"),
         kind: "file",
       });
     }
@@ -524,7 +590,7 @@ function getActivityItems(message: Message): ActivityItem[] {
         items.push({
           key: `${activity.activityType}-${items.length}`,
           title: "File edited",
-          content: String(activity.data.file ?? ""),
+          content: getRelativePath(String(activity.data.file ?? "")),
           kind: "file",
         });
         break;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useFileWatcher } from "./use-file-watcher";
 
 interface UseMarkdownSyncOptions {
@@ -25,6 +25,7 @@ export function useMarkdownSync({
   const [fileName, setFileName] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const lastModifiedMapRef = useRef(new Map<string, string>());
 
   const {
     files,
@@ -83,9 +84,28 @@ export function useMarkdownSync({
     }
   }, [markdownFiles, enabled, preferredFileName, fileName, loadFile]);
 
+  useEffect(() => {
+    if (!enabled || !fileName) return;
+
+    const targetFile = files.find((file) => file.name === fileName);
+    if (!targetFile) return;
+
+    const modifiedAt =
+      typeof targetFile.modifiedAt === "string"
+        ? targetFile.modifiedAt
+        : String(targetFile.modifiedAt);
+    const lastKnown = lastModifiedMapRef.current.get(fileName);
+
+    if (!lastKnown || lastKnown !== modifiedAt) {
+      lastModifiedMapRef.current.set(fileName, modifiedAt);
+      loadFile(fileName);
+    }
+  }, [files, enabled, fileName, loadFile]);
+
   const selectFile = useCallback(
     (newFileName: string) => {
       if (markdownFiles.includes(newFileName)) {
+        lastModifiedMapRef.current.delete(newFileName);
         loadFile(newFileName);
       }
     },
