@@ -53,7 +53,10 @@ export function useTextSelection(
     const endLine = startLine + selectedLines.length - 1;
     const startOffset = textBefore.length;
 
+    const id = `sel-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
     setSelection({
+      id,
       text: selectedText,
       startLine,
       endLine,

@@ -19,7 +19,7 @@ interface ProjectState {
   currentProjectId: string | null;
   isLoading: boolean;
   isOpenCodeBusy: boolean;
-  textSelection: TextSelection | null;
+  textSelections: TextSelection[];
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
@@ -43,7 +43,7 @@ interface ProjectState {
   addQuestion: (questionData: QuestionData) => Promise<void>;
   answerQuestion: (questionId: string, answers: string[][]) => Promise<void>;
   setOpenCodeBusy: (busy: boolean) => void;
-  setTextSelection: (selection: TextSelection | null) => void;
+  setTextSelections: (selections: TextSelection[]) => void;
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
   setSessionStatus: (status: SessionStatus) => void;
@@ -73,7 +73,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   currentProjectId: null,
   isLoading: false,
   isOpenCodeBusy: false,
-  textSelection: null,
+  textSelections: [],
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
@@ -99,7 +99,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   },
 
   selectProject: (id) => {
-    set({ currentProjectId: id, textSelection: null, analysisMetrics: null });
+    set({
+      currentProjectId: id,
+      textSelections: [],
+      analysisMetrics: null,
+    });
   },
 
   createProject: async (name, formData) => {
@@ -436,8 +440,8 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     set({ isOpenCodeBusy: busy });
   },
 
-  setTextSelection: (selection) => {
-    set({ textSelection: selection });
+  setTextSelections: (selections) => {
+    set({ textSelections: selections });
   },
 
   setAnalysisMetrics: (metrics) => {

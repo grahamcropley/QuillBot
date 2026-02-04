@@ -63,11 +63,19 @@ export interface StarterFormData {
 }
 
 export interface TextSelection {
+  id: string;
   text: string;
   startLine: number;
   endLine: number;
   startOffset: number;
   endOffset: number;
+}
+
+export interface PersistentSelections {
+  selections: TextSelection[];
+  addSelection: (selection: Omit<TextSelection, "id">) => void;
+  removeSelection: (id: string) => void;
+  clearSelections: () => void;
 }
 
 export interface AnalysisMetrics {

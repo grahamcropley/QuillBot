@@ -35,8 +35,8 @@ interface ConversationPanelProps {
   onRetryMessage?: (message: Message) => void;
   isLoading?: boolean;
   statusMessage?: string;
-  textSelection?: TextSelection | null;
-  onClearSelection?: () => void;
+  textSelections?: TextSelection[];
+  onClearSelections?: () => void;
 }
 
 interface MessageBubbleProps {
@@ -659,8 +659,8 @@ export function ConversationPanel({
   onRetryMessage,
   isLoading,
   statusMessage,
-  textSelection,
-  onClearSelection,
+  textSelections = [],
+  onClearSelections,
 }: ConversationPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -697,16 +697,21 @@ export function ConversationPanel({
 
       let messageContent = inputValue.trim();
 
-      if (textSelection) {
-        const selectionContext = `[Lines ${textSelection.startLine}-${textSelection.endLine}] Selected: "${textSelection.text}"\n\n`;
-        messageContent = selectionContext + messageContent;
-        onClearSelection?.();
+      if (textSelections.length > 0) {
+        const selectionContexts = textSelections
+          .map(
+            (sel, idx) =>
+              `[Selection ${idx + 1}] Lines ${sel.startLine}-${sel.endLine}: "${sel.text}"`,
+          )
+          .join("\n");
+        messageContent = selectionContexts + "\n\n" + messageContent;
+        onClearSelections?.();
       }
 
       onSendMessage(messageContent);
       setInputValue("");
     },
-    [inputValue, isLoading, textSelection, onSendMessage, onClearSelection],
+    [inputValue, isLoading, textSelections, onSendMessage, onClearSelections],
   );
 
   const handleKeyDown = useCallback(
@@ -751,19 +756,30 @@ export function ConversationPanel({
         </div>
       )}
 
-      {textSelection && (
+      {textSelections.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-yellow-800 dark:text-yellow-200">
-              Selection: &ldquo;{textSelection.text.slice(0, 50)}
-              {textSelection.text.length > 50 ? "..." : ""}&rdquo;
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-yellow-800 dark:text-yellow-200 font-semibold">
+              {textSelections.length} section(s) marked
             </span>
             <button
-              onClick={onClearSelection}
+              onClick={onClearSelections}
               className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300"
             >
-              ×
+              Clear All
             </button>
+          </div>
+          <div className="space-y-1">
+            {textSelections.map((sel, idx) => (
+              <div
+                key={sel.id}
+                className="text-xs text-yellow-700 dark:text-yellow-300"
+              >
+                [{idx + 1}] Lines {sel.startLine}-{sel.endLine}:{" "}
+                {sel.text.slice(0, 50)}
+                {sel.text.length > 50 ? "..." : ""}
+              </div>
+            ))}
           </div>
         </div>
       )}

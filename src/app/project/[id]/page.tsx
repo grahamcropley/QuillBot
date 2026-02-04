@@ -77,8 +77,7 @@ export default function ProjectPage() {
 
   const documentContent = currentProject?.documentContent || "";
 
-  const { selection: textSelection, clearSelection: clearTextSelection } =
-    useTextSelection(previewRef, documentContent);
+  const textSelections = useProjectStore((state) => state.textSelections);
 
   const {
     content: syncedContent,
@@ -475,8 +474,8 @@ export default function ProjectPage() {
     };
   }, [isResizing, resize, stopResizing]);
 
-  const handleTextSelect = useCallback((selection: TextSelection) => {
-    useProjectStore.getState().setTextSelection(selection);
+  const handleMarkSelections = useCallback((selections: TextSelection[]) => {
+    useProjectStore.getState().setTextSelections(selections);
   }, []);
 
   const handleDeleteProject = useCallback(async () => {
@@ -574,8 +573,10 @@ export default function ProjectPage() {
                   onRetryMessage={handleRetryMessage}
                   isLoading={isStreaming}
                   statusMessage={statusMessage}
-                  textSelection={textSelection}
-                  onClearSelection={clearTextSelection}
+                  textSelections={textSelections}
+                  onClearSelections={() =>
+                    useProjectStore.getState().setTextSelections([])
+                  }
                 />
               </PanelErrorBoundary>
             </div>
@@ -625,7 +626,7 @@ export default function ProjectPage() {
                     : currentProject.documentContent
                 }
                 onContentChange={handleContentChange}
-                onTextSelect={handleTextSelect}
+                onMarkSelections={handleMarkSelections}
                 isEditable={!isStreaming}
                 isOpenCodeBusy={isStreaming}
                 lastUpdated={syncedLastUpdated}

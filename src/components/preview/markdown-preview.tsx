@@ -3,9 +3,12 @@
 import { useState, useRef, useCallback, lazy, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Edit3, Eye, Copy, Check, AlertCircle } from "lucide-react";
+import { Edit3, Eye, Copy, Check, AlertCircle, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
+import { usePersistentSelection } from "@/hooks/use-persistent-selection";
+import { WysiwygEditor } from "./wysiwyg-editor";
+import { SelectionBadge } from "./selection-badge";
 import type { TextSelection } from "@/types";
 import { clsx } from "clsx";
 
@@ -18,13 +21,13 @@ const MarkdownEditor = lazy(() =>
 interface MarkdownPreviewProps {
   content: string;
   onContentChange?: (content: string) => void;
-  onTextSelect?: (selection: TextSelection) => void;
+  onMarkSelections?: (selections: TextSelection[]) => void;
   isEditable?: boolean;
   isOpenCodeBusy?: boolean;
   lastUpdated?: Date | null;
 }
 
-type ViewMode = "preview" | "edit";
+type ViewMode = "wysiwyg" | "markdown" | "preview";
 
 function formatLastUpdated(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -37,12 +40,12 @@ function formatLastUpdated(date: Date): string {
 export function MarkdownPreview({
   content,
   onContentChange,
-  onTextSelect,
+  onMarkSelections,
   isEditable = true,
   isOpenCodeBusy = false,
   lastUpdated,
 }: MarkdownPreviewProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [viewMode, setViewMode] = useState<ViewMode>("wysiwyg");
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -50,34 +53,43 @@ export function MarkdownPreview({
   const lastSyncedContentRef = useRef(content);
   const theme = useTheme();
 
-  const handleTextSelection = useCallback(() => {
-    if (!onTextSelect || !previewRef.current) return;
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    clearSelections,
+    hasSelections,
+  } = usePersistentSelection();
 
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
+  const handleTextSelection = useCallback(
+    (selection: Omit<TextSelection, "id">) => {
+      addSelection(selection);
+      if (onMarkSelections) {
+        onMarkSelections([
+          ...selections,
+          { ...selection, id: `temp-${Date.now()}` },
+        ]);
+      }
+    },
+    [addSelection, selections, onMarkSelections],
+  );
 
-    const selectedText = selection.toString().trim();
-    if (!selectedText) return;
+  const handleRemoveSelection = useCallback(
+    (id: string) => {
+      removeSelection(id);
+      if (onMarkSelections) {
+        onMarkSelections(selections.filter((s) => s.id !== id));
+      }
+    },
+    [removeSelection, selections, onMarkSelections],
+  );
 
-    const range = selection.getRangeAt(0);
-    const previewElement = previewRef.current;
-
-    if (!previewElement.contains(range.commonAncestorContainer)) return;
-
-    const textBefore = content.substring(0, content.indexOf(selectedText));
-    const linesBeforeSelection = textBefore.split("\n");
-    const startLine = linesBeforeSelection.length;
-    const endLine = startLine + selectedText.split("\n").length - 1;
-    const startOffset = textBefore.length;
-
-    onTextSelect({
-      text: selectedText,
-      startLine,
-      endLine,
-      startOffset,
-      endOffset: startOffset + selectedText.length,
-    });
-  }, [content, onTextSelect]);
+  const handleClearSelections = useCallback(() => {
+    clearSelections();
+    if (onMarkSelections) {
+      onMarkSelections([]);
+    }
+  }, [clearSelections, onMarkSelections]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(content);
@@ -93,32 +105,36 @@ export function MarkdownPreview({
   const handleSaveEdit = useCallback(() => {
     onContentChange?.(editContent);
     setHasUnsavedChanges(false);
-    setViewMode("preview");
+    setViewMode("wysiwyg");
   }, [editContent, onContentChange]);
 
   const handleDiscardChanges = useCallback(() => {
     setEditContent(lastSyncedContentRef.current);
     setHasUnsavedChanges(false);
-    setViewMode("preview");
+    setViewMode("wysiwyg");
   }, []);
 
   const handleModeSwitch = useCallback(
     (mode: ViewMode) => {
-      if (mode === "preview" && hasUnsavedChanges) {
+      if (
+        (mode === "preview" || mode === "wysiwyg") &&
+        hasUnsavedChanges &&
+        viewMode === "markdown"
+      ) {
         const confirm = window.confirm(
           "You have unsaved changes. Discard them?",
         );
         if (!confirm) return;
         setHasUnsavedChanges(false);
       }
-      if (mode === "edit") {
+      if (mode === "markdown") {
         setEditContent(content);
         lastSyncedContentRef.current = content;
         setHasUnsavedChanges(false);
       }
       setViewMode(mode);
     },
-    [hasUnsavedChanges, content],
+    [hasUnsavedChanges, content, viewMode],
   );
 
   const canEdit = isEditable && !isOpenCodeBusy;
@@ -128,6 +144,18 @@ export function MarkdownPreview({
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-2">
           <div className="flex gap-1">
+            <button
+              onClick={() => handleModeSwitch("wysiwyg")}
+              className={clsx(
+                "px-3 py-1.5 text-sm rounded-md transition-colors",
+                viewMode === "wysiwyg"
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
+              )}
+            >
+              <Edit3 className="w-4 h-4 inline mr-1" />
+              Edit
+            </button>
             <button
               onClick={() => handleModeSwitch("preview")}
               className={clsx(
@@ -142,16 +170,16 @@ export function MarkdownPreview({
             </button>
             {canEdit && (
               <button
-                onClick={() => handleModeSwitch("edit")}
+                onClick={() => handleModeSwitch("markdown")}
                 className={clsx(
                   "px-3 py-1.5 text-sm rounded-md transition-colors",
-                  viewMode === "edit"
+                  viewMode === "markdown"
                     ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
                 )}
               >
                 <Edit3 className="w-4 h-4 inline mr-1" />
-                Edit
+                Markdown
               </button>
             )}
           </div>
@@ -161,9 +189,15 @@ export function MarkdownPreview({
               Unsaved
             </span>
           )}
+          {hasSelections && (
+            <span className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
+              <Bookmark className="w-3 h-3" />
+              {selections.length} marked
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {lastUpdated && viewMode === "preview" && (
+          {lastUpdated && viewMode !== "markdown" && (
             <span className="text-xs text-gray-400 dark:text-gray-600">
               Updated {formatLastUpdated(lastUpdated)}
             </span>
@@ -178,11 +212,28 @@ export function MarkdownPreview({
         </div>
       </div>
 
+      {hasSelections && (
+        <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+          <SelectionBadge
+            selections={selections}
+            onRemove={handleRemoveSelection}
+            onClear={handleClearSelections}
+          />
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden">
-        {viewMode === "preview" ? (
+        {viewMode === "wysiwyg" ? (
+          <WysiwygEditor
+            content={content}
+            onContentChange={onContentChange}
+            onTextSelect={handleTextSelection}
+            isEditable={canEdit}
+            theme={theme}
+          />
+        ) : viewMode === "preview" ? (
           <div
             ref={previewRef}
-            onMouseUp={handleTextSelection}
             className={clsx(
               "h-full overflow-y-auto p-6 prose prose-sm max-w-none",
               theme === "dark" && "dark",

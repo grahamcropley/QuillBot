@@ -93,7 +93,7 @@ describe("OpenCode SSE Integration", () => {
       currentProjectId: null,
       isLoading: false,
       isOpenCodeBusy: false,
-      textSelection: null,
+      textSelections: [],
       analysisMetrics: null,
       isHydrated: false,
     });
