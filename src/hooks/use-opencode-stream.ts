@@ -126,7 +126,9 @@ export function useOpenCodeStream(
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => initialSessionId ?? null,
+  );
   const [error, setError] = useState<Error | null>(null);
   const [lastFailedMessageId, setLastFailedMessageId] = useState<string | null>(
     null,
@@ -142,16 +144,6 @@ export function useOpenCodeStream(
       abortControllerRef.current?.abort();
     };
   }, []);
-
-  useEffect(() => {
-    if (!initialSessionId || initialSessionId === sessionId) {
-      return;
-    }
-
-    if (!isStreaming) {
-      setSessionId(initialSessionId);
-    }
-  }, [initialSessionId, sessionId, isStreaming]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -575,7 +567,6 @@ export function useOpenCodeStream(
       onChunk,
       onStatus,
       onQuestion,
-      onComplete,
       onError,
       onFileEdited,
       onPart,

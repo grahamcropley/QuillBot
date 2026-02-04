@@ -127,14 +127,14 @@ function MessageBubble({
         {showContentBubble && (
           <div
             className={clsx(
-              "px-4 py-2 rounded-2xl prose prose-sm max-w-none",
+              "px-4 py-2 rounded-2xl",
               hasError
-                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose-invert"
+                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose prose-sm max-w-none prose-invert"
                 : isPending || isRetrying
-                  ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose-invert"
+                  ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose prose-sm max-w-none prose-invert"
                   : isUser
-                    ? "bg-blue-600 dark:bg-blue-600 text-white rounded-br-md"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md dark:prose-invert",
+                    ? "bg-blue-500 dark:bg-blue-700 text-white dark:text-white rounded-br-md"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md prose prose-sm max-w-none dark:prose-invert",
             )}
           >
             {hasError ? (
@@ -665,6 +665,8 @@ export function ConversationPanel({
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const hasUnansweredQuestion = useMemo(() => {
     return messages.some(
@@ -686,9 +688,29 @@ export function ConversationPanel({
     return parseStatusMessage(statusMessage);
   }, [statusMessage, hasUnansweredQuestion, isLoading]);
 
+  // Detect scroll position and halt/resume auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, statusMessage]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const threshold = 100; // pixels
+
+      setShouldAutoScroll(distanceFromBottom < threshold);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll only when shouldAutoScroll is true
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, statusMessage, shouldAutoScroll]);
 
   const handleSubmit = useCallback(
     (e: FormEvent) => {
@@ -723,7 +745,10 @@ export function ConversationPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-3 space-y-3"
+      >
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>

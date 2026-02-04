@@ -47,9 +47,6 @@ export default function ProjectPage() {
   const addMessageWithDetails = useProjectStore(
     (state) => state.addMessageWithDetails,
   );
-  const markMessageAsFailed = useProjectStore(
-    (state) => state.markMessageAsFailed,
-  );
   const updateMessageStatus = useProjectStore(
     (state) => state.updateMessageStatus,
   );
@@ -394,7 +391,13 @@ export default function ProjectPage() {
         );
       }
     },
-    [currentProject, addMessage, sendMessage, updateMessageStatus],
+    [
+      currentProject,
+      addMessage,
+      sendMessage,
+      updateMessageStatus,
+      resetStreamingCollections,
+    ],
   );
 
   // Track initialization and trigger initial message send
