@@ -37,6 +37,9 @@ export default function ProjectPage() {
     useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [hasUnsavedEditorChanges, setHasUnsavedEditorChanges] = useState(false);
+  const [editorDiscardFn, setEditorDiscardFn] = useState<(() => void) | null>(
+    null,
+  );
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(0);
   const [isResizing, setIsResizing] = useState(false);
   const hasInitialized = useRef<Set<string>>(new Set());
@@ -653,6 +656,7 @@ export default function ProjectPage() {
                 isOpenCodeBusy={isStreaming}
                 lastUpdated={syncedLastUpdated}
                 onUnsavedChangesChange={setHasUnsavedEditorChanges}
+                onDiscardChanges={setEditorDiscardFn}
               />
             </PanelErrorBoundary>
           </div>
@@ -699,10 +703,7 @@ export default function ProjectPage() {
           setPendingMessage(null);
         }}
         onConfirm={() => {
-          // Save changes - user must manually discard if they don't want to save
           setIsUnsavedChangesModalOpen(false);
-          // The save will be handled by the editor's save handler
-          // We'll need to wait for the save to complete before sending
           setTimeout(() => {
             if (pendingMessage) {
               sendMessageInternal(pendingMessage);
@@ -710,7 +711,16 @@ export default function ProjectPage() {
             }
           }, 100);
         }}
+        onSecondary={() => {
+          editorDiscardFn?.();
+          setIsUnsavedChangesModalOpen(false);
+          if (pendingMessage) {
+            sendMessageInternal(pendingMessage);
+            setPendingMessage(null);
+          }
+        }}
         confirmText="Save & Send"
+        secondaryText="Discard & Send"
         cancelText="Cancel"
       />
     </div>

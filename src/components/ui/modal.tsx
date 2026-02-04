@@ -10,6 +10,8 @@ interface ModalProps {
   confirmText?: string;
   confirmVariant?: "primary" | "danger";
   cancelText?: string;
+  onSecondary?: () => void;
+  secondaryText?: string;
   isLoading?: boolean;
 }
 
@@ -22,6 +24,8 @@ export function Modal({
   confirmText = "Confirm",
   confirmVariant = "primary",
   cancelText = "Cancel",
+  onSecondary,
+  secondaryText,
   isLoading = false,
 }: ModalProps) {
   if (!isOpen) return null;
@@ -63,6 +67,16 @@ export function Modal({
           <Button variant="ghost" onClick={onClose} disabled={isLoading}>
             {cancelText}
           </Button>
+          {onSecondary && secondaryText && (
+            <Button
+              variant="ghost"
+              onClick={onSecondary}
+              disabled={isLoading}
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+            >
+              {secondaryText}
+            </Button>
+          )}
           <Button
             variant={confirmVariant}
             onClick={onConfirm}

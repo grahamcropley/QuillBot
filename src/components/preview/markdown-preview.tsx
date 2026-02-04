@@ -29,6 +29,7 @@ interface MarkdownPreviewProps {
   isOpenCodeBusy?: boolean;
   lastUpdated?: Date | null;
   onUnsavedChangesChange?: (hasChanges: boolean) => void;
+  onDiscardChanges?: (discard: () => void) => void;
 }
 
 function formatLastUpdated(date: Date): string {
@@ -102,6 +103,7 @@ export function MarkdownPreview({
   isOpenCodeBusy = false,
   lastUpdated,
   onUnsavedChangesChange,
+  onDiscardChanges,
 }: MarkdownPreviewProps) {
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -141,6 +143,10 @@ export function MarkdownPreview({
     setEditContent(lastSyncedContentRef.current);
     setHasUnsavedChanges(false);
   }, []);
+
+  useEffect(() => {
+    onDiscardChanges?.(handleDiscardChanges);
+  }, [handleDiscardChanges, onDiscardChanges]);
 
   const canEdit = isEditable && !isOpenCodeBusy;
 
