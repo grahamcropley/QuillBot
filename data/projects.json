@@ -1,45 +1,116 @@
 {
   "projects": [
     {
-      "id": "proj_1770037963775_xv75ars",
-      "name": "New Project",
+      "id": "proj_1770166645286_6z9rdc1",
+      "name": "Test",
       "contentType": "blog",
-      "brief": "Latest news on new and upcoming features of Microsoft Teams",
+      "brief": "News update on the latest Teams features",
       "wordCount": 500,
-      "styleHints": "",
+      "styleHints": "funny guy syndrome",
       "documentContent": "",
       "messages": [
         {
-          "id": "msg_1770037968611_smezdww",
+          "id": "msg_1770166645682_oc1x4r6",
           "role": "user",
-          "content": "Latest news on new and upcoming features of Microsoft Teams",
-          "timestamp": "2026-02-02T13:12:48.611Z"
+          "content": "News update on the latest Teams features",
+          "timestamp": "2026-02-04T00:57:25.682Z"
         },
         {
-          "id": "msg_1770038002482_lvplagp",
+          "id": "msg_1770166647253_rg1wds7",
           "role": "assistant",
-          "content": "/write-content ## Instructions\n\nYou are working on a content authoring project. The project directory contains a `brief.md` file with the initial requirements.\n\n**Important**: As our conversation progresses and the requirements become clearer or more refined, please UPDATE the `brief.md` file to reflect the current, refined understanding of what needs to be created. This ensures the brief stays accurate and useful as a reference throughout the project.\n\n---\n\nCreate a file called \"draft.md\" in the project directory containing a blog post with approximately 500 words.\n\nBrief:\nLatest news on new and upcoming features of Microsoft TeamsDraft created at `draft.md` with ~500-word blog post and a high-level roundup. Updated `brief.md` to capture the no-dates note.\n\nNext steps you might want:\n1. Adjust tone for a specific audience (IT admins vs end users).\n2. Add a short CTA or product-specific conclusion.Draft created at `draft.md` with ~500-word blog post and a high-level roundup. Updated `brief.md` to capture the no-dates note.\n\nNext steps you might want:\n1. Adjust tone for a specific audience (IT admins vs end users).\n2. Add a short CTA or product-specific conclusion.",
-          "timestamp": "2026-02-02T13:13:22.482Z",
+          "content": "",
+          "timestamp": "2026-02-04T00:57:27.253Z",
+          "parts": [],
+          "activities": []
+        }
+      ],
+      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770166645286_6z9rdc1",
+      "createdAt": "2026-02-04T00:57:25.286Z",
+      "updatedAt": "2026-02-04T00:57:27.367Z",
+      "opencodeSessionId": "ses_3d9d886d4ffebzfb01V6jgClpf"
+    },
+    {
+      "id": "proj_1770166742551_epqfbg2",
+      "name": "Playwright Test Project",
+      "contentType": "blog",
+      "brief": "Write a short blog post about automated testing benefits",
+      "wordCount": 500,
+      "styleHints": "professional and concise",
+      "documentContent": "",
+      "messages": [
+        {
+          "id": "msg_1770166743168_322l9a6",
+          "role": "user",
+          "content": "Write a short blog post about automated testing benefits",
+          "timestamp": "2026-02-04T00:59:03.168Z"
+        },
+        {
+          "id": "msg_1770166745256_j6n2nc3",
+          "role": "assistant",
+          "content": "",
+          "timestamp": "2026-02-04T00:59:05.256Z",
           "parts": [],
           "activities": []
         },
         {
-          "id": "msg_1770143018460_do3vp2f",
+          "id": "msg_1770167152157_aw1he73",
           "role": "user",
-          "content": "jazz it up a littl ebit",
-          "timestamp": "2026-02-03T18:23:38.460Z"
+          "content": "Hello, please respond with a simple greeting.",
+          "timestamp": "2026-02-04T01:05:52.157Z"
         },
         {
-          "id": "msg_1770143069464_53ehwn9",
+          "id": "msg_1770167398220_0tk507b",
           "role": "user",
-          "content": "hello",
-          "timestamp": "2026-02-03T18:24:29.464Z"
+          "content": "Say hello",
+          "timestamp": "2026-02-04T01:09:58.220Z"
+        },
+        {
+          "id": "msg_1770167401022_bzowums",
+          "role": "assistant",
+          "content": "Hello! 👋 How can I help you today?",
+          "timestamp": "2026-02-04T01:10:01.022Z",
+          "parts": [],
+          "activities": []
+        },
+        {
+          "id": "msg_1770167502607_mpvjeo6",
+          "role": "user",
+          "content": "What is 2+2?",
+          "timestamp": "2026-02-04T01:11:42.607Z"
+        },
+        {
+          "id": "msg_1770167504386_d7z3bwp",
+          "role": "assistant",
+          "content": "2 + 2 equals 4.",
+          "timestamp": "2026-02-04T01:11:44.386Z",
+          "parts": [],
+          "activities": []
+        },
+        {
+          "id": "msg_1770167638000_uwr9ukd",
+          "role": "user",
+          "content": "Say hello with emojis",
+          "timestamp": "2026-02-04T01:13:58.000Z"
+        },
+        {
+          "id": "msg_1770167673969_pixa9h7",
+          "role": "user",
+          "content": "say hello with emojis",
+          "timestamp": "2026-02-04T01:14:33.969Z"
+        },
+        {
+          "id": "msg_1770167676757_nb4uz3i",
+          "role": "assistant",
+          "content": "Hello! 👋😊🌟",
+          "timestamp": "2026-02-04T01:14:36.757Z",
+          "parts": [],
+          "activities": []
         }
       ],
-      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770037963775_xv75ars",
-      "createdAt": "2026-02-02T13:12:43.775Z",
-      "updatedAt": "2026-02-03T18:24:29.464Z",
-      "opencodeSessionId": "ses_3e183fdcfffeze5t9QsaCudUU3"
+      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770166742551_epqfbg2",
+      "createdAt": "2026-02-04T00:59:02.551Z",
+      "updatedAt": "2026-02-04T01:14:36.786Z",
+      "opencodeSessionId": "ses_3d9c8d95fffe22iMojVxQUKWYq"
     }
   ]
 }

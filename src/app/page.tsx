@@ -48,13 +48,7 @@ export default function HomePage() {
 
   const handleDeleteProject = useCallback(
     async (id: string) => {
-      if (
-        confirm(
-          "Are you sure you want to delete this project? This action cannot be undone.",
-        )
-      ) {
-        await deleteProject(id);
-      }
+      await deleteProject(id);
     },
     [deleteProject],
   );

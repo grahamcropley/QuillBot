@@ -18,10 +18,11 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const baseInputStyles = clsx(
-  "w-full px-3 py-2 border border-gray-300 rounded-lg",
-  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-  "disabled:bg-gray-100 disabled:cursor-not-allowed",
-  "placeholder:text-gray-400",
+  "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg",
+  "bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100",
+  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400",
+  "disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-gray-500 dark:disabled:text-gray-600",
+  "placeholder:text-gray-400 dark:placeholder:text-gray-600",
 );
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -33,7 +34,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={inputId}
+          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           {label}
         </label>
       )}
@@ -47,7 +51,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         )}
         {...props}
       />
-      {error && <span className="text-sm text-red-600">{error}</span>}
+      {error && (
+        <span className="text-sm text-red-600 dark:text-red-400">{error}</span>
+      )}
     </div>
   );
 });
@@ -61,7 +67,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-sm font-medium text-gray-700"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
           >
             {label}
           </label>
@@ -77,7 +83,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
           {...props}
         />
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {error && (
+          <span className="text-sm text-red-600 dark:text-red-400">
+            {error}
+          </span>
+        )}
       </div>
     );
   },

@@ -34,6 +34,12 @@ interface ProjectState {
   addMessage: (role: Message["role"], content: string) => Promise<void>;
   addMessageWithDetails: (message: Message) => Promise<void>;
   markMessageAsFailed: (messageId: string, errorMessage: string) => void;
+  updateMessageStatus: (
+    messageId: string,
+    status: "pending" | "sent" | "failed" | "retrying",
+    errorMessage?: string,
+    retryAttempts?: number,
+  ) => void;
   addQuestion: (questionData: QuestionData) => Promise<void>;
   answerQuestion: (questionId: string, answers: string[][]) => Promise<void>;
   setOpenCodeBusy: (busy: boolean) => void;
@@ -250,6 +256,33 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
               ...m,
               error: true,
               errorMessage,
+              status: "failed" as const,
+            };
+          }
+          return m;
+        });
+
+        return { ...p, messages: updatedMessages };
+      }),
+    }));
+  },
+
+  updateMessageStatus: (messageId, status, errorMessage, retryAttempts) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    set((state) => ({
+      projects: state.projects.map((p) => {
+        if (p.id !== currentProjectId) return p;
+
+        const updatedMessages = p.messages.map((m) => {
+          if (m.id === messageId) {
+            return {
+              ...m,
+              status,
+              error: status === "failed",
+              errorMessage: status === "failed" ? errorMessage : undefined,
+              retryAttempts: status === "retrying" ? retryAttempts : undefined,
             };
           }
           return m;

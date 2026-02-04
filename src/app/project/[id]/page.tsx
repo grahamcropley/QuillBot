@@ -16,6 +16,7 @@ import {
   useMarkdownSync,
   useFileWatcher,
 } from "@/hooks";
+import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
 import { buildPrompt } from "@/utils/prompt-builder";
 import type { TextSelection, Message } from "@/types";
@@ -47,6 +48,9 @@ export default function ProjectPage() {
   );
   const markMessageAsFailed = useProjectStore(
     (state) => state.markMessageAsFailed,
+  );
+  const updateMessageStatus = useProjectStore(
+    (state) => state.updateMessageStatus,
   );
   const addQuestion = useProjectStore((state) => state.addQuestion);
   const answerQuestion = useProjectStore((state) => state.answerQuestion);
@@ -152,6 +156,24 @@ export default function ProjectPage() {
       },
     });
 
+  useResumeBufferedStream(
+    {
+      sendMessage,
+      isStreaming,
+      streamingContent,
+      statusMessage,
+      sessionId: currentProject?.opencodeSessionId || null,
+      error: null,
+      lastFailedMessageId: null,
+      clearError: () => {},
+      reset: () => {},
+      abort: async () => {},
+      resumeBufferedStream: async () => {},
+    },
+    projectId,
+    true,
+  );
+
   const displayedMessages = useMemo(() => {
     if (!currentProject) return [] as Message[];
 
@@ -199,12 +221,42 @@ export default function ProjectPage() {
     async (content: string, isInitialMessage = false, messageId?: string) => {
       if (!currentProject) return;
 
+      const MAX_RETRY_ATTEMPTS = 3;
       let userMessageId = messageId;
+      let retryAttempt = 0;
 
-      if (!userMessageId) {
+      // Get current message to check retry count
+      if (userMessageId) {
+        const currentMessage = currentProject.messages.find(
+          (m) => m.id === userMessageId,
+        );
+        retryAttempt = (currentMessage?.retryAttempts || 0) + 1;
+
+        if (retryAttempt > MAX_RETRY_ATTEMPTS) {
+          updateMessageStatus(
+            userMessageId,
+            "failed",
+            `Failed after ${MAX_RETRY_ATTEMPTS} retry attempts`,
+            retryAttempt - 1,
+          );
+          return;
+        }
+
+        // Mark as retrying
+        if (retryAttempt > 1) {
+          updateMessageStatus(
+            userMessageId,
+            "retrying",
+            undefined,
+            retryAttempt,
+          );
+        }
+      } else {
         const tempId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         userMessageId = tempId;
         await addMessage("user", content);
+        // Mark new message as pending
+        updateMessageStatus(userMessageId, "pending");
       }
 
       const messageContent = isInitialMessage
@@ -224,14 +276,19 @@ export default function ProjectPage() {
         command: isInitialMessage ? "/write-content" : undefined,
       });
 
-      if (!result.success && userMessageId) {
-        markMessageAsFailed(
+      if (result.success) {
+        // Mark as sent
+        updateMessageStatus(userMessageId, "sent");
+      } else if (userMessageId) {
+        updateMessageStatus(
           userMessageId,
+          "failed",
           result.error.message || "Failed to send message",
+          retryAttempt,
         );
       }
     },
-    [currentProject, addMessage, sendMessage, markMessageAsFailed],
+    [currentProject, addMessage, sendMessage, updateMessageStatus],
   );
 
   // Track initialization and trigger initial message send

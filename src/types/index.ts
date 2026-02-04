@@ -3,6 +3,7 @@ import type { Part, StreamActivity } from "@/types/opencode-events";
 export type ContentType = "blog" | "white-paper" | "social-post" | "email";
 
 export type MessageRole = "user" | "assistant" | "system" | "question";
+export type MessageStatus = "pending" | "sent" | "failed" | "retrying";
 
 export interface QuestionOption {
   label: string;
@@ -35,6 +36,8 @@ export interface Message {
   readonly activities?: StreamActivity[];
   readonly error?: boolean;
   readonly errorMessage?: string;
+  readonly status?: MessageStatus;
+  readonly retryAttempts?: number;
 }
 
 export interface Project {

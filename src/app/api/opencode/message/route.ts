@@ -25,6 +25,21 @@ interface RequestBody {
   command?: string;
 }
 
+export const streamBuffers = new Map<
+  string,
+  { events: StreamEvent[]; isComplete: boolean }
+>();
+
+function getOrCreateStreamBuffer(sessionId: string): {
+  events: StreamEvent[];
+  isComplete: boolean;
+} {
+  if (!streamBuffers.has(sessionId)) {
+    streamBuffers.set(sessionId, { events: [], isComplete: false });
+  }
+  return streamBuffers.get(sessionId)!;
+}
+
 function formatSseEvent(event: StreamEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
 }
@@ -117,21 +132,16 @@ export async function POST(request: NextRequest) {
 
     const targetSessionId = effectiveSessionId;
     let aborted = false;
+    const streamBuffer = getOrCreateStreamBuffer(targetSessionId);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         request.signal.addEventListener("abort", async () => {
-          console.log("[OpenCode API] Client disconnected, aborting session");
+          console.log(
+            "[OpenCode API] Client disconnected, streaming will continue in background",
+          );
           aborted = true;
-          try {
-            await client.session.abort({
-              sessionID: targetSessionId,
-              directory: project.directoryPath,
-            });
-          } catch (abortError) {
-            console.error("[OpenCode API] Error aborting session:", abortError);
-          }
         });
 
         try {
@@ -145,6 +155,7 @@ export async function POST(request: NextRequest) {
             sessionId: targetSessionId,
           };
           controller.enqueue(encoder.encode(formatSseEvent(statusEvent)));
+          streamBuffer.events.push(statusEvent);
 
           console.log("[OpenCode API] Sending async prompt...");
 
@@ -170,27 +181,30 @@ export async function POST(request: NextRequest) {
                 sessionId: targetSessionId,
               };
               controller.enqueue(encoder.encode(formatSseEvent(errorEvent)));
+              streamBuffer.events.push(errorEvent);
               controller.close();
             });
 
           for await (const sdkEvent of eventSubscription.stream) {
-            if (aborted) {
-              console.log("[OpenCode API] Stream aborted, closing");
-              break;
-            }
-
             const streamEvent = transformSdkEvent(sdkEvent, targetSessionId);
             if (!streamEvent) continue;
 
-            controller.enqueue(encoder.encode(formatSseEvent(streamEvent)));
+            if (!aborted) {
+              controller.enqueue(encoder.encode(formatSseEvent(streamEvent)));
+            }
+
+            streamBuffer.events.push(streamEvent);
 
             if (streamEvent.type === "done" || streamEvent.type === "error") {
+              streamBuffer.isComplete = true;
               break;
             }
           }
 
           await promptPromise;
-          controller.close();
+          if (!aborted) {
+            controller.close();
+          }
         } catch (error) {
           console.error("[OpenCode API] Stream error:", error);
           const errorEvent: StreamError = {
@@ -198,8 +212,11 @@ export async function POST(request: NextRequest) {
             error: error instanceof Error ? error.message : String(error),
             sessionId: targetSessionId,
           };
-          controller.enqueue(encoder.encode(formatSseEvent(errorEvent)));
-          controller.close();
+          if (!aborted) {
+            controller.enqueue(encoder.encode(formatSseEvent(errorEvent)));
+          }
+          streamBuffer.events.push(errorEvent);
+          streamBuffer.isComplete = true;
         }
       },
     });

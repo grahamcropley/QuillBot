@@ -8,7 +8,9 @@ import {
   useMemo,
   type FormEvent,
 } from "react";
-import { Send, User, Bot, AlertCircle, RefreshCw } from "lucide-react";
+import { Send, User, Bot, AlertCircle, RefreshCw, Loader } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button, Textarea } from "@/components/ui";
 import { clsx } from "clsx";
 import { QuestionPrompt } from "./question-prompt";
@@ -46,6 +48,8 @@ function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasError = message.error;
+  const isPending = message.status === "pending";
+  const isRetrying = message.status === "retrying";
   const activityItems = getActivityItems(message);
 
   if (message.role === "question" && message.questionData) {
@@ -73,9 +77,12 @@ function MessageBubble({
             ? "bg-blue-600 dark:bg-blue-600"
             : "bg-gray-600 dark:bg-gray-700",
           hasError && "bg-red-600 dark:bg-red-600",
+          (isPending || isRetrying) && "bg-blue-400 dark:bg-blue-500",
         )}
       >
-        {hasError ? (
+        {isPending || isRetrying ? (
+          <Loader className="w-4 h-4 text-white animate-spin" />
+        ) : hasError ? (
           <AlertCircle className="w-4 h-4 text-white" />
         ) : isUser ? (
           <User className="w-4 h-4 text-white" />
@@ -98,15 +105,32 @@ function MessageBubble({
         )}
         <div
           className={clsx(
-            "px-4 py-2 rounded-2xl",
+            "px-4 py-2 rounded-2xl prose prose-sm max-w-none",
             hasError
-              ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md"
-              : isUser
-                ? "bg-blue-600 dark:bg-blue-600 text-white rounded-br-md"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md",
+              ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose-invert"
+              : isPending || isRetrying
+                ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose-invert"
+                : isUser
+                  ? "bg-blue-600 dark:bg-blue-600 text-white rounded-br-md"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md dark:prose-invert",
           )}
         >
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          {hasError ? (
+            <p className="whitespace-pre-wrap">{message.content}</p>
+          ) : isPending || isRetrying ? (
+            <div className="flex items-center gap-2">
+              <Loader className="w-4 h-4 animate-spin" />
+              <p className="text-sm">
+                {isRetrying
+                  ? `Retrying... (attempt ${message.retryAttempts || 1})`
+                  : "Sending..."}
+              </p>
+            </div>
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          )}
           {hasError && message.errorMessage && (
             <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
               <p className="text-sm text-red-700 dark:text-red-200 flex-1">
