@@ -10,3 +10,4 @@ export {
   AnalysisSkeleton,
 } from "./skeleton";
 export { ErrorBoundary, PanelErrorBoundary } from "./error-boundary";
+export { Modal } from "./modal";

@@ -7,6 +7,7 @@ import { ConversationPanel } from "@/components/conversation";
 import { MarkdownPreview } from "@/components/preview";
 import { AnalysisPanel } from "@/components/analysis";
 import { ExportModal } from "@/components/export";
+import { Modal } from "@/components/ui/modal";
 import { Button, Card, CardHeader, PanelErrorBoundary } from "@/components/ui";
 import { useProjectStore } from "@/stores/project-store";
 import {
@@ -28,6 +29,8 @@ export default function ProjectPage() {
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
+  const [serverErrorMessage, setServerErrorMessage] = useState("");
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(0);
   const [isResizing, setIsResizing] = useState(false);
   const hasInitialized = useRef<Set<string>>(new Set());
@@ -133,6 +136,19 @@ export default function ProjectPage() {
       },
       onError: (error) => {
         console.error("OpenCode stream error:", error);
+        const errorMsg = error.message || "Unknown error";
+
+        // Detect server connection errors
+        if (
+          errorMsg.includes("fetch failed") ||
+          errorMsg.includes("HTTP 500") ||
+          errorMsg.includes("Failed to communicate with OpenCode")
+        ) {
+          setServerErrorMessage(
+            "Unable to connect to the OpenCode server. Please ensure it's running and try again.",
+          );
+          setIsServerErrorModalOpen(true);
+        }
       },
     });
 
@@ -343,7 +359,7 @@ export default function ProjectPage() {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">
                 {currentProject.name}
               </h1>
             </div>
@@ -459,6 +475,20 @@ export default function ProjectPage() {
         project={currentProject}
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+      />
+
+      <Modal
+        isOpen={isServerErrorModalOpen}
+        title="OpenCode Server Unavailable"
+        description={serverErrorMessage}
+        onClose={() => setIsServerErrorModalOpen(false)}
+        onConfirm={() => {
+          setIsServerErrorModalOpen(false);
+          router.push("/");
+        }}
+        confirmText="Return Home"
+        cancelText=""
+        confirmVariant="danger"
       />
     </div>
   );
