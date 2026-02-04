@@ -216,9 +216,9 @@ export async function POST(request: NextRequest) {
                     },
                   ],
                 });
-                return;
+              } else {
+                throw error;
               }
-              throw error;
             }
           })().catch((error) => {
             if (aborted) {
