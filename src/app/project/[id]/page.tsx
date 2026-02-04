@@ -512,7 +512,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden">
+    <div className="flex h-full flex-col gap-3 overflow-hidden">
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => router.push("/")}>
@@ -560,8 +560,10 @@ export default function ProjectPage() {
           className="flex-shrink-0 flex flex-col min-h-0 min-w-[500px]"
         >
           <Card className="flex flex-1 flex-col overflow-hidden h-full rounded-r-none border-r-0">
-            <CardHeader className="flex-shrink-0">
-              <h3 className="font-semibold text-gray-900">Conversation</h3>
+            <CardHeader className="flex-shrink-0 pb-2">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Conversation
+              </h3>
             </CardHeader>
             <div className="flex-1 overflow-hidden" data-preserve-selection>
               <PanelErrorBoundary panelName="conversation">
@@ -587,8 +589,8 @@ export default function ProjectPage() {
           <div className="h-8 w-1 bg-gray-300 rounded-full group-hover:bg-blue-500" />
         </div>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-6 pr-6 overflow-hidden">
-          <div className="flex flex-wrap gap-6 pr-6">
+        <div className="flex-1 min-h-0 flex flex-col gap-3 pr-4 overflow-hidden">
+          <div className="flex flex-wrap gap-3 pr-2">
             <div className="flex-1 min-w-[240px] max-h-[400px] overflow-hidden">
               <PanelErrorBoundary panelName="file-explorer">
                 <FileExplorer
@@ -613,7 +615,7 @@ export default function ProjectPage() {
 
           <div
             ref={previewRef}
-            className="flex-1 min-h-0 overflow-hidden pr-6 pb-6"
+            className="flex-1 min-h-0 overflow-hidden pr-4 pb-4"
           >
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview

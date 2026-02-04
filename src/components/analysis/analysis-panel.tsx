@@ -34,10 +34,10 @@ const statusColors = {
 
 function MetricCard({ icon, label, value, subtext, status }: MetricCardProps) {
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+    <div className="flex items-start gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
       <div
         className={clsx(
-          "p-2 rounded-lg",
+          "p-1.5 rounded flex-shrink-0",
           status
             ? statusColors[status]
             : "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400",
@@ -45,13 +45,15 @@ function MetricCard({ icon, label, value, subtext, status }: MetricCardProps) {
       >
         {icon}
       </div>
-      <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="min-w-0">
+        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">
           {value}
         </p>
         {subtext && (
-          <p className="text-xs text-gray-400 dark:text-gray-500">{subtext}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 leading-tight">
+            {subtext}
+          </p>
         )}
       </div>
     </div>
@@ -66,18 +68,18 @@ export function AnalysisPanel({
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
+        <CardHeader className="pb-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
             Content Analysis
           </h3>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-3">
+          <div className="animate-pulse space-y-2">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-16 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                className="h-10 bg-gray-100 dark:bg-gray-800 rounded-lg"
               />
             ))}
           </div>
@@ -89,14 +91,14 @@ export function AnalysisPanel({
   if (!metrics) {
     return (
       <Card>
-        <CardHeader>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
+        <CardHeader className="pb-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
             Content Analysis
           </h3>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">
+          <p className="text-gray-400 dark:text-gray-500 text-xs text-center py-4">
             Analysis will appear once content is generated
           </p>
         </CardContent>
@@ -110,15 +112,15 @@ export function AnalysisPanel({
 
   return (
     <Card>
-      <CardHeader>
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5" />
+      <CardHeader className="pb-2">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4" />
           Content Analysis
         </h3>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         <MetricCard
-          icon={<Sparkles className="w-4 h-4" />}
+          icon={<Sparkles className="w-3.5 h-3.5" />}
           label="Readability Score"
           value={`${metrics.readabilityScore}/100`}
           subtext={
@@ -130,7 +132,7 @@ export function AnalysisPanel({
         />
 
         <MetricCard
-          icon={<FileText className="w-4 h-4" />}
+          icon={<FileText className="w-3.5 h-3.5" />}
           label="Word Count"
           value={metrics.wordCount}
           subtext={
@@ -150,7 +152,7 @@ export function AnalysisPanel({
         />
 
         <MetricCard
-          icon={<Type className="w-4 h-4" />}
+          icon={<Type className="w-3.5 h-3.5" />}
           label="Avg. Sentence Length"
           value={`${metrics.avgWordsPerSentence} words`}
           subtext={
@@ -162,7 +164,7 @@ export function AnalysisPanel({
         />
 
         <MetricCard
-          icon={<Sparkles className="w-4 h-4" />}
+          icon={<Sparkles className="w-3.5 h-3.5" />}
           label="Brief Adherence"
           value={`${metrics.briefAdherenceScore}%`}
           status={getScoreStatus(metrics.briefAdherenceScore)}

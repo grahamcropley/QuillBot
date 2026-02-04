@@ -68,13 +68,13 @@ export function FileExplorer({
             <p className="text-xs mt-1">Ask OpenCode to create files</p>
           </div>
         ) : (
-          <div className="p-2">
+          <div className="p-1.5">
             {markdownFiles.length > 0 && (
-              <div className="mb-4">
-                <div className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <div className="mb-2">
+                <div className="px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Markdown Documents
                 </div>
-                <div className="space-y-1 mt-1">
+                <div className="space-y-0.5 mt-0.5">
                   {markdownFiles.map((file) => {
                     const Icon = getFileIcon(file.name, file.isDirectory);
                     const isSelected = selectedFile === file.name;
@@ -84,7 +84,7 @@ export function FileExplorer({
                         key={file.name}
                         onClick={() => onSelectFile(file.name)}
                         className={clsx(
-                          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                          "w-full flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors",
                           isSelected
                             ? "bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-100 font-medium"
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
@@ -113,17 +113,17 @@ export function FileExplorer({
 
             {otherFiles.length > 0 && (
               <div>
-                <div className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <div className="px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   Other Files
                 </div>
-                <div className="space-y-1 mt-1">
+                <div className="space-y-0.5 mt-0.5">
                   {otherFiles.map((file) => {
                     const Icon = getFileIcon(file.name, file.isDirectory);
 
                     return (
                       <div
                         key={file.name}
-                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400"
+                        className="flex items-center gap-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-400"
                       >
                         <Icon className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-600" />
                         <span className="flex-1 truncate">{file.name}</span>

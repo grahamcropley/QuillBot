@@ -89,7 +89,7 @@ function MessageBubble({
 
   return (
     <div
-      className={clsx("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}
+      className={clsx("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
     >
       <div
         className={clsx(
@@ -723,7 +723,7 @@ export function ConversationPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>
@@ -770,7 +770,7 @@ export function ConversationPanel({
 
       <form
         onSubmit={handleSubmit}
-        className="p-4 border-t border-gray-200 dark:border-gray-800"
+        className="p-3 border-t border-gray-200 dark:border-gray-800"
       >
         <div className="flex w-full gap-2">
           <Textarea
