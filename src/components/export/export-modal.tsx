@@ -16,11 +16,17 @@ type ExportFormat = "markdown" | "word";
 
 interface ExportModalProps {
   project: Project;
+  content: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ExportModal({ project, isOpen, onClose }: ExportModalProps) {
+export function ExportModal({
+  project,
+  content,
+  isOpen,
+  onClose,
+}: ExportModalProps) {
   const [format, setFormat] = useState<ExportFormat>("markdown");
   const [includeMetadata, setIncludeMetadata] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -31,12 +37,12 @@ export function ExportModal({ project, isOpen, onClose }: ExportModalProps) {
       const filename = sanitizeFilename(project.name);
 
       if (format === "markdown") {
-        const blob = exportAsMarkdown(project, {
+        const blob = exportAsMarkdown(project, content, {
           includeFrontmatter: includeMetadata,
         });
         downloadBlob(blob, `${filename}.md`);
       } else {
-        const blob = await exportAsWord(project, { includeMetadata });
+        const blob = await exportAsWord(project, content, { includeMetadata });
         downloadBlob(blob, `${filename}.docx`);
       }
 
@@ -44,7 +50,7 @@ export function ExportModal({ project, isOpen, onClose }: ExportModalProps) {
     } finally {
       setIsExporting(false);
     }
-  }, [format, includeMetadata, project, onClose]);
+  }, [format, includeMetadata, project, content, onClose]);
 
   if (!isOpen) return null;
 

@@ -3,6 +3,7 @@ import type { Part, StreamActivity } from "@/types/opencode-events";
 export type ContentType = "blog" | "white-paper" | "social-post" | "email";
 
 export type MessageRole = "user" | "assistant" | "system" | "question";
+export type MessageStatus = "pending" | "sent" | "failed" | "retrying";
 
 export interface QuestionOption {
   label: string;
@@ -35,6 +36,8 @@ export interface Message {
   readonly activities?: StreamActivity[];
   readonly error?: boolean;
   readonly errorMessage?: string;
+  readonly status?: MessageStatus;
+  readonly retryAttempts?: number;
 }
 
 export interface Project {
@@ -67,12 +70,58 @@ export interface TextSelection {
   endOffset: number;
 }
 
+export interface MarkedSelection {
+  id: string;
+  text: string;
+  line: number;
+  column: number;
+  length: number;
+  source: "editor" | "preview";
+  contentIndex?: number;
+}
+
 export interface AnalysisMetrics {
-  readabilityScore: number;
+  gunningFogScore: number;
+  fleschReadingEase: number;
   wordCount: number;
   sentenceCount: number;
   avgWordsPerSentence: number;
   briefAdherenceScore: number;
+  complexWordPercentage: number;
+}
+
+export interface BriefPoint {
+  point: string;
+  status: "covered" | "missing";
+  citations?: Citation[];
+}
+
+export interface Citation {
+  excerpt: string;
+  context: string;
+}
+
+export interface BriefAdherenceCache {
+  draftHash: string;
+  adherenceScore: number;
+  pointsCovered: BriefPoint[];
+  timestamp: Date;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  contentType: ContentType;
+  brief: string;
+  wordCount: number;
+  styleHints: string;
+  documentContent: string;
+  messages: Message[];
+  opencodeSessionId?: string;
+  directoryPath: string;
+  createdAt: Date;
+  updatedAt: Date;
+  briefAdherenceCache?: BriefAdherenceCache;
 }
 
 export type Result<T, E = Error> =

@@ -8,12 +8,28 @@ import {
   useMemo,
   type FormEvent,
 } from "react";
-import { Send, User, Bot, AlertCircle, RefreshCw } from "lucide-react";
+import { Send, User, Bot, AlertCircle, RefreshCw, Loader } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button, Textarea } from "@/components/ui";
 import { clsx } from "clsx";
 import { QuestionPrompt } from "./question-prompt";
 import { StatusLine, parseStatusMessage } from "./status-line";
 import type { Message, TextSelection } from "@/types";
+import { useProjectStore } from "@/stores/project-store";
+import { SelectionsIndicator } from "./selections-indicator";
+import { formatSelectionsContext } from "@/utils/format-selections";
+
+function getRelativePath(filePath: string): string {
+  if (!filePath) return filePath;
+  // Match patterns like /data/projects/proj_xxx/ and remove everything before it
+  const projectMatch = filePath.match(/\/data\/projects\/[^/]+\/(.+)$/);
+  if (projectMatch) {
+    return projectMatch[1];
+  }
+  // Fallback: just get the filename or last part
+  return filePath.split("/").pop() || filePath;
+}
 
 interface ConversationPanelProps {
   messages: Message[];
@@ -24,6 +40,7 @@ interface ConversationPanelProps {
   statusMessage?: string;
   textSelection?: TextSelection | null;
   onClearSelection?: () => void;
+  currentFileName?: string;
 }
 
 interface MessageBubbleProps {
@@ -46,11 +63,23 @@ function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasError = message.error;
+  const isPending = message.status === "pending";
+  const isRetrying = message.status === "retrying";
   const activityItems = getActivityItems(message);
+  const hasContent = message.content.trim().length > 0;
+  const showContentBubble =
+    isUser || hasError || isPending || isRetrying || hasContent;
 
   if (message.role === "question" && message.questionData) {
     return (
-      <div className="flex flex-col items-start w-full">
+      <div className="flex flex-col items-start w-full gap-2">
+        {activityItems.length > 0 && (
+          <div className="w-full space-y-2">
+            {activityItems.map((item) => (
+              <ActivitySection key={item.key} item={item} />
+            ))}
+          </div>
+        )}
         <QuestionPrompt
           questionData={message.questionData}
           onSubmit={(answers) => onAnswerQuestion?.(message.id, answers)}
@@ -64,7 +93,7 @@ function MessageBubble({
 
   return (
     <div
-      className={clsx("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}
+      className={clsx("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
     >
       <div
         className={clsx(
@@ -73,9 +102,12 @@ function MessageBubble({
             ? "bg-blue-600 dark:bg-blue-600"
             : "bg-gray-600 dark:bg-gray-700",
           hasError && "bg-red-600 dark:bg-red-600",
+          (isPending || isRetrying) && "bg-blue-400 dark:bg-blue-500",
         )}
       >
-        {hasError ? (
+        {isPending || isRetrying ? (
+          <Loader className="w-4 h-4 text-white animate-spin" />
+        ) : hasError ? (
           <AlertCircle className="w-4 h-4 text-white" />
         ) : isUser ? (
           <User className="w-4 h-4 text-white" />
@@ -96,37 +128,58 @@ function MessageBubble({
             ))}
           </div>
         )}
-        <div
-          className={clsx(
-            "px-4 py-2 rounded-2xl",
-            hasError
-              ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md"
-              : isUser
-                ? "bg-blue-600 dark:bg-blue-600 text-white rounded-br-md"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md",
-          )}
-        >
-          <p className="whitespace-pre-wrap">{message.content}</p>
-          {hasError && message.errorMessage && (
-            <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
-              <p className="text-sm text-red-700 dark:text-red-200 flex-1">
-                Error: {message.errorMessage}
-              </p>
-              {onRetry && (
-                <button
-                  onClick={() => onRetry(message)}
-                  className="flex-shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
-                  title="Retry sending this message"
-                >
-                  <RefreshCw className="w-4 h-4 text-red-700 dark:text-red-200" />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">
-          {formatTime(message.timestamp)}
-        </span>
+        {showContentBubble && (
+          <div
+            className={clsx(
+              "px-4 py-2 rounded-2xl",
+              hasError
+                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose prose-compact max-w-none prose-invert"
+                : isPending || isRetrying
+                  ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose prose-sm max-w-none prose-invert"
+                  : isUser
+                    ? "bg-blue-500 dark:bg-blue-700 text-white dark:text-white rounded-br-md text-[0.8rem] leading-relaxed"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md prose prose-compact max-w-none dark:prose-invert",
+            )}
+          >
+            {hasError ? (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            ) : isPending || isRetrying ? (
+              <div className="flex items-center gap-2">
+                <Loader className="w-4 h-4 animate-spin" />
+                <p className="text-xs">
+                  {isRetrying
+                    ? `Retrying... (attempt ${message.retryAttempts || 1})`
+                    : "Sending..."}
+                </p>
+              </div>
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            )}
+            {hasError && message.errorMessage && (
+              <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
+                <p className="text-xs text-red-700 dark:text-red-200 flex-1">
+                  Error: {message.errorMessage}
+                </p>
+                {onRetry && (
+                  <button
+                    onClick={() => onRetry(message)}
+                    className="flex-shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
+                    title="Retry sending this message"
+                  >
+                    <RefreshCw className="w-4 h-4 text-red-700 dark:text-red-200" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {(showContentBubble || activityItems.length > 0) && (
+          <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+            {formatTime(message.timestamp)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -134,12 +187,14 @@ function MessageBubble({
 
 type ActivityItem = {
   key: string;
-  title: string;
+  title: string | React.ReactNode;
   content?: string;
   status?: "pending" | "running" | "completed" | "error";
   kind:
     | "thinking"
     | "tool"
+    | "tool-web"
+    | "tool-file"
     | "delegating"
     | "system"
     | "mcp"
@@ -153,17 +208,216 @@ type ActivityItem = {
     | "other";
 };
 
+function formatToolInputSummary(
+  tool: string,
+  input: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!input) return null;
+
+  const lines: string[] = [];
+
+  if (typeof input.url === "string") {
+    lines.push(`url: ${input.url}`);
+  }
+
+  if (typeof input.filePath === "string") {
+    lines.push(`file: ${getRelativePath(input.filePath)}`);
+  }
+
+  if (Array.isArray(input.paths) && input.paths.length > 0) {
+    lines.push(`paths: ${input.paths.map(getRelativePath).join(", ")}`);
+  }
+
+  if (typeof input.command === "string") {
+    lines.push(`command: ${input.command}`);
+  }
+
+  if (typeof input.query === "string") {
+    lines.push(`query: ${input.query}`);
+  }
+
+  if (typeof input.text === "string" && input.text.trim()) {
+    const trimmed = input.text.trim();
+    const preview =
+      trimmed.length > 140 ? `${trimmed.slice(0, 140)}...` : trimmed;
+    lines.push(`text: ${preview}`);
+  }
+
+  if (typeof input.element === "string") {
+    lines.push(`element: ${input.element}`);
+  }
+
+  if (!lines.length) {
+    if (tool === "webfetch" && typeof input.url !== "string") {
+      return "url: (missing)";
+    }
+    return null;
+  }
+
+  return lines.join("\n");
+}
+
+const ACTIVITY_KIND_STYLES: Record<
+  ActivityItem["kind"],
+  {
+    label: string;
+    badge: string;
+    border: string;
+    text: string;
+    content: string;
+  }
+> = {
+  thinking: {
+    label: "Thinking",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+    border:
+      "border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/40",
+    text: "text-blue-800 dark:text-blue-100",
+    content: "text-blue-700 dark:text-blue-200",
+  },
+  tool: {
+    label: "Tool",
+    badge:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
+    border:
+      "border-purple-200 dark:border-purple-900/60 bg-purple-50/70 dark:bg-purple-950/40",
+    text: "text-purple-800 dark:text-purple-100",
+    content: "text-purple-700 dark:text-purple-200",
+  },
+  "tool-web": {
+    label: "Web",
+    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
+    border:
+      "border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/70 dark:bg-cyan-950/40",
+    text: "text-cyan-800 dark:text-cyan-100",
+    content: "text-cyan-700 dark:text-cyan-200",
+  },
+  "tool-file": {
+    label: "File",
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+    border:
+      "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40",
+    text: "text-emerald-800 dark:text-emerald-100",
+    content: "text-emerald-700 dark:text-emerald-200",
+  },
+  delegating: {
+    label: "Delegate",
+    badge:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200",
+    border:
+      "border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/40",
+    text: "text-indigo-800 dark:text-indigo-100",
+    content: "text-indigo-700 dark:text-indigo-200",
+  },
+  system: {
+    label: "System",
+    badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
+    border:
+      "border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40",
+    text: "text-gray-700 dark:text-gray-200",
+    content: "text-gray-600 dark:text-gray-400",
+  },
+  mcp: {
+    label: "MCP",
+    badge: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-200",
+    border:
+      "border-teal-200 dark:border-teal-900/60 bg-teal-50/70 dark:bg-teal-950/40",
+    text: "text-teal-800 dark:text-teal-100",
+    content: "text-teal-700 dark:text-teal-200",
+  },
+  command: {
+    label: "Command",
+    badge:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
+    border:
+      "border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/40",
+    text: "text-amber-800 dark:text-amber-100",
+    content: "text-amber-700 dark:text-amber-200",
+  },
+  retry: {
+    label: "Retry",
+    badge:
+      "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200",
+    border:
+      "border-orange-200 dark:border-orange-900/60 bg-orange-50/70 dark:bg-orange-950/40",
+    text: "text-orange-800 dark:text-orange-100",
+    content: "text-orange-700 dark:text-orange-200",
+  },
+  compaction: {
+    label: "Compaction",
+    badge:
+      "bg-slate-100 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300",
+    border:
+      "border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40",
+    text: "text-slate-700 dark:text-slate-200",
+    content: "text-slate-600 dark:text-slate-400",
+  },
+  step: {
+    label: "Step",
+    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
+    border:
+      "border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/70 dark:bg-cyan-950/40",
+    text: "text-cyan-800 dark:text-cyan-100",
+    content: "text-cyan-700 dark:text-cyan-200",
+  },
+  file: {
+    label: "File",
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+    border:
+      "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40",
+    text: "text-emerald-800 dark:text-emerald-100",
+    content: "text-emerald-700 dark:text-emerald-200",
+  },
+  permission: {
+    label: "Permission",
+    badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
+    border:
+      "border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/40",
+    text: "text-rose-800 dark:text-rose-100",
+    content: "text-rose-700 dark:text-rose-200",
+  },
+  todo: {
+    label: "Todo",
+    badge: "bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-200",
+    border:
+      "border-lime-200 dark:border-lime-900/60 bg-lime-50/70 dark:bg-lime-950/40",
+    text: "text-lime-800 dark:text-lime-100",
+    content: "text-lime-700 dark:text-lime-200",
+  },
+  other: {
+    label: "Activity",
+    badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
+    border:
+      "border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40",
+    text: "text-gray-700 dark:text-gray-200",
+    content: "text-gray-600 dark:text-gray-400",
+  },
+};
+
+const STATUS_BADGES: Record<NonNullable<ActivityItem["status"]>, string> = {
+  pending: "bg-gray-100 text-gray-700 dark:bg-gray-900/60 dark:text-gray-300",
+  running: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200",
+  completed:
+    "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200",
+  error: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200",
+};
+
 function getActivityItems(message: Message): ActivityItem[] {
   const items: ActivityItem[] = [];
+  let lastToolIndex: number | null = null;
 
   for (const part of message.parts ?? []) {
     if (part.type === "reasoning") {
-      items.push({
-        key: part.id,
-        title: "Thinking",
-        content: part.text,
-        kind: "thinking",
-      });
+      if (part.text && part.text.trim()) {
+        items.push({
+          key: part.id,
+          title: "Thinking",
+          content: part.text,
+          kind: "thinking",
+        });
+      }
       continue;
     }
 
@@ -178,21 +432,72 @@ function getActivityItems(message: Message): ActivityItem[] {
     }
 
     if (part.type === "tool") {
+      // Skip redundant edit tools - the write tool already shows file completion
+      if (part.tool === "apply_patch" || part.tool === "edit") {
+        continue;
+      }
+
+      // Skip question tool in assistant messages - already shown in question message bubble
+      if (part.tool === "question" && message.role === "assistant") {
+        continue;
+      }
+
       const status = part.state.status;
-      const input = JSON.stringify(part.state.input ?? {}, null, 2);
+      const input = part.state.input as Record<string, unknown> | undefined;
+      const inputSummary = formatToolInputSummary(part.tool, input);
+      const inputDetails = input
+        ? JSON.stringify(input, null, 2)
+        : "(no input)";
       const output =
         part.state.status === "completed" ? part.state.output : undefined;
       const error =
         part.state.status === "error" ? part.state.error : undefined;
-      const body = output || error || input;
+      const detail = output || error || inputDetails;
+      const body = inputSummary ? `${inputSummary}\n\n${detail}` : detail;
+
+      // Determine kind and title based on tool type
+      let kind: ActivityItem["kind"] = "tool";
+      let title: string | React.ReactNode = `Running tool: ${part.tool}`;
+
+      if (part.tool === "webfetch" && typeof input?.url === "string") {
+        kind = "tool-web";
+        title = input.url;
+      } else if (
+        part.tool === "websearch_web_search_exa" &&
+        typeof input?.query === "string"
+      ) {
+        kind = "tool-web";
+        title = input.query;
+      } else if (
+        (part.tool === "read" || part.tool === "write") &&
+        typeof input?.filePath === "string"
+      ) {
+        kind = "tool-file";
+        // Extract filename and line count from output
+        const filename = getRelativePath(input.filePath);
+        const lineMatch =
+          typeof output === "string"
+            ? output.match(/\(total (\d+) lines?\)/)
+            : null;
+        const lineCount = lineMatch ? lineMatch[1] : null;
+        const verb = part.tool === "read" ? "Reading" : "Writing to";
+        const lineCountSuffix = lineCount ? ` (${lineCount} lines)` : "";
+        title = (
+          <>
+            {verb} <strong>{filename}</strong>
+            {lineCountSuffix}
+          </>
+        );
+      }
 
       items.push({
         key: part.id,
-        title: `Running tool: ${part.tool}`,
+        title,
         content: body,
         status,
-        kind: "tool",
+        kind,
       });
+      lastToolIndex = items.length - 1;
       continue;
     }
 
@@ -236,29 +541,28 @@ function getActivityItems(message: Message): ActivityItem[] {
       continue;
     }
 
-    if (part.type === "step-start") {
-      items.push({
-        key: part.id,
-        title: "Step started",
-        content: part.snapshot,
-        kind: "step",
-      });
-      continue;
-    }
-
     if (part.type === "step-finish") {
       const tokens = `Tokens: input ${part.tokens.input}, output ${part.tokens.output}`;
-      items.push({
-        key: part.id,
-        title: `Step finished (${part.reason})`,
-        content: tokens,
-        kind: "step",
-      });
+      if (lastToolIndex !== null) {
+        const existing = items[lastToolIndex];
+        const suffix = `Step finished (${part.reason})\n${tokens}`;
+        const content = existing.content
+          ? `${existing.content}\n\n${suffix}`
+          : suffix;
+        items[lastToolIndex] = { ...existing, content };
+      } else {
+        items.push({
+          key: part.id,
+          title: `Step finished (${part.reason})`,
+          content: tokens,
+          kind: "step",
+        });
+      }
       continue;
     }
 
     if (part.type === "file") {
-      const fileLabel = part.filename ?? part.url;
+      const fileLabel = getRelativePath(part.filename ?? part.url ?? "");
       items.push({
         key: part.id,
         title: "File",
@@ -268,13 +572,9 @@ function getActivityItems(message: Message): ActivityItem[] {
       continue;
     }
 
+    // Patch applied notifications are dropped from visual output
     if (part.type === "patch") {
-      items.push({
-        key: part.id,
-        title: "Patch applied",
-        content: part.files.join("\n"),
-        kind: "file",
-      });
+      continue;
     }
   }
 
@@ -352,6 +652,9 @@ function getActivityItems(message: Message): ActivityItem[] {
           kind: "other",
         });
         break;
+      case "file.edited":
+        // File edited notifications are dropped from visual output
+        break;
       default:
         items.push({
           key: `${activity.activityType}-${items.length}`,
@@ -366,17 +669,60 @@ function getActivityItems(message: Message): ActivityItem[] {
 }
 
 function ActivitySection({ item }: { item: ActivityItem }) {
-  const statusLabel = item.status ? ` (${item.status})` : "";
+  const style = ACTIVITY_KIND_STYLES[item.kind] ?? ACTIVITY_KIND_STYLES.other;
+  const isTruncatable = item.kind === "tool-web";
+  const titleString = typeof item.title === "string" ? item.title : undefined;
+  const hasContent = item.content && item.content.trim().length > 0;
+
   return (
-    <details className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2">
-      <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
-        {item.title}
-        {statusLabel}
+    <details
+      className={clsx("w-full rounded-lg border px-3 py-2", style.border)}
+    >
+      <summary className="cursor-pointer list-none">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={clsx(
+              "text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full",
+              style.badge,
+            )}
+          >
+            {style.label}
+          </span>
+          <span
+            className={clsx(
+              "text-xs font-medium",
+              style.text,
+              isTruncatable && "max-w-sm break-words",
+            )}
+            title={isTruncatable ? titleString : undefined}
+          >
+            {item.title}
+          </span>
+          {item.status && (
+            <span
+              className={clsx(
+                "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                STATUS_BADGES[item.status],
+              )}
+            >
+              {item.status}
+            </span>
+          )}
+        </div>
       </summary>
-      {item.content && (
-        <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-400">
+      {hasContent ? (
+        <pre
+          className={clsx(
+            "mt-2 whitespace-pre-wrap text-xs italic",
+            style.content,
+          )}
+        >
           {item.content}
         </pre>
+      ) : (
+        <div className={clsx("mt-2 text-xs italic opacity-50", style.content)}>
+          (No details available)
+        </div>
       )}
     </details>
   );
@@ -391,10 +737,18 @@ export function ConversationPanel({
   statusMessage,
   textSelection,
   onClearSelection,
+  currentFileName,
 }: ConversationPanelProps) {
+  const markedSelections = useProjectStore((state) => state.markedSelections);
+  const clearMarkedSelections = useProjectStore(
+    (state) => state.clearMarkedSelections,
+  );
+
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const hasUnansweredQuestion = useMemo(() => {
     return messages.some(
@@ -416,9 +770,29 @@ export function ConversationPanel({
     return parseStatusMessage(statusMessage);
   }, [statusMessage, hasUnansweredQuestion, isLoading]);
 
+  // Detect scroll position and halt/resume auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, statusMessage]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const threshold = 100; // pixels
+
+      setShouldAutoScroll(distanceFromBottom < threshold);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll only when shouldAutoScroll is true
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, statusMessage, shouldAutoScroll]);
 
   const handleSubmit = useCallback(
     (e: FormEvent) => {
@@ -426,6 +800,15 @@ export function ConversationPanel({
       if (!inputValue.trim() || isLoading) return;
 
       let messageContent = inputValue.trim();
+
+      if (markedSelections.length > 0) {
+        const selectionContext = formatSelectionsContext(
+          markedSelections,
+          currentFileName,
+        );
+        messageContent = selectionContext + "\n" + messageContent;
+        // Don't clear here - cleared after response completes (single-use)
+      }
 
       if (textSelection) {
         const selectionContext = `[Lines ${textSelection.startLine}-${textSelection.endLine}] Selected: "${textSelection.text}"\n\n`;
@@ -436,7 +819,15 @@ export function ConversationPanel({
       onSendMessage(messageContent);
       setInputValue("");
     },
-    [inputValue, isLoading, textSelection, onSendMessage, onClearSelection],
+    [
+      inputValue,
+      isLoading,
+      textSelection,
+      onSendMessage,
+      onClearSelection,
+      markedSelections,
+      currentFileName,
+    ],
   );
 
   const handleKeyDown = useCallback(
@@ -453,7 +844,10 @@ export function ConversationPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-3 space-y-3"
+      >
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>
@@ -481,8 +875,13 @@ export function ConversationPanel({
         </div>
       )}
 
+      <SelectionsIndicator
+        selections={markedSelections}
+        onClear={clearMarkedSelections}
+      />
+
       {textSelection && (
-        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm">
+        <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs">
           <div className="flex items-center justify-between">
             <span className="text-yellow-800 dark:text-yellow-200">
               Selection: &ldquo;{textSelection.text.slice(0, 50)}
@@ -500,7 +899,7 @@ export function ConversationPanel({
 
       <form
         onSubmit={handleSubmit}
-        className="p-4 border-t border-gray-200 dark:border-gray-800"
+        className="p-3 border-t border-gray-200 dark:border-gray-800"
       >
         <div className="flex w-full gap-2">
           <Textarea
@@ -513,8 +912,8 @@ export function ConversationPanel({
                 ? "Please answer the question above first..."
                 : "Type your message... (Shift+Enter for new line)"
             }
-            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none"
-            disabled={isLoading || hasUnansweredQuestion}
+            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
+            disabled={hasUnansweredQuestion}
           />
           <Button
             type="submit"

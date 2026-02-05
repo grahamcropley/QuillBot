@@ -58,33 +58,33 @@ function getToolStateIconConfig(state: ToolState): ToolStateIconConfig {
     case "pending":
       return {
         icon: Clock,
-        bgColor: "bg-gray-50",
-        borderColor: "border-gray-200",
-        textColor: "text-gray-600",
+        bgColor: "bg-gray-50 dark:bg-gray-900",
+        borderColor: "border-gray-200 dark:border-gray-700",
+        textColor: "text-gray-600 dark:text-gray-400",
         animate: false,
       };
     case "running":
       return {
         icon: Loader2,
-        bgColor: "bg-blue-50",
-        borderColor: "border-blue-200",
-        textColor: "text-blue-700",
+        bgColor: "bg-blue-50 dark:bg-blue-950",
+        borderColor: "border-blue-200 dark:border-blue-800",
+        textColor: "text-blue-700 dark:text-blue-300",
         animate: true,
       };
     case "completed":
       return {
         icon: CheckCircle2,
-        bgColor: "bg-green-50",
-        borderColor: "border-green-200",
-        textColor: "text-green-700",
+        bgColor: "bg-green-50 dark:bg-green-950",
+        borderColor: "border-green-200 dark:border-green-800",
+        textColor: "text-green-700 dark:text-green-300",
         animate: false,
       };
     case "error":
       return {
         icon: AlertCircle,
-        bgColor: "bg-red-50",
-        borderColor: "border-red-200",
-        textColor: "text-red-700",
+        bgColor: "bg-red-50 dark:bg-red-950",
+        borderColor: "border-red-200 dark:border-red-800",
+        textColor: "text-red-700 dark:text-red-300",
         animate: false,
       };
   }
@@ -105,52 +105,52 @@ const BASE_STATUS_CONFIG: Record<Exclude<StatusType, "tool">, StatusConfig> = {
     text: "Your turn",
     bgColor: "bg-transparent",
     borderColor: "border-transparent",
-    textColor: "text-gray-400",
+    textColor: "text-gray-400 dark:text-gray-600",
   },
   connecting: {
     icon: Loader2,
     text: "Connecting to OpenCode... this can take a moment",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-700",
+    bgColor: "bg-blue-50 dark:bg-blue-950",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    textColor: "text-blue-700 dark:text-blue-300",
     animate: true,
   },
   thinking: {
     icon: Loader2,
     text: "Working on it...",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-700",
+    bgColor: "bg-blue-50 dark:bg-blue-950",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    textColor: "text-blue-700 dark:text-blue-300",
     animate: true,
   },
   "waiting-for-answer": {
     icon: MessageSquare,
     text: "Waiting for your response so I can continue",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-200",
-    textColor: "text-amber-700",
+    bgColor: "bg-amber-50 dark:bg-amber-950",
+    borderColor: "border-amber-200 dark:border-amber-800",
+    textColor: "text-amber-700 dark:text-amber-300",
   },
   "processing-answer": {
     icon: Loader2,
     text: "Got it—processing your answer...",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-700",
+    bgColor: "bg-blue-50 dark:bg-blue-950",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    textColor: "text-blue-700 dark:text-blue-300",
     animate: true,
   },
   complete: {
     icon: CheckCircle2,
     text: "All set",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
-    textColor: "text-green-700",
+    bgColor: "bg-green-50 dark:bg-green-950",
+    borderColor: "border-green-200 dark:border-green-800",
+    textColor: "text-green-700 dark:text-green-300",
   },
   error: {
     icon: AlertCircle,
     text: "Something went wrong—try again",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-200",
-    textColor: "text-red-700",
+    bgColor: "bg-red-50 dark:bg-red-950",
+    borderColor: "border-red-200 dark:border-red-800",
+    textColor: "text-red-700 dark:text-red-300",
   },
 };
 
@@ -164,9 +164,9 @@ function getStatusConfig(
     return {
       icon,
       text: message || "Using a tool...",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200",
-      textColor: "text-purple-700",
+      bgColor: "bg-purple-50 dark:bg-purple-950",
+      borderColor: "border-purple-200 dark:border-purple-800",
+      textColor: "text-purple-700 dark:text-purple-300",
       animate: toolName !== "question",
     };
   }
@@ -253,13 +253,13 @@ function SessionStatusDisplay() {
       <div
         className={clsx(
           "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200",
-          "bg-yellow-50 border-yellow-200",
+          "bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800",
         )}
         role="status"
         aria-live="polite"
       >
-        <Loader2 className="w-4 h-4 flex-shrink-0 text-yellow-700 animate-spin" />
-        <span className="text-sm font-medium text-yellow-700">
+        <Loader2 className="w-4 h-4 flex-shrink-0 text-yellow-700 dark:text-yellow-300 animate-spin" />
+        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
           Retrying... (Attempt {retryAttempt ?? 1})
         </span>
       </div>
@@ -271,13 +271,15 @@ function SessionStatusDisplay() {
       <div
         className={clsx(
           "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200",
-          "bg-blue-50 border-blue-200",
+          "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800",
         )}
         role="status"
         aria-live="polite"
       >
-        <Loader2 className="w-4 h-4 flex-shrink-0 text-blue-700 animate-spin" />
-        <span className="text-sm font-medium text-blue-700">Working...</span>
+        <Loader2 className="w-4 h-4 flex-shrink-0 text-blue-700 dark:text-blue-300 animate-spin" />
+        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+          Working on it...
+        </span>
       </div>
     );
   }
@@ -410,6 +412,12 @@ export function parseStatusMessage(statusMessage: string): {
     if (pattern.test(statusMessage)) {
       return { status: "tool", message: statusMessage, toolName: tool };
     }
+  }
+
+  // If the message is just "busy" or other generic state, use empty message
+  // so the default config text is used
+  if (lowerMessage === "busy" || lowerMessage === "idle") {
+    return { status: "thinking", message: "" };
   }
 
   return { status: "thinking", message: statusMessage };

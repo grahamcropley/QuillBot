@@ -4,6 +4,7 @@ import type {
   Message,
   StarterFormData,
   TextSelection,
+  MarkedSelection,
   AnalysisMetrics,
   QuestionData,
 } from "@/types";
@@ -20,6 +21,7 @@ interface ProjectState {
   isLoading: boolean;
   isOpenCodeBusy: boolean;
   textSelection: TextSelection | null;
+  markedSelections: MarkedSelection[];
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
@@ -34,10 +36,19 @@ interface ProjectState {
   addMessage: (role: Message["role"], content: string) => Promise<void>;
   addMessageWithDetails: (message: Message) => Promise<void>;
   markMessageAsFailed: (messageId: string, errorMessage: string) => void;
+  updateMessageStatus: (
+    messageId: string,
+    status: "pending" | "sent" | "failed" | "retrying",
+    errorMessage?: string,
+    retryAttempts?: number,
+  ) => void;
   addQuestion: (questionData: QuestionData) => Promise<void>;
   answerQuestion: (questionId: string, answers: string[][]) => Promise<void>;
   setOpenCodeBusy: (busy: boolean) => void;
   setTextSelection: (selection: TextSelection | null) => void;
+  addMarkedSelection: (selection: MarkedSelection) => void;
+  removeMarkedSelection: (id: string) => void;
+  clearMarkedSelections: () => void;
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
   setSessionStatus: (status: SessionStatus) => void;
@@ -68,6 +79,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   isLoading: false,
   isOpenCodeBusy: false,
   textSelection: null,
+  markedSelections: [],
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
@@ -171,28 +183,18 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }));
 
     try {
-      const response = await fetch(`/api/projects/${currentProjectId}`, {
+      await fetch(`/api/projects/${currentProjectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: { role, content } }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updated = hydrateProject(data.project);
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === currentProjectId ? updated : p,
-          ),
-        }));
-      }
     } catch (error) {
       console.error("Failed to add message:", error);
     }
   },
 
   addMessageWithDetails: async (message) => {
-    const { currentProjectId } = get();
+    const { currentProjectId, projects } = get();
     if (!currentProjectId) return;
 
     const messageToStore: Message = {
@@ -202,6 +204,36 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       timestamp: message.timestamp ?? new Date(),
     };
+
+    const currentProject = projects.find((p) => p.id === currentProjectId);
+    const existingMessage = currentProject?.messages.find(
+      (m) => m.id === messageToStore.id,
+    );
+    if (existingMessage) {
+      console.log(
+        "[ProjectStore] Message with id already exists, skipping:",
+        messageToStore.id,
+      );
+      return;
+    }
+
+    if (
+      messageToStore.role === "question" &&
+      messageToStore.questionData?.requestId
+    ) {
+      const existingQuestion = currentProject?.messages.find(
+        (m) =>
+          m.role === "question" &&
+          m.questionData?.requestId === messageToStore.questionData?.requestId,
+      );
+      if (existingQuestion) {
+        console.log(
+          "[ProjectStore] Question with requestId already exists, skipping:",
+          messageToStore.questionData.requestId,
+        );
+        return;
+      }
+    }
 
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -216,21 +248,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }));
 
     try {
-      const response = await fetch(`/api/projects/${currentProjectId}`, {
+      await fetch(`/api/projects/${currentProjectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: messageToStore }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updated = hydrateProject(data.project);
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === currentProjectId ? updated : p,
-          ),
-        }));
-      }
     } catch (error) {
       console.error("Failed to add message with details:", error);
     }
@@ -250,6 +272,33 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
               ...m,
               error: true,
               errorMessage,
+              status: "failed" as const,
+            };
+          }
+          return m;
+        });
+
+        return { ...p, messages: updatedMessages };
+      }),
+    }));
+  },
+
+  updateMessageStatus: (messageId, status, errorMessage, retryAttempts) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    set((state) => ({
+      projects: state.projects.map((p) => {
+        if (p.id !== currentProjectId) return p;
+
+        const updatedMessages = p.messages.map((m) => {
+          if (m.id === messageId) {
+            return {
+              ...m,
+              status,
+              error: status === "failed",
+              errorMessage: status === "failed" ? errorMessage : undefined,
+              retryAttempts: status === "retrying" ? retryAttempts : undefined,
             };
           }
           return m;
@@ -262,8 +311,23 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   addQuestion: async (questionData) => {
     console.log("[ProjectStore] addQuestion called with:", questionData);
-    const { currentProjectId } = get();
+    const { currentProjectId, projects } = get();
     if (!currentProjectId) return;
+
+    // Check if a question with the same requestId already exists
+    const currentProject = projects.find((p) => p.id === currentProjectId);
+    const existingQuestion = currentProject?.messages.find(
+      (m) =>
+        m.role === "question" &&
+        m.questionData?.requestId === questionData.requestId,
+    );
+    if (existingQuestion) {
+      console.log(
+        "[ProjectStore] Question with requestId already exists, skipping:",
+        questionData.requestId,
+      );
+      return;
+    }
 
     const tempMessage: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -290,21 +354,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     console.log("[ProjectStore] Question message added to state");
 
     try {
-      const response = await fetch(`/api/projects/${currentProjectId}`, {
+      await fetch(`/api/projects/${currentProjectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: tempMessage }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updated = hydrateProject(data.project);
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === currentProjectId ? updated : p,
-          ),
-        }));
-      }
+      // Don't replace client state from server response to avoid race conditions
+      // with answerQuestion updates
     } catch (error) {
       console.error("Failed to add question:", error);
     }
@@ -339,13 +395,25 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const project = get().projects.find((p) => p.id === currentProjectId);
     const message = project?.messages.find((m) => m.id === questionId);
     const requestId = message?.questionData?.requestId;
+    const updatedQuestionData = message?.questionData;
 
-    if (!requestId) {
+    if (!requestId || !updatedQuestionData) {
       console.error("Could not find request ID for question", questionId);
       return;
     }
 
     try {
+      await fetch(`/api/projects/${currentProjectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageUpdate: {
+            id: questionId,
+            updates: { questionData: updatedQuestionData },
+          },
+        }),
+      });
+
       const response = await fetch("/api/opencode/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -393,6 +461,22 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   setTextSelection: (selection) => {
     set({ textSelection: selection });
+  },
+
+  addMarkedSelection: (selection) => {
+    set((state) => ({
+      markedSelections: [...state.markedSelections, selection],
+    }));
+  },
+
+  removeMarkedSelection: (id) => {
+    set((state) => ({
+      markedSelections: state.markedSelections.filter((s) => s.id !== id),
+    }));
+  },
+
+  clearMarkedSelections: () => {
+    set({ markedSelections: [] });
   },
 
   setAnalysisMetrics: (metrics) => {

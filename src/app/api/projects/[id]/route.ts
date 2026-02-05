@@ -5,7 +5,9 @@ import {
   deleteProject,
   addMessageToProject,
   addMessageObjectToProject,
+  updateMessageInProject,
 } from "@/lib/storage";
+import type { Message } from "@/types";
 import { getOpencodeClient } from "@/lib/opencode-client";
 
 interface RouteParams {
@@ -65,6 +67,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { status: 404 },
         );
       }
+      return NextResponse.json({ project });
+    }
+
+    if (body.messageUpdate) {
+      const { id: messageId, updates } = body.messageUpdate as {
+        id: string;
+        updates: Partial<Message>;
+      };
+
+      const project = await updateMessageInProject(id, messageId, updates);
+
+      if (!project) {
+        return NextResponse.json(
+          { error: "Project not found" },
+          { status: 404 },
+        );
+      }
+
       return NextResponse.json({ project });
     }
 

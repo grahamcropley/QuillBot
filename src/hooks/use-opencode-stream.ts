@@ -16,9 +16,15 @@ import {
   isStreamFileEdited,
   isStreamActivity,
 } from "@/types/opencode-events";
+import {
+  classifyStreamEvent,
+  createFileEditedActivity,
+  isDisplayableTextPart,
+} from "@/utils/stream-classifier";
 
 interface UseOpenCodeStreamOptions {
   projectId: string;
+  initialSessionId?: string | null;
   onChunk?: (content: string) => void;
   onStatus?: (status: string) => void;
   onQuestion?: (question: QuestionData) => void;
@@ -27,14 +33,20 @@ interface UseOpenCodeStreamOptions {
   onFileEdited?: (path: string) => void;
   onPart?: (part: Part, delta?: string) => void;
   onActivity?: (activity: StreamActivity) => void;
+  onStreamSplit?: (info: {
+    tool: string;
+    callId?: string;
+    content: string;
+  }) => void;
 }
 
 interface SendMessageOptions {
   message: string;
   command?: string;
+  agent?: string;
 }
 
-interface UseOpenCodeStreamReturn {
+export interface UseOpenCodeStreamReturn {
   sendMessage: (
     options: SendMessageOptions,
   ) => Promise<Result<{ sessionId: string; content: string }>>;
@@ -47,13 +59,7 @@ interface UseOpenCodeStreamReturn {
   clearError: () => void;
   reset: () => void;
   abort: () => Promise<void>;
-}
-
-function extractTextFromPart(part: Part): string | null {
-  if (part.type === "text") {
-    return part.text;
-  }
-  return null;
+  resumeBufferedStream: (currentSessionId: string) => Promise<void>;
 }
 
 function parseSSELine(line: string): StreamEvent | null {
@@ -106,6 +112,7 @@ export function useOpenCodeStream(
 ): UseOpenCodeStreamReturn {
   const {
     projectId,
+    initialSessionId,
     onChunk,
     onStatus,
     onQuestion,
@@ -114,12 +121,15 @@ export function useOpenCodeStream(
     onFileEdited,
     onPart,
     onActivity,
+    onStreamSplit,
   } = options;
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => initialSessionId ?? null,
+  );
   const [error, setError] = useState<Error | null>(null);
   const [lastFailedMessageId, setLastFailedMessageId] = useState<string | null>(
     null,
@@ -191,6 +201,8 @@ export function useOpenCodeStream(
       let accumulatedContent = "";
       let currentSessionId = sessionId ?? "";
       let buffer = "";
+      let suppressText = false;
+      const splitToolCallIds = new Set<string>();
 
       try {
         const response = await fetch("/api/opencode/message", {
@@ -199,8 +211,9 @@ export function useOpenCodeStream(
           body: JSON.stringify({
             sessionId: sessionId || undefined,
             projectId,
-            message: command ? `${command} ${message}` : message,
+            message,
             command,
+            agent: messageOptions.agent || "quillbot",
           }),
           signal: abortController.signal,
         });
@@ -250,20 +263,77 @@ export function useOpenCodeStream(
             const event = parseSSELine(trimmedLine);
             if (!event) continue;
 
-            console.log(
-              "[useOpenCodeStream] Received event:",
-              event.type,
-              event,
-            );
+            const bucket = classifyStreamEvent(event);
 
             if (isStreamMessagePartUpdated(event)) {
-              const delta = event.delta ?? extractTextFromPart(event.part);
+              if (event.part.type === "tool") {
+                const toolPart = event.part;
+                const isToolStatusSplit =
+                  toolPart.state.status === "pending" ||
+                  toolPart.state.status === "running";
+                const isToolRunningSplitCandidate =
+                  toolPart.tool !== "question" &&
+                  isToolStatusSplit &&
+                  Boolean(accumulatedContent.trim());
+                const toolCallId = toolPart.callID;
+
+                if (
+                  isToolRunningSplitCandidate &&
+                  (!toolCallId || !splitToolCallIds.has(toolCallId))
+                ) {
+                  if (toolCallId) {
+                    splitToolCallIds.add(toolCallId);
+                  }
+                  onStreamSplit?.({
+                    tool: toolPart.tool,
+                    callId: toolCallId,
+                    content: accumulatedContent,
+                  });
+                  accumulatedContent = "";
+                  if (isMountedRef.current) {
+                    setStreamingContent("");
+                  }
+                }
+              }
+
               onPart?.(event.part, event.delta);
-              if (delta) {
-                accumulatedContent += delta;
+
+              if (
+                event.part.type === "tool" &&
+                event.part.tool === "question" &&
+                event.part.state.status === "completed"
+              ) {
+                suppressText = false;
+                accumulatedContent = "";
+                if (isMountedRef.current) {
+                  setStreamingContent("");
+                }
+              }
+
+              if (event.part.type === "reasoning") {
+                if (isMountedRef.current) {
+                  setStatusMessage("Thinking...");
+                  onStatus?.("Thinking...");
+                }
+              } else if (event.part.type === "tool") {
+                const toolName = event.part.tool || "unknown";
+                const toolStatus = event.part.state.status;
+                if (toolStatus === "running" && isMountedRef.current) {
+                  setStatusMessage(`Using tool: ${toolName}`);
+                  onStatus?.(`Using tool: ${toolName}`);
+                }
+              } else if (isDisplayableTextPart(event.part)) {
+                if (isMountedRef.current) {
+                  setStatusMessage("Replying...");
+                  onStatus?.("Replying...");
+                }
+              }
+
+              if (!suppressText && bucket === "display" && event.delta) {
+                accumulatedContent += event.delta;
                 if (isMountedRef.current) {
                   setStreamingContent(accumulatedContent);
-                  onChunk?.(delta);
+                  onChunk?.(event.delta);
                 }
               }
             } else if (isStreamQuestionAsked(event)) {
@@ -272,10 +342,11 @@ export function useOpenCodeStream(
                 event.data.sessionId,
                 event.data.questions,
               );
-              console.log(
-                "[useOpenCodeStream] Calling onQuestion with:",
-                questionData,
-              );
+              suppressText = true;
+              accumulatedContent = "";
+              if (isMountedRef.current) {
+                setStreamingContent("");
+              }
               onQuestion?.(questionData);
             } else if (isStreamSessionStatus(event)) {
               currentSessionId = event.sessionId;
@@ -299,6 +370,7 @@ export function useOpenCodeStream(
               }
             } else if (isStreamFileEdited(event)) {
               onFileEdited?.(event.file);
+              onActivity?.(createFileEditedActivity(event.file));
             } else if (isStreamActivity(event)) {
               onActivity?.(event);
             }
@@ -347,6 +419,166 @@ export function useOpenCodeStream(
       onFileEdited,
       onPart,
       onActivity,
+      onStreamSplit,
+    ],
+  );
+
+  const resumeBufferedStream = useCallback(
+    async (currentSessionId: string) => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      let lastEventIndex = 0;
+      let suppressText = false;
+      let resumedContent = "";
+      const splitToolCallIds = new Set<string>();
+
+      try {
+        setIsStreaming(true);
+
+        while (true) {
+          const response = await fetch(
+            `/api/opencode/buffer?sessionId=${encodeURIComponent(currentSessionId)}&lastEventIndex=${lastEventIndex}`,
+          );
+
+          if (!response.ok) {
+            console.warn("[useOpenCodeStream] Failed to fetch buffered events");
+            break;
+          }
+
+          const data = await response.json();
+          const { events, isComplete, nextEventIndex } = data;
+
+          for (const event of events) {
+            if (!isMountedRef.current) break;
+
+            if (isStreamMessagePartUpdated(event)) {
+              if (event.part.type === "tool") {
+                const toolPart = event.part;
+                const isToolStatusSplit =
+                  toolPart.state.status === "pending" ||
+                  toolPart.state.status === "running";
+                const isToolRunningSplitCandidate =
+                  toolPart.tool !== "question" &&
+                  isToolStatusSplit &&
+                  Boolean(resumedContent.trim());
+                const toolCallId = toolPart.callID;
+
+                if (
+                  isToolRunningSplitCandidate &&
+                  (!toolCallId || !splitToolCallIds.has(toolCallId))
+                ) {
+                  if (toolCallId) {
+                    splitToolCallIds.add(toolCallId);
+                  }
+                  onStreamSplit?.({
+                    tool: toolPart.tool,
+                    callId: toolCallId,
+                    content: resumedContent,
+                  });
+                  resumedContent = "";
+                  if (isMountedRef.current) {
+                    setStreamingContent("");
+                  }
+                }
+              }
+
+              onPart?.(event.part, event.delta);
+
+              if (
+                event.part.type === "tool" &&
+                event.part.tool === "question" &&
+                event.part.state.status === "completed"
+              ) {
+                suppressText = false;
+                if (isMountedRef.current) {
+                  setStreamingContent("");
+                }
+              }
+
+              if (
+                !suppressText &&
+                event.delta &&
+                isDisplayableTextPart(event.part)
+              ) {
+                resumedContent += event.delta;
+                setStreamingContent((prev) => prev + (event.delta || ""));
+                onChunk?.(event.delta);
+              }
+            } else if (isStreamQuestionAsked(event)) {
+              const questionData = mapQuestionDataFromEvent(
+                event.data.requestId,
+                event.data.sessionId,
+                event.data.questions,
+              );
+              suppressText = true;
+              resumedContent = "";
+              if (isMountedRef.current) {
+                setStreamingContent("");
+              }
+              onQuestion?.(questionData);
+            } else if (isStreamSessionStatus(event)) {
+              if (isMountedRef.current) {
+                setStatusMessage(event.sessionStatus.type);
+                onStatus?.(event.sessionStatus.type);
+              }
+            } else if (isStreamError(event)) {
+              const err = new Error(event.error);
+              if (isMountedRef.current) {
+                setError(err);
+                onError?.(err);
+              }
+              break;
+            } else if (isStreamDone(event)) {
+              if (isMountedRef.current) {
+                setStatusMessage("");
+              }
+              break;
+            } else if (isStreamFileEdited(event)) {
+              onFileEdited?.(event.file);
+              onActivity?.(createFileEditedActivity(event.file));
+            } else if (isStreamActivity(event)) {
+              onActivity?.(event);
+            }
+          }
+
+          lastEventIndex = nextEventIndex;
+
+          if (isComplete) {
+            await fetch(
+              `/api/opencode/buffer?sessionId=${encodeURIComponent(currentSessionId)}&clear=true`,
+            );
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        if (isMountedRef.current) {
+          setIsStreaming(false);
+          onComplete?.(resumedContent, currentSessionId);
+        }
+      } catch (err) {
+        console.error(
+          "[useOpenCodeStream] Failed to resume buffered stream:",
+          err,
+        );
+        if (isMountedRef.current) {
+          setIsStreaming(false);
+        }
+      }
+    },
+    [
+      onChunk,
+      onStatus,
+      onQuestion,
+      onComplete,
+      onError,
+      onFileEdited,
+      onPart,
+      onActivity,
+      onStreamSplit,
     ],
   );
 
@@ -361,5 +593,6 @@ export function useOpenCodeStream(
     clearError,
     reset,
     abort,
+    resumeBufferedStream,
   };
 }

@@ -110,8 +110,12 @@ function QuestionBlock({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h3 className="text-lg font-medium text-gray-900">{info.header}</h3>
-        <p className="text-sm text-gray-500">{info.question}</p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          {info.header}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {info.question}
+        </p>
       </div>
 
       <div className="space-y-2" role={info.multiple ? "group" : "radiogroup"}>
@@ -124,12 +128,12 @@ function QuestionBlock({
               key={option.label}
               onClick={() => handleOptionToggle(option.label)}
               className={clsx(
-                "relative flex items-start p-3 rounded-lg border cursor-pointer transition-all hover:bg-gray-50",
+                "relative flex items-start p-3 rounded-lg border cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700",
                 isSelected
-                  ? "border-blue-500 bg-blue-50/50"
-                  : "border-gray-200",
+                  ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950"
+                  : "border-gray-200 dark:border-gray-700",
                 disabled &&
-                  "opacity-60 cursor-not-allowed hover:bg-transparent",
+                  "opacity-60 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent",
               )}
               role={info.multiple ? "checkbox" : "radio"}
               aria-checked={isSelected}
@@ -139,18 +143,22 @@ function QuestionBlock({
                   <CheckIcon
                     className={clsx(
                       "h-5 w-5",
-                      isSelected ? "text-blue-600" : "text-gray-400",
+                      isSelected
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-gray-400 dark:text-gray-500",
                     )}
                   />
                 ) : (
                   <div
                     className={clsx(
                       "h-5 w-5 rounded-full border flex items-center justify-center",
-                      isSelected ? "border-blue-600" : "border-gray-400",
+                      isSelected
+                        ? "border-blue-600 dark:border-blue-400"
+                        : "border-gray-400 dark:border-gray-500",
                     )}
                   >
                     {isSelected && (
-                      <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                     )}
                   </div>
                 )}
@@ -159,13 +167,15 @@ function QuestionBlock({
                 <span
                   className={clsx(
                     "font-medium block",
-                    isSelected ? "text-blue-900" : "text-gray-900",
+                    isSelected
+                      ? "text-blue-900 dark:text-blue-100"
+                      : "text-gray-900 dark:text-gray-100",
                   )}
                 >
                   {option.label}
                 </span>
                 {option.description && (
-                  <span className="text-gray-500 block mt-0.5">
+                  <span className="text-gray-500 dark:text-gray-400 block mt-0.5">
                     {option.description}
                   </span>
                 )}
@@ -179,8 +189,8 @@ function QuestionBlock({
             className={clsx(
               "relative rounded-lg border transition-all",
               effectiveIsOtherSelected
-                ? "border-blue-500 bg-blue-50/50"
-                : "border-gray-200 hover:bg-gray-50",
+                ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950"
+                : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700",
               disabled && "opacity-60",
             )}
           >
@@ -194,12 +204,12 @@ function QuestionBlock({
                     className={clsx(
                       "h-5 w-5 border rounded flex items-center justify-center",
                       effectiveIsOtherSelected
-                        ? "border-blue-600 bg-transparent"
-                        : "border-gray-400",
+                        ? "border-blue-600 dark:border-blue-400 bg-transparent"
+                        : "border-gray-400 dark:border-gray-500",
                     )}
                   >
                     {effectiveIsOtherSelected && (
-                      <Check className="h-3.5 w-3.5 text-blue-600" />
+                      <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                     )}
                   </div>
                 ) : (
@@ -207,12 +217,12 @@ function QuestionBlock({
                     className={clsx(
                       "h-5 w-5 rounded-full border flex items-center justify-center",
                       effectiveIsOtherSelected
-                        ? "border-blue-600"
-                        : "border-gray-400",
+                        ? "border-blue-600 dark:border-blue-400"
+                        : "border-gray-400 dark:border-gray-500",
                     )}
                   >
                     {effectiveIsOtherSelected && (
-                      <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                     )}
                   </div>
                 )}
@@ -222,13 +232,13 @@ function QuestionBlock({
                   className={clsx(
                     "font-medium block",
                     effectiveIsOtherSelected
-                      ? "text-blue-900"
-                      : "text-gray-900",
+                      ? "text-blue-900 dark:text-blue-100"
+                      : "text-gray-900 dark:text-gray-100",
                   )}
                 >
                   Other
                 </span>
-                <span className="text-gray-500 block mt-0.5">
+                <span className="text-gray-500 dark:text-gray-400 block mt-0.5">
                   Specify your own answer
                 </span>
               </div>
@@ -241,7 +251,6 @@ function QuestionBlock({
                   onChange={(e) => handleCustomInputChange(e.target.value)}
                   placeholder="Type your answer here..."
                   disabled={disabled}
-                  className="bg-white"
                   autoFocus={!disabled}
                 />
               </div>
@@ -283,9 +292,14 @@ export function QuestionPrompt({
   const isValid = answers.every((a) => a.length > 0);
 
   return (
-    <Card className={clsx("w-full my-4", isAnswered && "bg-gray-50")}>
+    <Card
+      className={clsx(
+        "w-full my-4",
+        isAnswered && "bg-gray-50 dark:bg-gray-900",
+      )}
+    >
       <CardHeader>
-        <div className="flex items-center space-x-2 text-blue-600 mb-1">
+        <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-1">
           <Info className="h-5 w-5" />
           <span className="text-sm font-semibold uppercase tracking-wider">
             {isAnswered ? "Answered Question" : "Action Required"}
@@ -297,7 +311,11 @@ export function QuestionPrompt({
         {questionData.questions.map((question, index) => (
           <div
             key={question.question}
-            className={index > 0 ? "pt-6 border-t border-gray-100" : ""}
+            className={
+              index > 0
+                ? "pt-6 border-t border-gray-100 dark:border-gray-800"
+                : ""
+            }
           >
             <QuestionBlock
               info={question}

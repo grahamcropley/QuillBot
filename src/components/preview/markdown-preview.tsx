@@ -1,13 +1,48 @@
 "use client";
 
-import { useState, useRef, useCallback, lazy, Suspense } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  memo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  Copy,
+  Check,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Bookmark,
+  X,
+  Code,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Edit3, Eye, Copy, Check, AlertCircle } from "lucide-react";
+import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
+import { markdownToHtml } from "@/lib/markdown-to-html";
 import type { TextSelection } from "@/types";
-import { clsx } from "clsx";
+import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#+\s+/gm, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .trim();
+}
 
 const MarkdownEditor = lazy(() =>
   import("@/components/editor").then((mod) => ({
@@ -22,9 +57,14 @@ interface MarkdownPreviewProps {
   isEditable?: boolean;
   isOpenCodeBusy?: boolean;
   lastUpdated?: Date | null;
+  onUnsavedChangesChange?: (hasChanges: boolean) => void;
+  onDiscardChanges?: (discard: () => void) => void;
 }
 
-type ViewMode = "preview" | "edit";
+export interface MarkdownPreviewHandle {
+  findAndHighlight: (excerpt: string) => boolean;
+  save: () => void;
+}
 
 function formatLastUpdated(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -34,208 +74,402 @@ function formatLastUpdated(date: Date): string {
   }).format(date);
 }
 
-export function MarkdownPreview({
-  content,
-  onContentChange,
-  onTextSelect,
-  isEditable = true,
-  isOpenCodeBusy = false,
+function getLineCol(
+  text: string,
+  index: number,
+): { line: number; column: number } {
+  const textBefore = text.slice(0, index);
+  const lines = textBefore.split("\n");
+  const line = lines.length;
+  const column = lines[lines.length - 1].length;
+  return { line, column };
+}
+
+interface HeaderProps {
+  hasUnsavedChanges: boolean;
+  lastUpdated: Date | null | undefined;
+  copied: boolean;
+  copiedHtml: boolean;
+  isPreviewMode: boolean;
+  onDiscard: () => void;
+  onSave: () => void;
+  onCopy: () => void;
+  onCopyHtml: () => void;
+  onTogglePreview: () => void;
+  hasSelection: boolean;
+  inMarkedSection: boolean;
+  onMark: () => void;
+  onClear: () => void;
+}
+
+const EditorHeader = memo(function EditorHeader({
+  hasUnsavedChanges,
   lastUpdated,
-}: MarkdownPreviewProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  copied,
+  copiedHtml,
+  isPreviewMode,
+  onDiscard,
+  onSave,
+  onCopy,
+  onCopyHtml,
+  onTogglePreview,
+  hasSelection,
+  inMarkedSection,
+  onMark,
+  onClear,
+}: HeaderProps) {
+  return (
+    <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
+      <div className="flex items-center gap-2">
+        {hasUnsavedChanges && (
+          <>
+            <Button size="sm" onClick={onDiscard} variant="secondary">
+              Discard
+            </Button>
+            <Button size="sm" onClick={onSave} disabled={!hasUnsavedChanges}>
+              Save
+            </Button>
+          </>
+        )}
+        {hasUnsavedChanges && (
+          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+            <AlertCircle className="w-3 h-3" />
+            Unsaved
+          </span>
+        )}
+        <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={inMarkedSection ? onClear : onMark}
+          disabled={!hasSelection && !inMarkedSection}
+          title={inMarkedSection ? "Clear selection" : "Mark selection"}
+          className={`${
+            !hasSelection && !inMarkedSection
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
+        >
+          {inMarkedSection ? (
+            <>
+              <X className="w-4 h-4 text-red-500" />
+              <span className="text-xs ml-1">Clear selection</span>
+            </>
+          ) : (
+            <>
+              <Bookmark
+                className="w-4 h-4 text-amber-500"
+                fill={hasSelection ? "currentColor" : "none"}
+              />
+              <span className="text-xs ml-1">Mark selection</span>
+            </>
+          )}
+        </Button>
+      </div>
+      <div className="flex items-center gap-2">
+        {lastUpdated && (
+          <span className="text-xs text-gray-400 dark:text-gray-600">
+            Updated {formatLastUpdated(lastUpdated)}
+          </span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onTogglePreview}
+          title={isPreviewMode ? "Edit" : "Preview"}
+        >
+          {isPreviewMode ? (
+            <Eye className="w-4 h-4" />
+          ) : (
+            <EyeOff className="w-4 h-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCopy}
+          title="Copy markdown"
+        >
+          {copied ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCopyHtml}
+          title="Copy HTML"
+        >
+          {copiedHtml ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Code className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+export const MarkdownPreview = forwardRef<
+  MarkdownPreviewHandle,
+  MarkdownPreviewProps
+>(function MarkdownPreview(
+  {
+    content,
+    onContentChange,
+    onTextSelect,
+    isEditable = true,
+    isOpenCodeBusy = false,
+    lastUpdated,
+    onUnsavedChangesChange,
+    onDiscardChanges,
+  },
+  ref,
+) {
+  const previewRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [copied, setCopied] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [copiedHtml, setCopiedHtml] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const lastSyncedContentRef = useRef(content);
+  const editorRef = useRef<MarkdownEditorHandle>(null);
   const theme = useTheme();
 
-  const handleTextSelection = useCallback(() => {
-    if (!onTextSelect || !previewRef.current) return;
+  useEffect(() => {
+    setEditContent(content);
+    lastSyncedContentRef.current = content;
+    setHasUnsavedChanges(false);
+  }, [content]);
 
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
-
-    const selectedText = selection.toString().trim();
-    if (!selectedText) return;
-
-    const range = selection.getRangeAt(0);
-    const previewElement = previewRef.current;
-
-    if (!previewElement.contains(range.commonAncestorContainer)) return;
-
-    const textBefore = content.substring(0, content.indexOf(selectedText));
-    const linesBeforeSelection = textBefore.split("\n");
-    const startLine = linesBeforeSelection.length;
-    const endLine = startLine + selectedText.split("\n").length - 1;
-    const startOffset = textBefore.length;
-
-    onTextSelect({
-      text: selectedText,
-      startLine,
-      endLine,
-      startOffset,
-      endOffset: startOffset + selectedText.length,
-    });
-  }, [content, onTextSelect]);
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(content);
+    await navigator.clipboard.writeText(editContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [content]);
+  }, [editContent]);
+
+  const handleCopyHtml = useCallback(async () => {
+    const html = markdownToHtml(editContent);
+    try {
+      const htmlBlob = new Blob([html], { type: "text/html" });
+      const textBlob = new Blob([html], { type: "text/plain" });
+      const data = [
+        new ClipboardItem({
+          "text/html": htmlBlob,
+          "text/plain": textBlob,
+        }),
+      ];
+      await navigator.clipboard.write(data);
+    } catch {
+      // Fallback for browsers that don't support ClipboardItem
+      await navigator.clipboard.writeText(html);
+    }
+    setCopiedHtml(true);
+    setTimeout(() => setCopiedHtml(false), 2000);
+  }, [editContent]);
+
+  const handleTogglePreview = useCallback(() => {
+    setIsPreviewMode((prev) => !prev);
+  }, []);
 
   const handleEditorChange = useCallback((newContent: string) => {
     setEditContent(newContent);
-    setHasUnsavedChanges(newContent !== lastSyncedContentRef.current);
+    const isDirty = newContent !== lastSyncedContentRef.current;
+    setHasUnsavedChanges(isDirty);
   }, []);
 
   const handleSaveEdit = useCallback(() => {
     onContentChange?.(editContent);
+    lastSyncedContentRef.current = editContent;
     setHasUnsavedChanges(false);
-    setViewMode("preview");
-  }, [editContent, onContentChange]);
+    onUnsavedChangesChange?.(false);
+  }, [editContent, onContentChange, onUnsavedChangesChange]);
 
   const handleDiscardChanges = useCallback(() => {
     setEditContent(lastSyncedContentRef.current);
     setHasUnsavedChanges(false);
-    setViewMode("preview");
   }, []);
 
-  const handleModeSwitch = useCallback(
-    (mode: ViewMode) => {
-      if (mode === "preview" && hasUnsavedChanges) {
-        const confirm = window.confirm(
-          "You have unsaved changes. Discard them?",
-        );
-        if (!confirm) return;
-        setHasUnsavedChanges(false);
-      }
-      if (mode === "edit") {
-        setEditContent(content);
-        lastSyncedContentRef.current = content;
-        setHasUnsavedChanges(false);
-      }
-      setViewMode(mode);
-    },
-    [hasUnsavedChanges, content],
-  );
+  useEffect(() => {
+    onDiscardChanges?.(handleDiscardChanges);
+  }, [handleDiscardChanges, onDiscardChanges]);
 
   const canEdit = isEditable && !isOpenCodeBusy;
 
-  return (
-    <div className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            <button
-              onClick={() => handleModeSwitch("preview")}
-              className={clsx(
-                "px-3 py-1.5 text-sm rounded-md transition-colors",
-                viewMode === "preview"
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
-              )}
-            >
-              <Eye className="w-4 h-4 inline mr-1" />
-              Preview
-            </button>
-            {canEdit && (
-              <button
-                onClick={() => handleModeSwitch("edit")}
-                className={clsx(
-                  "px-3 py-1.5 text-sm rounded-md transition-colors",
-                  viewMode === "edit"
-                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 shadow-sm"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
-                )}
-              >
-                <Edit3 className="w-4 h-4 inline mr-1" />
-                Edit
-              </button>
-            )}
-          </div>
-          {hasUnsavedChanges && (
-            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
-              <AlertCircle className="w-3 h-3" />
-              Unsaved
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {lastUpdated && viewMode === "preview" && (
-            <span className="text-xs text-gray-400 dark:text-gray-600">
-              Updated {formatLastUpdated(lastUpdated)}
-            </span>
-          )}
-          <Button variant="ghost" size="sm" onClick={handleCopy}>
-            {copied ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+  const [selectionState, setSelectionState] = useState({
+    hasSelection: false,
+    inMarkedSection: false,
+  });
 
-      <div className="flex-1 overflow-hidden">
-        {viewMode === "preview" ? (
+  const handleSelectionChange = useCallback((state: any) => {
+    setSelectionState({
+      hasSelection: state.hasSelection,
+      inMarkedSection: state.inMarkedSection,
+    });
+  }, []);
+
+  const handleMark = useCallback(() => {
+    editorRef.current?.mark?.();
+  }, []);
+
+  const handleClear = useCallback(() => {
+    editorRef.current?.clear?.();
+  }, []);
+
+  const headerProps = useMemo(
+    () => ({
+      hasUnsavedChanges,
+      lastUpdated,
+      copied,
+      copiedHtml,
+      isPreviewMode,
+      onDiscard: handleDiscardChanges,
+      onSave: handleSaveEdit,
+      onCopy: handleCopy,
+      onCopyHtml: handleCopyHtml,
+      onTogglePreview: handleTogglePreview,
+      hasSelection: selectionState.hasSelection,
+      inMarkedSection: selectionState.inMarkedSection,
+      onMark: handleMark,
+      onClear: handleClear,
+    }),
+    [
+      hasUnsavedChanges,
+      lastUpdated,
+      copied,
+      copiedHtml,
+      isPreviewMode,
+      handleDiscardChanges,
+      handleSaveEdit,
+      handleCopy,
+      handleCopyHtml,
+      handleTogglePreview,
+      selectionState,
+      handleMark,
+      handleClear,
+    ],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      findAndHighlight: (excerpt: string) => {
+        return editorRef.current?.findAndHighlight(excerpt) ?? false;
+      },
+      save: () => {
+        handleSaveEdit();
+      },
+    }),
+    [handleSaveEdit],
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden relative"
+    >
+      <EditorHeader {...headerProps} />
+
+      <div className="flex-1 overflow-hidden relative">
+        {isPreviewMode ? (
           <div
             ref={previewRef}
-            onMouseUp={handleTextSelection}
-            className={clsx(
-              "h-full overflow-y-auto p-6 prose prose-sm max-w-none",
-              theme === "dark" && "dark",
-            )}
+            className="h-full overflow-auto p-6 bg-white dark:bg-gray-950 relative"
           >
-            {content ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {content}
+            <div className="prose dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  a: ({ node, ...props }) => (
+                    <a
+                      {...props}
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                    />
+                  ),
+                  code: ({
+                    node,
+                    inline,
+                    className,
+                    children,
+                    ...props
+                  }: any) => (
+                    <code
+                      {...props}
+                      className={
+                        inline
+                          ? "bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm"
+                          : className
+                      }
+                    >
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ node, ...props }) => (
+                    <pre
+                      {...props}
+                      className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto"
+                    />
+                  ),
+                  blockquote: ({ node, ...props }) => (
+                    <blockquote
+                      {...props}
+                      className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic"
+                    />
+                  ),
+                  table: ({ node, ...props }) => (
+                    <table
+                      {...props}
+                      className="border-collapse w-full border border-gray-300 dark:border-gray-600"
+                    />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th
+                      {...props}
+                      className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-800 text-left"
+                    />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td
+                      {...props}
+                      className="border border-gray-300 dark:border-gray-600 p-2"
+                    />
+                  ),
+                }}
+              >
+                {editContent}
               </ReactMarkdown>
-            ) : (
-              <p className="text-gray-400 dark:text-gray-600 italic">
-                No content yet. Start a conversation to generate content.
-              </p>
-            )}
+            </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-hidden">
-              <Suspense
-                fallback={
-                  <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-                    Loading editor...
-                  </div>
-                }
-              >
-                <MarkdownEditor
-                  content={editContent}
-                  onChange={handleEditorChange}
-                  onSave={handleSaveEdit}
-                  disabled={!canEdit}
-                  theme={theme}
-                />
-              </Suspense>
-            </div>
-            <div className="flex justify-end gap-2 p-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleDiscardChanges}
-              >
-                Discard
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSaveEdit}
-                disabled={!hasUnsavedChanges}
-              >
-                Save Changes
-              </Button>
-            </div>
-          </div>
+          <Suspense
+            fallback={
+              <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+                Loading editor...
+              </div>
+            }
+          >
+            <MarkdownEditor
+              ref={editorRef}
+              content={editContent}
+              onChange={handleEditorChange}
+              onSave={handleSaveEdit}
+              disabled={!canEdit}
+              theme={theme}
+              onSelectionChange={handleSelectionChange}
+            />
+          </Suspense>
         )}
       </div>
     </div>
   );
-}
+});
