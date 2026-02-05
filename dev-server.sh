@@ -47,7 +47,7 @@ is_process_running() {
 cmd_start() {
     echo ""
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║           QuillBot Development Server (Starting)            ║${NC}"
+    echo -e "${BLUE}║           QuillBot Development Server (Starting)           ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
