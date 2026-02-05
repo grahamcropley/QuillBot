@@ -32,21 +32,28 @@ npm install
 
 ### Running the Development Environment
 
-**Option 1: Integrated tmux session (Recommended)**
+**Unified Development Server Manager (Recommended)**
 
-Start both OpenCode server and Next.js dev server in a single tmux session with split panes:
+Use the `dev-server.sh` script to manage both OpenCode and Next.js servers:
 
 ```bash
-./start-dev.sh
+# Start both services in a detached tmux session
+./dev-server.sh start
+
+# Check status of both services
+./dev-server.sh status
+
+# Attach to the tmux session
+./dev-server.sh attach
+
+# Stop all services
+./dev-server.sh stop
 ```
 
-This will:
+This creates a tmux session with split panes:
 
-- Create a tmux session named `quillbot-dev`
-- Split the terminal into two panes side by side
-- Left pane: OpenCode server (port 9090)
-- Right pane: Next.js dev server (port 3000)
-- Display helpful tmux shortcuts
+- **Left pane**: OpenCode server (port 9090)
+- **Right pane**: Next.js dev server (port 3000)
 
 **tmux keyboard shortcuts:**
 
@@ -54,33 +61,6 @@ This will:
 - `Ctrl+b` then `z` - Zoom current pane (toggle fullscreen)
 - `Ctrl+b` then `[` - Scroll mode (press `q` to exit)
 - `Ctrl+b` then `d` - Detach from session (keeps running in background)
-
-**Reattach to session:**
-
-```bash
-tmux attach -t quillbot-dev
-```
-
-**Stop all servers:**
-
-```bash
-./stop-dev.sh
-# Or manually: tmux kill-session -t quillbot-dev
-```
-
-**Option 2: Separate terminals (Manual)**
-
-Terminal 1 - OpenCode server:
-
-```bash
-./start-opencode.sh
-```
-
-Terminal 2 - Next.js dev server:
-
-```bash
-npm run dev
-```
 
 Open [http://localhost:3000](http://localhost:3000) to access the application.
 
