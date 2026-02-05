@@ -48,27 +48,41 @@ export function markdownToHtml(markdown: string): string {
 
   // Unordered lists: -, *, or + at start of line
   const ulRegex = /^(\s*)[-*+] (.*)$/gm;
-  html = html.replace(ulRegex, (_match, indent) => {
+  html = html.replace(ulRegex, (_match, indent, text) => {
     const level = indent.length / 2;
-    return `<li${level > 0 ? ` style="margin-left: ${level * 20}px"` : ""}>$2</li>`;
+    return `<li${level > 0 ? ` style="margin-left: ${level * 20}px"` : ""}>${text}</li>`;
   });
 
-  // Wrap consecutive list items in <ul>
+  // Wrap consecutive unordered list items in <ul> (before processing ordered lists)
   html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
     return `<ul>\n${match}</ul>\n`;
   });
 
+  // Now split any <ul> blocks back out so ordered lists can be processed separately
+  // Store ul blocks and replace with placeholders
+  const ulBlocks: string[] = [];
+  html = html.replace(/<ul>[\s\S]*?<\/ul>/g, (match) => {
+    const placeholder = `__UL_BLOCK_${ulBlocks.length}__`;
+    ulBlocks.push(match);
+    return placeholder;
+  });
+
   // Ordered lists: number. at start of line
   const olRegex = /^(\s*)\d+\. (.*)$/gm;
-  html = html.replace(olRegex, (_match, indent) => {
+  html = html.replace(olRegex, (_match, indent, text) => {
     const level = indent.length / 2;
-    return `<li${level > 0 ? ` style="margin-left: ${level * 20}px"` : ""}>$2</li>`;
+    return `<li${level > 0 ? ` style="margin-left: ${level * 20}px"` : ""}>${text}</li>`;
   });
 
   // Wrap consecutive ordered list items in <ol>
   html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
     return `<ol>\n${match}</ol>\n`;
   });
+
+  // Restore ul blocks
+  for (let i = 0; i < ulBlocks.length; i++) {
+    html = html.replace(`__UL_BLOCK_${i}__`, ulBlocks[i]);
+  }
 
   // Paragraphs: double newline = paragraph break
   html = html

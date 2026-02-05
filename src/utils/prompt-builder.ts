@@ -10,8 +10,6 @@ const CONTENT_TYPE_DESCRIPTIONS: Record<string, string> = {
 export function buildPrompt(formData: StarterFormData): string {
   const sentences: string[] = [];
 
-  sentences.push("/write-content");
-  sentences.push("");
   sentences.push("## Instructions");
   sentences.push("");
   sentences.push(

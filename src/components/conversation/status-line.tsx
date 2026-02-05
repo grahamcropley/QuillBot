@@ -278,7 +278,7 @@ function SessionStatusDisplay() {
       >
         <Loader2 className="w-4 h-4 flex-shrink-0 text-blue-700 dark:text-blue-300 animate-spin" />
         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-          Working...
+          Working on it...
         </span>
       </div>
     );
@@ -412,6 +412,12 @@ export function parseStatusMessage(statusMessage: string): {
     if (pattern.test(statusMessage)) {
       return { status: "tool", message: statusMessage, toolName: tool };
     }
+  }
+
+  // If the message is just "busy" or other generic state, use empty message
+  // so the default config text is used
+  if (lowerMessage === "busy" || lowerMessage === "idle") {
+    return { status: "thinking", message: "" };
   }
 
   return { status: "thinking", message: statusMessage };

@@ -410,12 +410,14 @@ function getActivityItems(message: Message): ActivityItem[] {
 
   for (const part of message.parts ?? []) {
     if (part.type === "reasoning") {
-      items.push({
-        key: part.id,
-        title: "Thinking",
-        content: part.text,
-        kind: "thinking",
-      });
+      if (part.text && part.text.trim()) {
+        items.push({
+          key: part.id,
+          title: "Thinking",
+          content: part.text,
+          kind: "thinking",
+        });
+      }
       continue;
     }
 
@@ -432,6 +434,11 @@ function getActivityItems(message: Message): ActivityItem[] {
     if (part.type === "tool") {
       // Skip redundant edit tools - the write tool already shows file completion
       if (part.tool === "apply_patch" || part.tool === "edit") {
+        continue;
+      }
+
+      // Skip question tool in assistant messages - already shown in question message bubble
+      if (part.tool === "question" && message.role === "assistant") {
         continue;
       }
 
@@ -665,6 +672,7 @@ function ActivitySection({ item }: { item: ActivityItem }) {
   const style = ACTIVITY_KIND_STYLES[item.kind] ?? ACTIVITY_KIND_STYLES.other;
   const isTruncatable = item.kind === "tool-web";
   const titleString = typeof item.title === "string" ? item.title : undefined;
+  const hasContent = item.content && item.content.trim().length > 0;
 
   return (
     <details
@@ -702,7 +710,7 @@ function ActivitySection({ item }: { item: ActivityItem }) {
           )}
         </div>
       </summary>
-      {item.content && (
+      {hasContent ? (
         <pre
           className={clsx(
             "mt-2 whitespace-pre-wrap text-xs italic",
@@ -711,6 +719,10 @@ function ActivitySection({ item }: { item: ActivityItem }) {
         >
           {item.content}
         </pre>
+      ) : (
+        <div className={clsx("mt-2 text-xs italic opacity-50", style.content)}>
+          (No details available)
+        </div>
       )}
     </details>
   );

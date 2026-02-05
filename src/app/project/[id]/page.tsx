@@ -57,6 +57,9 @@ export default function ProjectPage() {
   const projects = useProjectStore((state) => state.projects);
   const currentProject = projects.find((p) => p.id === projectId);
   const isHydrated = useProjectStore((state) => state.isHydrated);
+
+  // Only enable hooks that need the project after store is hydrated and project exists
+  const projectReady = isHydrated && !!currentProject;
   const fetchProjects = useProjectStore((state) => state.fetchProjects);
   const selectProject = useProjectStore((state) => state.selectProject);
   const addMessage = useProjectStore((state) => state.addMessage);
@@ -103,12 +106,12 @@ export default function ProjectPage() {
     selectFile,
   } = useMarkdownSync({
     projectId,
-    enabled: true,
+    enabled: projectReady,
   });
 
   const { files: projectFiles, refetch: refreshFiles } = useFileWatcher({
     projectId,
-    enabled: true,
+    enabled: projectReady,
   });
 
   const [streamingParts, setStreamingParts] = useState<Part[]>([]);
@@ -120,6 +123,7 @@ export default function ProjectPage() {
   const streamingActivitiesRef = useRef<StreamActivity[]>([]);
   const streamingSegmentsRef = useRef<Message[]>([]);
   const streamSplitCounterRef = useRef(0);
+  const completionProcessedRef = useRef(false);
 
   const nextStreamSplitId = useCallback(() => {
     streamSplitCounterRef.current += 1;
@@ -148,23 +152,48 @@ export default function ProjectPage() {
     statusMessage,
     sessionId: streamSessionId,
     resumeBufferedStream,
+    reset,
   } = useOpenCodeStream({
     projectId,
     initialSessionId: currentProject?.opencodeSessionId ?? null,
     onQuestion: (questionData) => {
       console.log("[ProjectPage] onQuestion called with:", questionData);
-      addQuestion(questionData);
+
+      const questionMessage: Message = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        role: "question",
+        content: "",
+        questionData,
+        timestamp: new Date(),
+        parts: [...streamingPartsRef.current],
+        activities: [...streamingActivitiesRef.current],
+      };
+
+      resetStreamingCollections();
+
+      addMessageWithDetails(questionMessage);
     },
     onStreamSplit: ({ tool, content }) => {
       const parts = streamingPartsRef.current;
       const activities = streamingActivitiesRef.current;
 
+      console.log("[ProjectPage] onStreamSplit called:", {
+        tool,
+        contentLength: content.length,
+        partsCount: parts.length,
+        activitiesCount: activities.length,
+      });
+
       if (!content.trim() && parts.length === 0 && activities.length === 0) {
+        console.log("[ProjectPage] Skipping empty stream split");
         return;
       }
 
+      const segmentId = nextStreamSplitId();
+      console.log("[ProjectPage] Creating stream split segment:", segmentId);
+
       commitStreamingSegment({
-        id: nextStreamSplitId(),
+        id: segmentId,
         role: "assistant",
         content,
         timestamp: new Date(),
@@ -173,18 +202,37 @@ export default function ProjectPage() {
       });
 
       resetStreamingCollections();
-      console.log("[ProjectPage] Stream split at tool:", tool);
+      console.log("[ProjectPage] Stream split complete, collections reset");
     },
     onComplete: (content) => {
+      if (completionProcessedRef.current) {
+        console.log("[ProjectPage] onComplete: Already processed, skipping");
+        return;
+      }
+
+      completionProcessedRef.current = true;
+
       const finalParts = streamingPartsRef.current;
       const finalActivities = streamingActivitiesRef.current;
       const segmentsToStore = [...streamingSegmentsRef.current];
 
-      if (
-        content.trim() ||
-        finalParts.length > 0 ||
-        finalActivities.length > 0
-      ) {
+      console.log("[ProjectPage] onComplete called:", {
+        contentLength: content.length,
+        finalPartsCount: finalParts.length,
+        finalActivitiesCount: finalActivities.length,
+        existingSegmentsCount: segmentsToStore.length,
+      });
+
+      // Only create final segment if there's NEW content after last stream split
+      // If we already have segments (from onStreamSplit) and no new content/parts/activities,
+      // don't create a duplicate segment
+      const hasNewContent = content.trim().length > 0;
+      const hasNewPartsOrActivities =
+        finalParts.length > 0 || finalActivities.length > 0;
+      const hasExistingSegments = segmentsToStore.length > 0;
+
+      if (hasNewContent || (hasNewPartsOrActivities && !hasExistingSegments)) {
+        console.log("[ProjectPage] Creating final segment");
         segmentsToStore.push({
           id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           role: "assistant",
@@ -193,18 +241,30 @@ export default function ProjectPage() {
           parts: finalParts,
           activities: finalActivities,
         });
+      } else {
+        console.log(
+          "[ProjectPage] Skipping final segment creation (would be duplicate)",
+        );
       }
+
+      console.log(
+        "[ProjectPage] Total segments to store:",
+        segmentsToStore.length,
+      );
 
       resetStreamingCollections();
       clearMarkedSelections();
+      reset();
+
+      // Clear streaming segments BEFORE persisting to avoid duplicates in displayedMessages
+      setStreamingSegments([]);
+      streamingSegmentsRef.current = [];
 
       void (async () => {
         for (const segment of segmentsToStore) {
+          console.log("[ProjectPage] Storing segment:", segment.id);
           await addMessageWithDetails(segment);
         }
-
-        setStreamingSegments([]);
-        streamingSegmentsRef.current = [];
       })();
 
       const markdownMatch = content.match(/```markdown\n([\s\S]*?)\n```/);
@@ -212,13 +272,35 @@ export default function ProjectPage() {
         updateDocument(markdownMatch[1]);
       }
     },
-    onPart: (part) => {
+    onPart: (part, delta) => {
       const current = streamingPartsRef.current;
       const index = current.findIndex((p) => p.id === part.id);
+
+      let updatedPart = part;
+      if (part.type === "reasoning") {
+        const existingPart = index !== -1 ? current[index] : null;
+        const existingText =
+          existingPart && existingPart.type === "reasoning"
+            ? (existingPart as any).text || ""
+            : "";
+
+        // Use part.text if available, otherwise accumulate from delta
+        const partText = (part as any).text || "";
+        const newText =
+          partText || (delta ? existingText + delta : existingText);
+
+        updatedPart = {
+          ...part,
+          text: newText,
+        } as any;
+      }
+
       const next =
         index === -1
-          ? [...current, part]
-          : current.map((existing, idx) => (idx === index ? part : existing));
+          ? [...current, updatedPart]
+          : current.map((existing, idx) =>
+              idx === index ? updatedPart : existing,
+            );
       streamingPartsRef.current = next;
       setStreamingParts(next);
     },
@@ -292,26 +374,6 @@ export default function ProjectPage() {
       parts: streamingParts,
       activities: streamingActivities,
     };
-
-    const lastMessage = currentProject.messages.at(-1);
-    const hasPendingQuestion =
-      lastMessage?.role === "question" &&
-      lastMessage.questionData &&
-      !lastMessage.questionData.answered;
-    const hasStreamingText = Boolean(streamingContent.trim());
-
-    if (hasPendingQuestion && !hasStreamingText) {
-      const mergedQuestion: Message = {
-        ...lastMessage,
-        parts: [...(lastMessage.parts ?? []), ...streamingParts],
-        activities: [...(lastMessage.activities ?? []), ...streamingActivities],
-      };
-      return [
-        ...currentProject.messages.slice(0, -1),
-        mergedQuestion,
-        ...streamingSegments,
-      ];
-    }
 
     const seenIds = new Set(currentProject.messages.map((msg) => msg.id));
     const dedupedSegments = streamingSegments.filter(
@@ -412,10 +474,11 @@ export default function ProjectPage() {
       resetStreamingCollections();
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
+      completionProcessedRef.current = false;
 
       const result = await sendMessage({
         message: messageContent,
-        command: isInitialMessage ? "/write-content" : undefined,
+        command: isInitialMessage ? "write-content" : undefined,
       });
 
       if (result.success) {
