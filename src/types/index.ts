@@ -77,6 +77,7 @@ export interface MarkedSelection {
   column: number;
   length: number;
   source: "editor" | "preview";
+  contentIndex?: number;
 }
 
 export interface AnalysisMetrics {

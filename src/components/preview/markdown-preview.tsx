@@ -20,12 +20,14 @@ import {
   EyeOff,
   Bookmark,
   X,
+  Code,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
+import { markdownToHtml } from "@/lib/markdown-to-html";
 import type { TextSelection } from "@/types";
 import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
 
@@ -61,6 +63,7 @@ interface MarkdownPreviewProps {
 
 export interface MarkdownPreviewHandle {
   findAndHighlight: (excerpt: string) => boolean;
+  save: () => void;
 }
 
 function formatLastUpdated(date: Date): string {
@@ -86,10 +89,12 @@ interface HeaderProps {
   hasUnsavedChanges: boolean;
   lastUpdated: Date | null | undefined;
   copied: boolean;
+  copiedHtml: boolean;
   isPreviewMode: boolean;
   onDiscard: () => void;
   onSave: () => void;
   onCopy: () => void;
+  onCopyHtml: () => void;
   onTogglePreview: () => void;
   hasSelection: boolean;
   inMarkedSection: boolean;
@@ -101,10 +106,12 @@ const EditorHeader = memo(function EditorHeader({
   hasUnsavedChanges,
   lastUpdated,
   copied,
+  copiedHtml,
   isPreviewMode,
   onDiscard,
   onSave,
   onCopy,
+  onCopyHtml,
   onTogglePreview,
   hasSelection,
   inMarkedSection,
@@ -177,11 +184,28 @@ const EditorHeader = memo(function EditorHeader({
             <EyeOff className="w-4 h-4" />
           )}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onCopy}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCopy}
+          title="Copy markdown"
+        >
           {copied ? (
             <Check className="w-4 h-4" />
           ) : (
             <Copy className="w-4 h-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCopyHtml}
+          title="Copy HTML"
+        >
+          {copiedHtml ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Code className="w-4 h-4" />
           )}
         </Button>
       </div>
@@ -211,6 +235,7 @@ export const MarkdownPreview = forwardRef<
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const lastSyncedContentRef = useRef(content);
   const editorRef = useRef<MarkdownEditorHandle>(null);
@@ -232,6 +257,26 @@ export const MarkdownPreview = forwardRef<
     setTimeout(() => setCopied(false), 2000);
   }, [editContent]);
 
+  const handleCopyHtml = useCallback(async () => {
+    const html = markdownToHtml(editContent);
+    try {
+      const htmlBlob = new Blob([html], { type: "text/html" });
+      const textBlob = new Blob([html], { type: "text/plain" });
+      const data = [
+        new ClipboardItem({
+          "text/html": htmlBlob,
+          "text/plain": textBlob,
+        }),
+      ];
+      await navigator.clipboard.write(data);
+    } catch {
+      // Fallback for browsers that don't support ClipboardItem
+      await navigator.clipboard.writeText(html);
+    }
+    setCopiedHtml(true);
+    setTimeout(() => setCopiedHtml(false), 2000);
+  }, [editContent]);
+
   const handleTogglePreview = useCallback(() => {
     setIsPreviewMode((prev) => !prev);
   }, []);
@@ -241,19 +286,6 @@ export const MarkdownPreview = forwardRef<
     const isDirty = newContent !== lastSyncedContentRef.current;
     setHasUnsavedChanges(isDirty);
   }, []);
-
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-
-    const timer = setTimeout(() => {
-      onContentChange?.(editContent);
-      lastSyncedContentRef.current = editContent;
-      setHasUnsavedChanges(false);
-      onUnsavedChangesChange?.(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [editContent, hasUnsavedChanges, onContentChange, onUnsavedChangesChange]);
 
   const handleSaveEdit = useCallback(() => {
     onContentChange?.(editContent);
@@ -298,10 +330,12 @@ export const MarkdownPreview = forwardRef<
       hasUnsavedChanges,
       lastUpdated,
       copied,
+      copiedHtml,
       isPreviewMode,
       onDiscard: handleDiscardChanges,
       onSave: handleSaveEdit,
       onCopy: handleCopy,
+      onCopyHtml: handleCopyHtml,
       onTogglePreview: handleTogglePreview,
       hasSelection: selectionState.hasSelection,
       inMarkedSection: selectionState.inMarkedSection,
@@ -312,10 +346,12 @@ export const MarkdownPreview = forwardRef<
       hasUnsavedChanges,
       lastUpdated,
       copied,
+      copiedHtml,
       isPreviewMode,
       handleDiscardChanges,
       handleSaveEdit,
       handleCopy,
+      handleCopyHtml,
       handleTogglePreview,
       selectionState,
       handleMark,
@@ -329,8 +365,11 @@ export const MarkdownPreview = forwardRef<
       findAndHighlight: (excerpt: string) => {
         return editorRef.current?.findAndHighlight(excerpt) ?? false;
       },
+      save: () => {
+        handleSaveEdit();
+      },
     }),
-    [],
+    [handleSaveEdit],
   );
 
   return (

@@ -16,6 +16,9 @@ import { clsx } from "clsx";
 import { QuestionPrompt } from "./question-prompt";
 import { StatusLine, parseStatusMessage } from "./status-line";
 import type { Message, TextSelection } from "@/types";
+import { useProjectStore } from "@/stores/project-store";
+import { SelectionsIndicator } from "./selections-indicator";
+import { formatSelectionsContext } from "@/utils/format-selections";
 
 function getRelativePath(filePath: string): string {
   if (!filePath) return filePath;
@@ -37,6 +40,7 @@ interface ConversationPanelProps {
   statusMessage?: string;
   textSelection?: TextSelection | null;
   onClearSelection?: () => void;
+  currentFileName?: string;
 }
 
 interface MessageBubbleProps {
@@ -426,6 +430,11 @@ function getActivityItems(message: Message): ActivityItem[] {
     }
 
     if (part.type === "tool") {
+      // Skip redundant edit tools - the write tool already shows file completion
+      if (part.tool === "apply_patch" || part.tool === "edit") {
+        continue;
+      }
+
       const status = part.state.status;
       const input = part.state.input as Record<string, unknown> | undefined;
       const inputSummary = formatToolInputSummary(part.tool, input);
@@ -716,7 +725,13 @@ export function ConversationPanel({
   statusMessage,
   textSelection,
   onClearSelection,
+  currentFileName,
 }: ConversationPanelProps) {
+  const markedSelections = useProjectStore((state) => state.markedSelections);
+  const clearMarkedSelections = useProjectStore(
+    (state) => state.clearMarkedSelections,
+  );
+
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -774,6 +789,15 @@ export function ConversationPanel({
 
       let messageContent = inputValue.trim();
 
+      if (markedSelections.length > 0) {
+        const selectionContext = formatSelectionsContext(
+          markedSelections,
+          currentFileName,
+        );
+        messageContent = selectionContext + "\n" + messageContent;
+        // Don't clear here - cleared after response completes (single-use)
+      }
+
       if (textSelection) {
         const selectionContext = `[Lines ${textSelection.startLine}-${textSelection.endLine}] Selected: "${textSelection.text}"\n\n`;
         messageContent = selectionContext + messageContent;
@@ -783,7 +807,15 @@ export function ConversationPanel({
       onSendMessage(messageContent);
       setInputValue("");
     },
-    [inputValue, isLoading, textSelection, onSendMessage, onClearSelection],
+    [
+      inputValue,
+      isLoading,
+      textSelection,
+      onSendMessage,
+      onClearSelection,
+      markedSelections,
+      currentFileName,
+    ],
   );
 
   const handleKeyDown = useCallback(
@@ -830,6 +862,11 @@ export function ConversationPanel({
           />
         </div>
       )}
+
+      <SelectionsIndicator
+        selections={markedSelections}
+        onClear={clearMarkedSelections}
+      />
 
       {textSelection && (
         <div className="mx-4 mb-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs">

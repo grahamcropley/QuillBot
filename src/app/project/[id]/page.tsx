@@ -21,6 +21,7 @@ import { analyzeContent } from "@/lib/analysis";
 import { buildPrompt } from "@/utils/prompt-builder";
 import type { TextSelection, Message } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
+import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
 import { FileExplorer } from "@/components/preview/file-explorer";
 
 export default function ProjectPage() {
@@ -28,9 +29,7 @@ export default function ProjectPage() {
   const router = useRouter();
   const projectId = params.id as string;
   const previewRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<{ findAndHighlight: (excerpt: string) => boolean }>(
-    null,
-  );
+  const editorRef = useRef<MarkdownPreviewHandle | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
@@ -45,6 +44,13 @@ export default function ProjectPage() {
   );
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(0);
   const [isResizing, setIsResizing] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
+  const [pendingFileSwitch, setPendingFileSwitch] = useState<string | null>(
+    null,
+  );
+  const [isNavigationModalOpen, setIsNavigationModalOpen] = useState(false);
   const hasInitialized = useRef<Set<string>>(new Set());
   const initialWidthSetRef = useRef(false);
 
@@ -67,6 +73,9 @@ export default function ProjectPage() {
   const analysisMetrics = useProjectStore((state) => state.analysisMetrics);
   const setAnalysisMetrics = useProjectStore(
     (state) => state.setAnalysisMetrics,
+  );
+  const clearMarkedSelections = useProjectStore(
+    (state) => state.clearMarkedSelections,
   );
 
   useEffect(() => {
@@ -181,6 +190,7 @@ export default function ProjectPage() {
         }
 
         resetStreamingCollections();
+        clearMarkedSelections();
 
         void (async () => {
           for (const segment of segmentsToStore) {
@@ -527,6 +537,75 @@ export default function ProjectPage() {
     router.push("/");
   }, [deleteProject, projectId, router]);
 
+  const handleBackClick = useCallback(() => {
+    if (hasUnsavedEditorChanges) {
+      setPendingNavigation("/");
+      setIsNavigationModalOpen(true);
+    } else {
+      router.push("/");
+    }
+  }, [hasUnsavedEditorChanges, router]);
+
+  const handleFileSelect = useCallback(
+    (fileName: string) => {
+      if (hasUnsavedEditorChanges) {
+        setPendingFileSwitch(fileName);
+        setIsNavigationModalOpen(true);
+      } else {
+        selectFile(fileName);
+      }
+    },
+    [hasUnsavedEditorChanges, selectFile],
+  );
+
+  const handleNavigationConfirm = useCallback(() => {
+    editorRef.current?.save?.();
+    setHasUnsavedEditorChanges(false);
+    setIsNavigationModalOpen(false);
+    if (pendingMessage) {
+      sendMessageInternal(pendingMessage);
+      setPendingMessage(null);
+    } else if (pendingFileSwitch) {
+      selectFile(pendingFileSwitch);
+      setPendingFileSwitch(null);
+    } else if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [
+    pendingMessage,
+    pendingFileSwitch,
+    pendingNavigation,
+    selectFile,
+    sendMessageInternal,
+    router,
+  ]);
+
+  const handleNavigationCancel = useCallback(() => {
+    setIsNavigationModalOpen(false);
+    setPendingNavigation(null);
+    setPendingFileSwitch(null);
+  }, []);
+
+  const handleNavigationDiscard = useCallback(() => {
+    editorDiscardFn?.();
+    setHasUnsavedEditorChanges(false);
+    setIsNavigationModalOpen(false);
+    if (pendingFileSwitch) {
+      selectFile(pendingFileSwitch);
+      setPendingFileSwitch(null);
+    } else if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [
+    editorDiscardFn,
+    pendingFileSwitch,
+    pendingNavigation,
+    selectFile,
+    router,
+  ]);
+
   if (!isHydrated) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -553,7 +632,7 @@ export default function ProjectPage() {
     <div className="flex h-full flex-col gap-3 overflow-hidden">
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.push("/")}>
+          <Button variant="ghost" onClick={handleBackClick}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
@@ -573,7 +652,9 @@ export default function ProjectPage() {
           <Button
             variant="secondary"
             onClick={() => setIsExportModalOpen(true)}
-            disabled={!currentProject.documentContent}
+            disabled={
+              !(syncedFileName ? syncedContent : currentProject.documentContent)
+            }
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -614,6 +695,7 @@ export default function ProjectPage() {
                   statusMessage={statusMessage}
                   textSelection={textSelection}
                   onClearSelection={clearTextSelection}
+                  currentFileName={syncedFileName || "draft.md"}
                 />
               </PanelErrorBoundary>
             </div>
@@ -634,7 +716,7 @@ export default function ProjectPage() {
                 <FileExplorer
                   files={projectFiles}
                   selectedFile={syncedFileName}
-                  onSelectFile={selectFile}
+                  onSelectFile={handleFileSelect}
                   onRefresh={refreshFiles}
                 />
               </PanelErrorBoundary>
@@ -684,6 +766,9 @@ export default function ProjectPage() {
 
       <ExportModal
         project={currentProject}
+        content={
+          syncedFileName ? syncedContent : currentProject.documentContent
+        }
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
       />
@@ -722,6 +807,8 @@ export default function ProjectPage() {
           setPendingMessage(null);
         }}
         onConfirm={() => {
+          editorRef.current?.save?.();
+          setHasUnsavedEditorChanges(false);
           setIsUnsavedChangesModalOpen(false);
           setTimeout(() => {
             if (pendingMessage) {
@@ -732,6 +819,7 @@ export default function ProjectPage() {
         }}
         onSecondary={() => {
           editorDiscardFn?.();
+          setHasUnsavedEditorChanges(false);
           setIsUnsavedChangesModalOpen(false);
           if (pendingMessage) {
             sendMessageInternal(pendingMessage);
@@ -740,6 +828,24 @@ export default function ProjectPage() {
         }}
         confirmText="Save & Send"
         secondaryText="Discard & Send"
+        cancelText="Cancel"
+      />
+
+      <Modal
+        isOpen={isNavigationModalOpen}
+        title="Unsaved Changes"
+        description={
+          pendingFileSwitch
+            ? "You have unsaved changes in the editor. Save them before switching files, or discard them and continue."
+            : "You have unsaved changes in the editor. Save them before leaving, or discard them and continue."
+        }
+        onClose={handleNavigationCancel}
+        onConfirm={handleNavigationConfirm}
+        onSecondary={handleNavigationDiscard}
+        confirmText={pendingFileSwitch ? "Save & Switch" : "Save & Leave"}
+        secondaryText={
+          pendingFileSwitch ? "Discard & Switch" : "Discard & Leave"
+        }
         cancelText="Cancel"
       />
     </div>

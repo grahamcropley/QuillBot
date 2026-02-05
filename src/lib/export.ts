@@ -18,17 +18,18 @@ updated: ${project.updatedAt.toISOString()}
 
 export function exportAsMarkdown(
   project: Project,
+  content: string,
   options: ExportOptions = {},
 ): Blob {
   const { includeFrontmatter = false } = options;
 
-  let content = project.documentContent;
+  let output = content;
 
   if (includeFrontmatter) {
-    content = generateFrontmatter(project) + content;
+    output = generateFrontmatter(project) + output;
   }
 
-  return new Blob([content], { type: "text/markdown;charset=utf-8" });
+  return new Blob([output], { type: "text/markdown;charset=utf-8" });
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {
@@ -51,12 +52,13 @@ export function sanitizeFilename(name: string): string {
 
 export async function exportAsWord(
   project: Project,
+  content: string,
   options: ExportOptions = {},
 ): Promise<Blob> {
   const { Document, Packer, Paragraph, TextRun, HeadingLevel } =
     await import("docx");
 
-  const lines = project.documentContent.split("\n");
+  const lines = content.split("\n");
   const children: (typeof Paragraph.prototype)[] = [];
 
   for (const line of lines) {
