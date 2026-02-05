@@ -12,33 +12,22 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { Copy, Check, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Copy,
+  Check,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Bookmark,
+  X,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
-import type { TextSelection, MarkedSelection } from "@/types";
+import type { TextSelection } from "@/types";
 import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
-import { useProjectStore } from "@/stores/project-store";
-import { createRoot } from "react-dom/client";
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 9);
-}
-
-// Simple recursive visitor for MDAST
-function visit(
-  node: any,
-  callback: (node: any, index: number, parent: any) => void,
-) {
-  if (node.children) {
-    node.children.forEach((child: any, i: number) => {
-      callback(child, i, node);
-      visit(child, callback);
-    });
-  }
-}
 
 function stripMarkdown(text: string): string {
   return text
@@ -82,6 +71,17 @@ function formatLastUpdated(date: Date): string {
   }).format(date);
 }
 
+function getLineCol(
+  text: string,
+  index: number,
+): { line: number; column: number } {
+  const textBefore = text.slice(0, index);
+  const lines = textBefore.split("\n");
+  const line = lines.length;
+  const column = lines[lines.length - 1].length;
+  return { line, column };
+}
+
 interface HeaderProps {
   hasUnsavedChanges: boolean;
   lastUpdated: Date | null | undefined;
@@ -91,6 +91,10 @@ interface HeaderProps {
   onSave: () => void;
   onCopy: () => void;
   onTogglePreview: () => void;
+  hasSelection: boolean;
+  inMarkedSection: boolean;
+  onMark: () => void;
+  onClear: () => void;
 }
 
 const EditorHeader = memo(function EditorHeader({
@@ -102,6 +106,10 @@ const EditorHeader = memo(function EditorHeader({
   onSave,
   onCopy,
   onTogglePreview,
+  hasSelection,
+  inMarkedSection,
+  onMark,
+  onClear,
 }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
@@ -122,6 +130,34 @@ const EditorHeader = memo(function EditorHeader({
             Unsaved
           </span>
         )}
+        <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={inMarkedSection ? onClear : onMark}
+          disabled={!hasSelection && !inMarkedSection}
+          title={inMarkedSection ? "Clear selection" : "Mark selection"}
+          className={`${
+            !hasSelection && !inMarkedSection
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
+        >
+          {inMarkedSection ? (
+            <>
+              <X className="w-4 h-4 text-red-500" />
+              <span className="text-xs ml-1">Clear selection</span>
+            </>
+          ) : (
+            <>
+              <Bookmark
+                className="w-4 h-4 text-amber-500"
+                fill={hasSelection ? "currentColor" : "none"}
+              />
+              <span className="text-xs ml-1">Mark selection</span>
+            </>
+          )}
+        </Button>
       </div>
       <div className="flex items-center gap-2">
         {lastUpdated && (
@@ -169,13 +205,8 @@ export const MarkdownPreview = forwardRef<
   },
   ref,
 ) {
-  const { markedSelections, addMarkedSelection } = useProjectStore();
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    text: string;
-  } | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -242,6 +273,26 @@ export const MarkdownPreview = forwardRef<
 
   const canEdit = isEditable && !isOpenCodeBusy;
 
+  const [selectionState, setSelectionState] = useState({
+    hasSelection: false,
+    inMarkedSection: false,
+  });
+
+  const handleSelectionChange = useCallback((state: any) => {
+    setSelectionState({
+      hasSelection: state.hasSelection,
+      inMarkedSection: state.inMarkedSection,
+    });
+  }, []);
+
+  const handleMark = useCallback(() => {
+    editorRef.current?.mark?.();
+  }, []);
+
+  const handleClear = useCallback(() => {
+    editorRef.current?.clear?.();
+  }, []);
+
   const headerProps = useMemo(
     () => ({
       hasUnsavedChanges,
@@ -252,6 +303,10 @@ export const MarkdownPreview = forwardRef<
       onSave: handleSaveEdit,
       onCopy: handleCopy,
       onTogglePreview: handleTogglePreview,
+      hasSelection: selectionState.hasSelection,
+      inMarkedSection: selectionState.inMarkedSection,
+      onMark: handleMark,
+      onClear: handleClear,
     }),
     [
       hasUnsavedChanges,
@@ -262,6 +317,9 @@ export const MarkdownPreview = forwardRef<
       handleSaveEdit,
       handleCopy,
       handleTogglePreview,
+      selectionState,
+      handleMark,
+      handleClear,
     ],
   );
 
@@ -276,12 +334,18 @@ export const MarkdownPreview = forwardRef<
   );
 
   return (
-    <div className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden relative"
+    >
       <EditorHeader {...headerProps} />
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         {isPreviewMode ? (
-          <div className="h-full overflow-auto p-6 bg-white dark:bg-gray-950">
+          <div
+            ref={previewRef}
+            className="h-full overflow-auto p-6 bg-white dark:bg-gray-950 relative"
+          >
             <div className="prose dark:prose-invert max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -362,6 +426,7 @@ export const MarkdownPreview = forwardRef<
               onSave={handleSaveEdit}
               disabled={!canEdit}
               theme={theme}
+              onSelectionChange={handleSelectionChange}
             />
           </Suspense>
         )}

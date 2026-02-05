@@ -6,6 +6,7 @@ import {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  useState,
 } from "react";
 import {
   EditorView,
@@ -15,9 +16,6 @@ import {
   drawSelection,
   Decoration,
   DecorationSet,
-  showTooltip,
-  Tooltip,
-  tooltips,
 } from "@codemirror/view";
 import {
   EditorState,
@@ -35,8 +33,7 @@ import {
 } from "@codemirror/language";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { useProjectStore } from "@/stores/project-store";
-import { Bookmark } from "lucide-react";
-import { createRoot } from "react-dom/client";
+import { Bookmark, X } from "lucide-react";
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
@@ -66,10 +63,23 @@ interface MarkdownEditorProps {
   disabled?: boolean;
   className?: string;
   theme?: "light" | "dark";
+  onSelectionChange?: (state: SelectionState) => void;
 }
 
 export interface MarkdownEditorHandle {
   findAndHighlight: (excerpt: string) => boolean;
+  getSelectionState: () => SelectionState;
+  mark: () => void;
+  clear: () => void;
+}
+
+interface SelectionState {
+  hasSelection: boolean;
+  selectionFrom: number;
+  selectionTo: number;
+  cursorPos: number;
+  inMarkedSection: boolean;
+  markedId: string | null;
 }
 
 const clearHighlight = StateEffect.define<void>();
@@ -173,14 +183,26 @@ export const MarkdownEditor = forwardRef<
     disabled = false,
     className = "",
     theme = "light",
+    onSelectionChange,
   },
   ref,
 ) {
-  const { addMarkedSelection, markedSelections } = useProjectStore();
+  const { addMarkedSelection, markedSelections, removeMarkedSelection } =
+    useProjectStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  const [selectionState, setSelectionState] = useState<SelectionState>({
+    hasSelection: false,
+    selectionFrom: 0,
+    selectionTo: 0,
+    cursorPos: 0,
+    inMarkedSection: false,
+    markedId: null,
+  });
 
   // Keep refs in sync with latest callbacks
   useEffect(() => {
@@ -191,66 +213,51 @@ export const MarkdownEditor = forwardRef<
     onSaveRef.current = onSave;
   }, [onSave]);
 
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
+
+  const updateSelectionState = useCallback((view: EditorView) => {
+    const doc = view.state.doc;
+    const { from: cursorFrom, to: cursorTo, empty } = view.state.selection.main;
+
+    const newState: SelectionState = {
+      hasSelection: !empty,
+      selectionFrom: cursorFrom,
+      selectionTo: cursorTo,
+      cursorPos: cursorFrom,
+      inMarkedSection: false,
+      markedId: null,
+    };
+
+    // Check if cursor is in any marked section
+    const selections = useProjectStore.getState().markedSelections;
+    for (const sel of selections) {
+      if (sel.line > doc.lines) continue;
+      const lineObj = doc.line(sel.line);
+      const from = lineObj.from + sel.column;
+      const to = from + sel.length;
+
+      if (cursorFrom <= to && cursorTo >= from) {
+        newState.inMarkedSection = true;
+        newState.markedId = sel.id;
+        break;
+      }
+    }
+
+    setSelectionState(newState);
+    onSelectionChangeRef.current?.(newState);
+  }, []);
+
   const createEditor = useCallback(() => {
-    if (!containerRef.current) return null;
+    if (!editorContainerRef.current) return null;
 
     const handleUpdate = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
       }
-    });
-
-    const markTooltipExtension = StateField.define<Tooltip | null>({
-      create: () => null,
-      update(tooltip, tr) {
-        if (!tr.selection && !tr.docChanged) return tooltip;
-        const { from, to, empty } = tr.newSelection.main;
-        if (empty) return null;
-
-        return {
-          pos: from,
-          above: true,
-          strictSide: true,
-          create: (view) => {
-            const dom = document.createElement("div");
-            dom.className = "cm-selection-tooltip";
-            dom.onmousedown = (e) => e.preventDefault();
-
-            const root = createRoot(dom);
-
-            const handleMark = () => {
-              const text = view.state.doc.sliceString(from, to);
-              const lineObj = view.state.doc.lineAt(from);
-              const line = lineObj.number;
-              const column = from - lineObj.from;
-
-              addMarkedSelection({
-                id: generateId(),
-                text,
-                line,
-                column,
-                length: text.length,
-                source: "editor",
-              });
-            };
-
-            root.render(
-              <div
-                onClick={handleMark}
-                className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-sm px-2 py-1 z-50 pointer-events-auto cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <Bookmark className="w-3 h-3 text-amber-500" />
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
-                  Mark
-                </span>
-              </div>,
-            );
-
-            return { dom, destroy: () => root.unmount() };
-          },
-        };
-      },
-      provide: (f) => showTooltip.from(f),
+      // Update selection state on any selection/doc change
+      updateSelectionState(update.view);
     });
 
     const saveKeymap = keymap.of([
@@ -279,7 +286,6 @@ export const MarkdownEditor = forwardRef<
       handleUpdate,
       highlightField,
       markedHighlightField,
-      markTooltipExtension,
       EditorView.lineWrapping,
     ];
 
@@ -290,9 +296,9 @@ export const MarkdownEditor = forwardRef<
 
     return new EditorView({
       state,
-      parent: containerRef.current,
+      parent: editorContainerRef.current,
     });
-  }, [theme, disabled]);
+  }, [theme, disabled, updateSelectionState]);
 
   useEffect(() => {
     if (editorRef.current) return;
@@ -300,13 +306,14 @@ export const MarkdownEditor = forwardRef<
     const view = createEditor();
     if (view) {
       editorRef.current = view;
+      updateSelectionState(view);
     }
 
     return () => {
       editorRef.current?.destroy();
       editorRef.current = null;
     };
-  }, [createEditor]);
+  }, [createEditor, updateSelectionState]);
 
   // Sync marked selections from store to editor decorations
   useEffect(() => {
@@ -374,9 +381,55 @@ export const MarkdownEditor = forwardRef<
     });
   }, [disabled]);
 
+  const handleMark = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const state = editor.state.selection.main;
+    if (state.empty) return;
+
+    const text = editor.state.doc.sliceString(state.from, state.to);
+    const lineObj = editor.state.doc.lineAt(state.from);
+    const line = lineObj.number;
+    const column = state.from - lineObj.from;
+
+    addMarkedSelection({
+      id: generateId(),
+      text,
+      line,
+      column,
+      length: text.length,
+      source: "editor",
+    });
+  }, [addMarkedSelection]);
+
+  const handleClear = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const doc = editor.state.doc;
+    const { from: cursorFrom, to: cursorTo } = editor.state.selection.main;
+
+    const selections = useProjectStore.getState().markedSelections;
+    for (const sel of selections) {
+      if (sel.line > doc.lines) continue;
+      const lineObj = doc.line(sel.line);
+      const from = lineObj.from + sel.column;
+      const to = from + sel.length;
+
+      if (cursorFrom <= to && cursorTo >= from) {
+        removeMarkedSelection(sel.id);
+        break;
+      }
+    }
+  }, [removeMarkedSelection]);
+
   useImperativeHandle(
     ref,
     () => ({
+      getSelectionState: () => selectionState,
+      mark: handleMark,
+      clear: handleClear,
       findAndHighlight: (excerpt: string): boolean => {
         const editor = editorRef.current;
         if (!editor) return false;
@@ -452,6 +505,8 @@ export const MarkdownEditor = forwardRef<
     <div
       ref={containerRef}
       className={`h-full overflow-hidden border border-gray-200 dark:border-gray-800 rounded-lg ${className}`}
-    />
+    >
+      <div ref={editorContainerRef} className="h-full" />
+    </div>
   );
 });
