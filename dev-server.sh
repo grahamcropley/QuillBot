@@ -58,8 +58,8 @@ cmd_start() {
         return 0
     fi
 
-    # Create new detached tmux session with OpenCode window
-    tmux new-session -d -s "$SESSION_NAME" -n "OpenCode"
+    # Create new detached tmux session with OpenCode window (using project config)
+    tmux -f "$SCRIPT_DIR/.tmux.conf" new-session -d -s "$SESSION_NAME" -n "OpenCode"
     tmux send-keys -t "$SESSION_NAME:0" "cd '$SCRIPT_DIR' && clear" C-m
     tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}╔════════════════════════════════════════╗${NC}'" C-m
     tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}║    OpenCode Server (Port 9090)        ║${NC}'" C-m
