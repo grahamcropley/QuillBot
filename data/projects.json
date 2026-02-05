@@ -7,7 +7,7 @@
       "brief": "Celebrate the achievements of our very own Teams MVP Zach Bennett",
       "wordCount": 500,
       "styleHints": "casual, friendly, personal",
-      "documentContent": "# Celebrating Zach Bennett: Our Very Own Microsoft Teams MVP\n\nWe're absolutely thrilled to shine a spotlight on someone who's been making serious waves in the Microsoft Teams community — our Principal Architect, Zach Bennett..\n\nZach has just been renewed as a Microsoft Most Valuable Professional in Microsoft Teams — and let's be clear about what that means. Out of the millions of IT professionals working with Microsoft technologies across the United Kingdom, only 18 hold this title for Teams. Eighteen. Microsoft hand-picks these people because they're not just good at what they do — they're among the absolute best in the world, actively shaping the future of how enterprises communicate. Zach is one of them.\n\n## From Cisco to Cloud Telephony Champion\n\nZach's journey is one of those brilliant \"follow your passion\" stories. He studied Computer Science at Manchester Metropolitan University, and during his placement year at General Electric, he had a realisation that would shape his career: the big corporate life wasn't for him. He wanted somewhere more intimate, where he could wear many hats and really make an impact.\n\nHe started out managing Cisco phone systems, but quickly found his true calling in the Microsoft ecosystem — first with development work, then Skype for Business, and eventually discovering his passion in voice deployments. As he puts it: \"The telephone totally revolutionized the way we could communicate… What's next?\" That forward-thinking mindset has driven everything since.\n\n## What Zach Actually Does (It's a Lot)\n\nAs Principal Architect at LoopUp, Zach sits at the heart of our most complex global telephony deployments. This isn't just \"set up some phones\" work — it's enterprise-scale transformation for multinational organisations operating across 100+ countries.\n\nDay to day, Zach leads the full journey: strategic planning, proof-of-concept design, and multi-site rollouts that can span dozens of countries simultaneously. He works directly with global enterprises to migrate them away from fragmented legacy PBX systems — often a patchwork of regional carriers, each with their own contracts, billing, support teams, and headaches — onto a unified Microsoft Teams Phone platform.\n\nHe advises on Microsoft licensing optimisation, security configurations, and modern workplace capabilities, ensuring clients don't just get Teams Phone working, but get the absolute maximum value from it. Whether it's navigating the complexities of Operator Connect, architecting Direct Routing solutions via our Cloud Telephony Platform, or helping organisations tackle tricky markets like China and India, Zach's the one making it happen.\n\nIn short: when a Fortune 500 company needs to consolidate their global voice infrastructure and actually make it work seamlessly, Zach's the architect they turn to.\n\n## Building for the Community\n\nWhat really sets Zach apart is how much he gives back. He doesn't just solve problems for clients — he shares what he learns with everyone.\n\nHis blog at zachb.uk has become a trusted resource for Teams admins everywhere, covering everything from whether Teams Premium is worth the investment to Voice Isolation features, the new Queues App capabilities, and the latest Direct Routing troubleshooting tools rolling out in Teams Admin Center.\n\nHis YouTube channel walks viewers through practical guides on Call Queues, Auto Attendants, and more. And then there's **teamstts.com** — a tool Zach built entirely for the community. It lets you test what Text-to-Speech will actually sound like in your Auto Attendants and Call Queues before you go live, using the same voices Microsoft Teams uses on the backend. If you've ever had a company name that TTS absolutely butchers, you'll understand why this is such a lifesaver.\n\n## On Stage and Around the World\n\nZach's passion for teaching extends well beyond the screen. One of his most memorable career moments came at Comms vNext 2024 in Denver, Colorado — his first major international speaking engagement — where he presented \"Is Teams Ready To Be Your Contact Center?\" to an audience of Microsoft communications professionals from around the globe.\n\nSince then, he's become a regular on the conference circuit. Just last November, he was at Microsoft Ignite 2025 in San Francisco, co-presenting \"Unlock MS Teams Phone Globally: Insights from World's Leading Brands\" with our own Andrew Birch. He's a fixture at Commsverse (the UK's premier Microsoft Teams conference) and is already confirmed to speak at Commsverse 2026.\n\nHe's also been featured across industry publications — Authority Magazine, AI TechPark, NODE Magazine — sharing his insights on the future of enterprise communications and AI-driven telephony.\n\n## The Person Behind the Professional\n\nHere's something you might not know about Zach: his favourite quote is \"The Dude abides\" from The Big Lebowski. As he explains it, it's about accepting life's challenges, taking things in your stride, and remembering what truly matters. Pretty solid life philosophy, if you ask us.\n\nHe's also quick to credit others for his success — particularly Graham Cropley, our Head of Global Consulting, who Zach describes as a constant source of knowledge and encouragement throughout his career. And on the personal front, 2025 has been extra special: Zach recently welcomed a baby girl into the world.\n\n## What's Next?\n\nWith Teams Phone continuing to evolve at a rapid pace — AI-powered features, Copilot integration, new admin tools, enhanced call handling — there's never been a more exciting time to be working in this space. And we couldn't be prouder to have Zach leading the charge, both for our clients and for the wider community.\n\nSo here's to Zach: MVP, architect, educator, tool builder, new dad, and all-around Teams Phone enthusiast. Congratulations on another well-deserved year of recognition!\n\n---\n\n_Want to follow Zach's work? Check out his blog at [zachb.uk](https://www.zachb.uk), his [YouTube channel](https://www.youtube.com/@zachbennett), or connect with him on [LinkedIn](https://www.linkedin.com/in/zachjbennett/)._\n",
+      "documentContent": "# Celebrating Zach Bennett: Our Very Own Microsoft Teams MVP\n\nWe're absolutely thrilled to shine a spotlight on someone who's been making serious waves in the Microsoft Teams community — our Principal Architect, Zach Bennett.\n\nZach has just been renewed as a Microsoft Most Valuable Professional in Microsoft Teams — and let's be clear about what that means. Out of the millions of IT professionals working with Microsoft technologies across the United Kingdom, only 18 hold this title for Teams. Eighteen. Microsoft hand-picks these people because they're not just good at what they do — they're among the absolute best in the world, actively shaping the future of how enterprises communicate. Zach is one of them.\n\n## From Cisco to Cloud Telephony Champion\n\nZach's journey is one of those brilliant \"follow your passion\" stories. He studied Computer Science at Manchester Metropolitan University, and during his placement year at General Electric, he had a realisation that would shape his career: the big corporate life wasn't for him. He wanted somewhere more intimate, where he could wear many hats and really make an impact.\n\nThat Computer Science foundation matters. It’s the kind of degree that forces you to think in systems: how complex parts connect, where failures actually come from, and how to troubleshoot methodically when the obvious answer isn’t the right one. Pair that with a real industry placement inside a huge organisation, and you get an engineer who can speak both languages — the technical detail _and_ the messy reality of how big enterprises operate.\n\nIt also explains a lot about Zach today: he’s not just “good with Teams.” He’s good at the underlying problem—designing, debugging, and scaling real-world communications systems that have to work for thousands of people, across multiple countries, under real constraints.\n\nHe started out managing Cisco phone systems, but quickly found his true calling in the Microsoft ecosystem — first with development work, then Skype for Business, and eventually discovering his passion in voice deployments. As he puts it: \"The telephone totally revolutionized the way we could communicate… What's next?\" That forward-thinking mindset has driven everything since.\n\n## What Zach Actually Does (It's a Lot)\n\nAs Principal Architect at LoopUp, Zach sits at the heart of our most complex global telephony deployments. This isn't just \"set up some phones\" work — it's enterprise-scale transformation for multinational organisations operating across 100+ countries.\n\nDay to day, Zach leads the full journey: strategic planning, proof-of-concept design, and multi-site rollouts that can span dozens of countries simultaneously. He works directly with global enterprises to migrate them away from fragmented legacy PBX systems — often a patchwork of regional carriers, each with their own contracts, billing, support teams, and headaches — onto a unified Microsoft Teams Phone platform.\n\nHe advises on Microsoft licensing optimisation, security configurations, and modern workplace capabilities, ensuring clients don't just get Teams Phone working, but get the absolute maximum value from it. Whether it's navigating the complexities of Operator Connect, architecting Direct Routing solutions via our Cloud Telephony Platform, or helping organisations tackle tricky markets like China and India, Zach's the one making it happen.\n\nIn short: when a Fortune 500 company needs to consolidate their global voice infrastructure and actually make it work seamlessly, Zach's the architect they turn to.\n\n## Building for the Community\n\nWhat really sets Zach apart is how much he gives back. He doesn't just solve problems for clients — he shares what he learns with everyone.\n\nHis blog at zachb.uk has become a trusted resource for Teams admins everywhere, covering everything from whether Teams Premium is worth the investment to Voice Isolation features, the new Queues App capabilities, and the latest Direct Routing troubleshooting tools rolling out in Teams Admin Center.\n\nHis YouTube channel walks viewers through practical guides on Call Queues, Auto Attendants, and more. And then there's **teamstts.com** — a tool Zach built entirely for the community. It lets you test what Text-to-Speech will actually sound like in your Auto Attendants and Call Queues before you go live, using the same voices Microsoft Teams uses on the backend. If you've ever had a company name that TTS absolutely butchers, you'll understand why this is such a lifesaver.\n\n## On Stage and Around the World\n\nZach's passion for teaching extends well beyond the screen. One of his most memorable career moments came at Comms vNext 2024 in Denver, Colorado — his first major international speaking engagement — where he presented \"Is Teams Ready To Be Your Contact Center?\" to an audience of Microsoft communications professionals from around the globe.\n\nSince then, he's become a regular on the conference circuit. Just last November, he was at Microsoft Ignite 2025 in San Francisco, co-presenting \"Unlock MS Teams Phone Globally: Insights from World's Leading Brands\" with our own Andrew Birch. He's a fixture at Commsverse (the UK's premier Microsoft Teams conference) and is already confirmed to speak at Commsverse 2026.\n\nHe's also been featured across industry publications — Authority Magazine, AI TechPark, NODE Magazine — sharing his insights on the future of enterprise communications and AI-driven telephony.\n\n## The Person Behind the Professional\n\nHere's something you might not know about Zach: his favourite quote is \"The Dude abides\" from The Big Lebowski. As he explains it, it's about accepting life's challenges, taking things in your stride, and remembering what truly matters. Pretty solid life philosophy, if you ask us.\n\nHe's also quick to credit others for his success — particularly Graham Cropley, our Head of Global Consulting, who Zach describes as a constant source of knowledge and encouragement throughout his career. And on the personal front, 2025 has been extra special: Zach recently welcomed a baby girl into the world.\n\n## What's Next?\n\nWith Teams Phone continuing to evolve at a rapid pace — AI-powered features, Copilot integration, new admin tools, enhanced call handling — there's never been a more exciting time to be working in this space. And we couldn't be prouder to have Zach leading the charge, both for our clients and for the wider community.\n\nSo here's to Zach: MVP, architect, educator, tool builder, new dad, and all-around Teams Phone enthusiast. Congratulations on another well-deserved year of recognition!\n\n---\n\n_Want to follow Zach's work? Check out his blog at [zachb.uk](https://www.zachb.uk), his [YouTube channel](https://www.youtube.com/@zachbennett), or connect with him on [LinkedIn](https://www.linkedin.com/in/zachjbennett/)._\n",
       "messages": [
         {
           "id": "msg_1770230079321_2eevm7p",
@@ -1944,7 +1944,7 @@
       ],
       "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770230079222_4qmuv4q",
       "createdAt": "2026-02-04T18:34:39.222Z",
-      "updatedAt": "2026-02-05T10:26:52.615Z",
+      "updatedAt": "2026-02-05T11:52:14.103Z",
       "opencodeSessionId": "ses_3d6109fe8ffeBTkIzhyuXcAIDq",
       "briefAdherenceCache": {
         "draftHash": "d513362f1250aa6819f4b2dfc32845ce0b21a5afefa723e6c82f40830c7523d0",
@@ -2231,7 +2231,7 @@
       "brief": "Celebrate the achievements of our very own Microsoft MVP Zach Bennett.",
       "wordCount": 500,
       "styleHints": "friendly, comical, funny, casual",
-      "documentContent": "",
+      "documentContent": "# Zach Bennett, Microsoft MVP: The Legend, The Laptop, The Low-Key Superhero\n\nSome people collect stamps. Some people collect coffee mugs. Zach Bennett? Zach collects thank-you messages from strangers on the internet—and somehow turns them into real-world goodness. Which is a very long-winded way of saying: Zach is officially a **Microsoft MVP**, and we are extremely, unreasonably, enthusiastically proud.\n\nIf you’ve ever wondered what an MVP does, the short version is: they’re the folks who make tech feel less like an impossible maze and more like a friendly, well-lit hallway with clear signs and snacks. (Okay, the snacks aren’t guaranteed, but Zach would absolutely bring snacks if you asked nicely.) Microsoft MVPs are recognized for sharing knowledge, helping others succeed, and generally being a force for good in the community—often while running on a heroic combination of curiosity, caffeine, and “Sure, I can help with that.”\n\nAnd if you’ve spent five minutes around Zach, you know “Sure, I can help with that” is basically his personal brand.\n\nHe’s the person who can take a problem that looks like a tangled ball of holiday lights—APIs, configs, edge cases, one mysterious error message that only appears on Tuesdays—and calmly untie it while explaining what’s happening in plain English. The rest of us are standing there like, “Is it sorcery?” and Zach’s like, “No, it’s just a missing semicolon… plus three other things.”\n\nBut what makes this MVP recognition feel especially perfect is that Zach’s impact doesn’t stop at solving the thing in front of him. He shares the why, the how, and the “here’s how to avoid this next time,” so everyone around him gets better too. That’s the magic: not just fixing problems, but building confidence. The kind where someone who was afraid to touch a deployment pipeline is suddenly saying, “Actually, I think I can handle it.”\n\nAlso, Zach does all this while staying genuinely kind. No gatekeeping. No “Well, _obviously_…” energy. Just steady, friendly expertise—and the occasional well-timed joke that lands exactly when you needed your shoulders to unclench.\n\nSo today we’re celebrating Zach: for the hours spent answering questions, writing up explanations, sharing insights, encouraging others, and showing up for the community again and again. The Microsoft MVP title is an awesome recognition, but anyone who’s worked with him already knows the real story: Zach has been doing MVP-level work for a long time. Now it just comes with a badge.\n\nDrop a note, send a high-five, or unleash your favorite GIF in his general direction. Congratulations, Zach Bennett—our very own Microsoft MVP. May your builds be green, your logs be readable, and your coffee be strong.\n",
       "messages": [
         {
           "id": "msg_1770260619039_9ut2tu2",
@@ -3450,7 +3450,7 @@
       ],
       "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770260618931_87j63mb",
       "createdAt": "2026-02-05T03:03:38.931Z",
-      "updatedAt": "2026-02-05T03:21:12.454Z",
+      "updatedAt": "2026-02-05T12:03:23.291Z",
       "opencodeSessionId": "ses_3d43e9fe7ffeUQytidnG41rbIz"
     },
     {
@@ -3460,7 +3460,7 @@
       "brief": "Talk about all the new features of Queues App in Teams",
       "wordCount": 500,
       "styleHints": "jokes all the time, not serious, causal, a bit sexy and spicy",
-      "documentContent": "",
+      "documentContent": "---\ntitle: \"Teams Queues App: Your Calls, But Make It Hot\"\n---\n\nIf your support line currently feels like a group chat where everyone’s typing “who’s got this?” while the customer slowly turns into a fossil… hi. Microsoft Teams’ **Queues app** is here to make call queues feel less like a haunted house and more like a well-lit kitchen where everyone knows where the snacks are.\n\nAt a high level, the Queues app is a **Teams-native** place for handling customer calls (powered by Teams Phone) without bouncing between tools like a caffeinated pinball. Agents get a clean workspace to answer and place calls; leads get the “I’m watching you, but lovingly” controls; admins get less ticket-driven chaos. Everybody wins. Nobody has to open _yet another_ tab. (Your browser can finally unclench.)\n\n## Agents: the “I can handle this” era\n\nFirst, the basics—**incoming calls**. The Queues app supports handling incoming calls whether they’re **PSTN or VoIP**. That means when the phone rings, you don’t have to go spelunking through Teams to find the right place to answer. It’s right there, like your favorite person at the party.\n\nThen there’s the big relationship status upgrade: **Opt in / Opt out** of queues. You can join the queue when you’re ready to be perceived and dip out when you’re about to combust. And if your org uses **presence-based routing**, you’ll only get calls when you’re _both_ opted in _and_ set to **Available**. Translation: no more getting queue calls while you’re “Busy” because you’re eating lunch with the intensity of a courtroom drama.\n\nNeed to call customers back, but don’t want to dox your personal number? The Queues app lets you **make outbound calls on behalf of the call queue or auto attendant** you’re assigned to—so the customer sees your org, not “Mysterious Cell Number (Probably a Scam).” Professional. Branded. Slightly seductive.\n\nAnd because we all love receipts: you can **view call history** (including missed calls with voicemail) and return calls with the queue-associated number. Flaky follow-up? Not in this economy.\n\n## Leads: coaching without the “micromanage-y” aftertaste\n\nLeads get the real fun toys—aka, the stuff that makes your team better _without_ turning into a spreadsheet goblin.\n\nYou can **monitor queues and people in real time**, opt agents in/out as needed, and (with the right policy + licensing) use the iconic quartet:\n\n- **Monitor**: listen in quietly.\n- **Whisper**: coach the agent without the caller hearing (the professional version of “pssst, say the thing”).\n- **Barge**: jump in and talk to both sides.\n- **Takeover**: gently remove the agent from the call and handle it yourself.\n\nIt’s like being a call center ninja… but with better UI.\n\n## Analytics: because vibes are not a KPI\n\nThe Queues app includes **real-time stats**—think calls waiting, average wait time, and other “are we okay?” signals—plus **historical reporting** (typically up to the last ~27 days) and the ability to **export to Excel** for the folks who experience joy only when a pivot table snaps into place.\n\n## The spicy new-new: Shared call history (rolling out)\n\nThe upcoming headline feature: **shared call history** for queue members—so the team can see missed, incoming, and outgoing call events in one shared view. It’s rolling out **January–February 2026**, and it’s **disabled by default**, meaning your admin has to enable it. (Yes, you still have to flirt with the Teams Admin Center a little.)\n\n## Tiny but important fine print (aka: consent and licensing)\n\nQueues app is available when users have **Teams Phone + Teams Premium**. Some lead features (like Monitor/Whisper/Barge/Takeover) also depend on **voice applications policy** settings. Platform-wise, it’s primarily for **desktop/Mac/VDI**, and it’s also supported on **Teams phones (touch devices)**.\n\nBottom line: the Queues app takes call queues out of the “everyone panic separately” era and into the “we’re coordinated and slightly smug about it” era. Your customers get faster help. Your agents get calmer days. Your leads get actual levers to pull. And your team gets to keep everything inside Teams—where, frankly, we already live.\n",
       "messages": [
         {
           "id": "msg_1770286947695_vo2azdl",
@@ -3669,12 +3669,267 @@
               }
             }
           ]
+        },
+        {
+          "id": "msg_1770292390080_pqmsxjp",
+          "role": "user",
+          "content": "how's it going? any changes you want to make?",
+          "timestamp": "2026-02-05T11:53:10.080Z"
+        },
+        {
+          "id": "msg_1770292978637_hwkgrut",
+          "role": "user",
+          "content": "Last review, what are your honest thoughts about this article?",
+          "timestamp": "2026-02-05T12:02:58.637Z"
+        },
+        {
+          "id": "msg_1770293202188_wf3s0z1",
+          "role": "user",
+          "content": "Last review, what are your honest thoughts about this article?",
+          "timestamp": "2026-02-05T12:06:42.188Z"
+        },
+        {
+          "id": "msg_1770293828025_wb2y7ge",
+          "role": "user",
+          "content": "Last review, what are your honest thoughts about this article? Just a quick comment, no need to delegate etc.. just have a read of the draft.md file.",
+          "timestamp": "2026-02-05T12:17:08.025Z"
+        },
+        {
+          "id": "msg_1770293838012_c3unwv7",
+          "role": "assistant",
+          "content": "It’s punchy and easy to skim, with a solid agent-vs-lead structure and jokes that mostly stay workplace-safe.\n\nTwo things I’d fix if you care about the brief: it’s ~150 words over target, and the “new features” framing is a bit soft (shared call history is the clearest “new-new”; the rest reads more like core capabilities). Also, “slightly seductive” + “make it hot” might be a little risky depending on audience.",
+          "timestamp": "2026-02-05T12:17:18.012Z",
+          "parts": [
+            {
+              "id": "prt_c2dbc19f2002T4BnOiSSFQKfmZ",
+              "sessionID": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+              "messageID": "msg_c2dbc19f2001yg2HIu3WDrFzQd",
+              "type": "text",
+              "text": "[analyze-mode]\nANALYSIS MODE. Gather context before diving deep:\n\nCONTEXT GATHERING (parallel):\n- 1-2 explore agents (codebase patterns, implementations)\n- 1-2 librarian agents (if external library involved)\n- Direct tools: Grep, AST-grep, LSP for targeted searches\n\nIF COMPLEX - DO NOT STRUGGLE ALONE. Consult specialists:\n- **Oracle**: Conventional problems (architecture, debugging, complex logic)\n- **Artistry**: Non-conventional problems (different approach needed)\n\nSYNTHESIZE findings before proceeding.\n\n---\n\nLast review, what are your honest thoughts about this article? Just a quick comment, no need to delegate etc.. just have a read of the draft.md file."
+            },
+            {
+              "id": "prt_c2dbc275b0011AqZSwjcVDCYX2",
+              "sessionID": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+              "messageID": "msg_c2dbc1a19001xy26RDSlfyApTe",
+              "type": "step-start",
+              "snapshot": "195531dd230f37f5e861c0d8cd090a8ef4bf1ffd"
+            },
+            {
+              "id": "prt_c2dbc27ae00164TafF7NzNgxGW",
+              "sessionID": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+              "messageID": "msg_c2dbc1a19001xy26RDSlfyApTe",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "lL9dJIia4h/pv7trugCY06K3teSRRXRVVDMfq4ETsMO2Z2Wvj2hXmTjB901NGYRophIBvXs8oKlPZ5j/OSdG5GzsgW+mU4oOdlMwO2Fxmc+dXAycBUDC/c1oY1r4GTIhEm8NZe9VicCWxP/zPezP+8euUhWk94En7ReaDtAFT0LwNTpltJTdWKAgpKI45xNciwirkPVhBv0TGeT4kK+w5sdL7J4eotMUKpa87SySmir825a3aFobKbXBeYhaYc0csmIFrU8hj+Gkb1hMfGwqGbfXGQyS+KpLJh47vjSjZNBJ+MTLKHPfMr3da4WAW+zM+uEshNJEEaYs6Lt2JAqBsjk6npzzaueh5HW9UfyOHvgSr2mVTzHnSO5B7Dye6O5UzF7nnxcPR6JAO3NjS8F2hQ==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770293831598,
+                "end": 1770293831599
+              }
+            },
+            {
+              "id": "prt_c2dbc27af001fHSe42bazeU10S",
+              "sessionID": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+              "messageID": "msg_c2dbc1a19001xy26RDSlfyApTe",
+              "type": "text",
+              "text": "It’s punchy and easy to skim, with a solid agent-vs-lead structure and jokes that mostly stay workplace-safe.\n\nTwo things I’d fix if you care about the brief: it’s ~150 words over target, and the “new features” framing is a bit soft (shared call history is the clearest “new-new”; the rest reads more like core capabilities). Also, “slightly seductive” + “make it hot” might be a little risky depending on audience.",
+              "time": {
+                "start": 1770293833487,
+                "end": 1770293833487
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "FV0PVAeCoS0KaPtx2R1zH1jXhru9HLb+wJ95XcNjiInbObJ4ddkEkvblJGlXKqD4HiahioEqEKxd3Y2rZMdZOTJWJDyaCjmSPOu4uXJA3IiTRY/0YrKtTq6qJHn86tNHQx7olzsHXFhim+hSp3deWNsmTOGpbRaMZXO2NpMi81XfN4Uo/7Vhk9EpK/o1I4f+31b1B5OOVA4lqXSFvTY7vChnXciDY7oTf2L2j61r0c2JOMOKE6Ujz7u7Qg6QUj97n+z9uKJ/DXRs/ALRDOkiZgN3Ezrf2HVZ79QDvy9ecjmt0EdLjgqRvo3XkWr7cv0SlYb7q3Q1Sp+s6pciWaVnAgChSMuZFwZJRfmvI1bKzX3EPf6kcV+I3EwLzT/AFIh/IMcnvRZetlc9oCZRv5sw7Ac="
+                }
+              }
+            },
+            {
+              "id": "prt_c2dbc2f17001KgJRwYxon4jZ8l",
+              "sessionID": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+              "messageID": "msg_c2dbc1a19001xy26RDSlfyApTe",
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "195531dd230f37f5e861c0d8cd090a8ef4bf1ffd",
+              "cost": 0,
+              "tokens": {
+                "input": 362,
+                "output": 139,
+                "reasoning": 34,
+                "cache": {
+                  "read": 86016,
+                  "write": 0
+                }
+              }
+            }
+          ],
+          "activities": []
         }
       ],
       "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770286946235_303xhl1",
       "createdAt": "2026-02-05T10:22:26.235Z",
-      "updatedAt": "2026-02-05T10:28:57.685Z",
-      "opencodeSessionId": "ses_3d2acdcbcffeicHb6vEdHoEYz8"
+      "updatedAt": "2026-02-05T12:18:42.455Z",
+      "opencodeSessionId": "ses_3d2acdcbcffeicHb6vEdHoEYz8",
+      "briefAdherenceCache": {
+        "draftHash": "d8e204f2cc78e57d77741ce8beea2a11d66c13468a5c5c23a1b8cf18274cd3a8",
+        "adherenceScore": 92,
+        "pointsCovered": [
+          {
+            "point": "Explain what Queues app is (Teams-native workspace for call queues/auto attendants)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "the Queues app is a **Teams-native** place for handling customer calls (powered by Teams Phone)",
+                "context": "Agents get a clean workspace to answer and place calls; leads get the 'I'm watching you, but lovingly' controls; admins get less ticket-driven chaos."
+              }
+            ]
+          },
+          {
+            "point": "For agents/members: opt in/out capability",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "**Opt in / Opt out** of queues. You can join the queue when you're ready to be perceived and dip out when you're about to combust.",
+                "context": "And if your org uses **presence-based routing**, you'll only get calls when you're _both_ opted in _and_ set to **Available**."
+              }
+            ]
+          },
+          {
+            "point": "For agents/members: take incoming calls (PSTN/VoIP)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "**incoming calls**. The Queues app supports handling incoming calls whether they're **PSTN or VoIP**.",
+                "context": "That means when the phone rings, you don't have to go spelunking through Teams to find the right place to answer."
+              }
+            ]
+          },
+          {
+            "point": "For agents/members: outbound calls on behalf of queue/auto attendant",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "The Queues app lets you **make outbound calls on behalf of the call queue or auto attendant** you're assigned to",
+                "context": "so the customer sees your org, not 'Mysterious Cell Number (Probably a Scam).' Professional. Branded. Slightly seductive."
+              }
+            ]
+          },
+          {
+            "point": "For agents/members: call history and callback",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "you can **view call history** (including missed calls with voicemail) and return calls with the queue-associated number.",
+                "context": "And because we all love receipts: [this enables] Flaky follow-up? Not in this economy."
+              }
+            ]
+          },
+          {
+            "point": "For agents/members: real-time queue stats",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "The Queues app includes **real-time stats**—think calls waiting, average wait time, and other 'are we okay?' signals",
+                "context": "plus **historical reporting** (typically up to the last ~27 days) and the ability to **export to Excel**"
+              }
+            ]
+          },
+          {
+            "point": "For leads/supervisors: real-time monitoring and oversight",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "You can **monitor queues and people in real time**, opt agents in/out as needed",
+                "context": "and (with the right policy + licensing) use the iconic quartet: Monitor, Whisper, Barge, Takeover"
+              }
+            ]
+          },
+          {
+            "point": "For leads/supervisors: coaching/escalation controls (Monitor/Whisper/Barge/Takeover)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "**Monitor**: listen in quietly. **Whisper**: coach the agent without the caller hearing. **Barge**: jump in and talk to both sides. **Takeover**: gently remove the agent from the call and handle it yourself.",
+                "context": "It's like being a call center ninja… but with better UI."
+              }
+            ]
+          },
+          {
+            "point": "For leads/supervisors: real-time and historical reporting with Excel export",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "**historical reporting** (typically up to the last ~27 days) and the ability to **export to Excel**",
+                "context": "The Queues app includes **real-time stats**—think calls waiting, average wait time, and other 'are we okay?' signals"
+              }
+            ]
+          },
+          {
+            "point": "Highlight at least one 'what's new/noteworthy' item (shared call history rollout)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "The upcoming headline feature: **shared call history** for queue members… It's rolling out **January–February 2026**, and it's **disabled by default**",
+                "context": "meaning your admin has to enable it. (Yes, you still have to flirt with the Teams Admin Center a little.)"
+              }
+            ]
+          },
+          {
+            "point": "Licensing/prerequisites (Teams Phone + Teams Premium, plain-English mention)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Queues app is available when users have **Teams Phone + Teams Premium**. Some lead features (like Monitor/Whisper/Barge/Takeover) also depend on **voice applications policy** settings.",
+                "context": "Platform-wise, it's primarily for **desktop/Mac/VDI**, and it's also supported on **Teams phones (touch devices)**."
+              }
+            ]
+          },
+          {
+            "point": "Tone: conversational, casual voice with contractions and asides",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "If your support line currently feels like a group chat where everyone's typing 'who's got this?' while the customer slowly turns into a fossil… hi.",
+                "context": "Your browser can finally unclench. Nobody has to open _yet another_ tab."
+              }
+            ]
+          },
+          {
+            "point": "Tone: jokes/playful lines throughout (every 2-3 paragraphs)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "like a well-lit kitchen where everyone knows where the snacks are... It's right there, like your favorite person at the party... Mysterious Cell Number (Probably a Scam)... spreadsheet goblin",
+                "context": "Multiple humorous asides woven throughout, including wordplay on 'consent and licensing,' 'slightly smug about it,' and the overall tone remains light and playful."
+              }
+            ]
+          },
+          {
+            "point": "Tone: lightly spicy/flirty phrasing (PG-13, workplace-safe)",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Your Calls, But Make It Hot... 'I'm watching you, but lovingly'... Professional. Branded. Slightly seductive... the iconic quartet... call center ninja",
+                "context": "Language maintains workplace appropriateness while using metaphorical 'spice': romantic/flirty framing without explicit content."
+              }
+            ]
+          },
+          {
+            "point": "Word count target: ~500 words",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Draft totals approximately 580 words (measured from title to final sentence)",
+                "context": "Slightly exceeds 500-word target but falls within reasonable blogging range; brief allowed flexibility around '~500 words'"
+              }
+            ]
+          }
+        ],
+        "timestamp": "2026-02-05T12:18:42.452Z"
+      }
     }
   ]
 }
