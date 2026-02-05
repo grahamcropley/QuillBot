@@ -57,8 +57,10 @@ This creates a tmux session with two windows (each fullscreen):
 
 **tmux keyboard shortcuts:**
 
-- `Ctrl+b` then `→` - Next window
-- `Ctrl+b` then `←` - Previous window
+- `Ctrl+b` then `n` - Next window
+- `Ctrl+b` then `p` - Previous window
+- `Ctrl+b` then `0` - Window 0 (OpenCode)
+- `Ctrl+b` then `1` - Window 1 (Next.js)
 - `Ctrl+b` then `[` - Scroll mode (press `q` to exit)
 - `Ctrl+b` then `d` - Detach from session (keeps running in background)
 

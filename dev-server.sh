@@ -58,8 +58,8 @@ cmd_start() {
         return 0
     fi
 
-    # Create new detached tmux session with OpenCode window (using project config)
-    tmux -f "$SCRIPT_DIR/.tmux.conf" new-session -d -s "$SESSION_NAME" -n "OpenCode"
+    # Create new detached tmux session with OpenCode window
+    tmux new-session -d -s "$SESSION_NAME" -n "OpenCode"
     tmux send-keys -t "$SESSION_NAME:0" "cd '$SCRIPT_DIR' && clear" C-m
     tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}╔════════════════════════════════════════╗${NC}'" C-m
     tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}║    OpenCode Server (Port 9090)        ║${NC}'" C-m
@@ -94,8 +94,10 @@ cmd_start() {
     echo "  ./dev-server.sh stop     - Stop all servers"
     echo ""
     echo -e "${CYAN}tmux shortcuts (while attached):${NC}"
-    echo "  Ctrl+b then →            - Next window"
-    echo "  Ctrl+b then ←            - Previous window"
+    echo "  Ctrl+b then n            - Next window"
+    echo "  Ctrl+b then p            - Previous window"
+    echo "  Ctrl+b then 0            - Window 0 (OpenCode)"
+    echo "  Ctrl+b then 1            - Window 1 (Next.js)"
     echo "  Ctrl+b then d            - Detach from session"
     echo ""
 }
