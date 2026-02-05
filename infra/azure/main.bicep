@@ -176,6 +176,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             '0.0.0.0'
             '--port'
             '9090'
+            '--print-logs'
           ]
           env: concat(
             [
