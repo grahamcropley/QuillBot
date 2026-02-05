@@ -1,0 +1,161 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║             CODE LOCATIONS & EXACT MODIFICATION POINTS                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+FILE 1: src/hooks/use-opencode-stream.ts
+═══════════════════════════════════════════════════════════════════════════
+
+Location 1a: SendMessageOptions interface (line ~43)
+┌────────────────────────────────────────────────────────────┐
+│ interface SendMessageOptions {                             │
+│   message: string;                                         │
+│   command?: string;                                        │
+│   agent?: string;              ← ADD THIS                  │
+│ }                                                          │
+└────────────────────────────────────────────────────────────┘
+
+Location 1b: sendMessage function (line ~182)
+┌────────────────────────────────────────────────────────────┐
+│ const sendMessage = useCallback(                           │
+│   async (                                                  │
+│     messageOptions: SendMessageOptions,                   │
+│   ): Promise<Result<{ sessionId: string; content: string }>> =>
+│   {                                                        │
+│     const { message, command, agent } = messageOptions;  │ ← ADD
+│                                                            │
+│     // ... existing code ...                              │
+│                                                            │
+│     const response = await fetch("/api/opencode/message", {
+│       method: "POST",                                     │
+│       headers: { "Content-Type": "application/json" },   │
+│       body: JSON.stringify({                             │
+│         sessionId: sessionId || undefined,               │
+│         projectId,                                        │
+│         message: command ? `${command} ${message}` : message,
+│         command,                                          │
+│         agent: agent || "quillbot",  ← ADD THIS          │
+│       }),                                                 │
+│       signal: abortController.signal,                    │
+│     });                                                   │
+│                                                            │
+│     // ... rest of function ...                           │
+└────────────────────────────────────────────────────────────┘
+
+
+FILE 2: src/app/api/opencode/message/route.ts  
+═══════════════════════════════════════════════════════════════════════════
+
+Location 2a: RequestBody interface (line ~22)
+┌────────────────────────────────────────────────────────────┐
+│ interface RequestBody {                                    │
+│   sessionId?: string;                                      │
+│   projectId: string;                                       │
+│   message: string;                                         │
+│   command?: string;                                        │
+│   agent?: string;              ← ADD THIS                  │
+│ }                                                          │
+└────────────────────────────────────────────────────────────┘
+
+Location 2b: First promptAsync call (line ~176)
+┌────────────────────────────────────────────────────────────┐
+│ const promptPromise = (async () => {                       │
+│   try {                                                    │
+│     await client.session.promptAsync({                    │
+│       sessionID: targetSessionId,                         │
+│       directory: project.directoryPath,                   │
+│       agent: body.agent || "quillbot",  ← ADD THIS        │
+│       parts: [                                            │
+│         {                                                 │
+│           type: "text",                                   │
+│           text: message,                                  │
+│         },                                                │
+│       ],                                                  │
+│     });                                                   │
+│   } catch (error) {                                       │
+│     if (isSessionNotFoundError(error)) {                  │
+│       console.warn(...);                                  │
+│       targetSessionId = await createNewSession();         │
+│       streamBuffer = getOrCreateStreamBuffer(targetSessionId);
+│       emitStatus(targetSessionId);                        │
+│                                                            │
+│       // SECOND promptAsync call (line ~195)              │
+│       await client.session.promptAsync({                  │
+│         sessionID: targetSessionId,                       │
+│         directory: project.directoryPath,                 │
+│         agent: body.agent || "quillbot",  ← ADD THIS TOO  │
+│         parts: [                                          │
+│           {                                               │
+│             type: "text",                                 │
+│             text: message,                                │
+│           },                                              │
+│         ],                                                │
+│       });                                                 │
+│     } else {                                              │
+│       throw error;                                        │
+│     }                                                     │
+│   }                                                       │
+│ })().catch((error) => {                                   │
+│   // ... error handling ...                               │
+│ });                                                       │
+└────────────────────────────────────────────────────────────┘
+
+
+FILE 3: src/app/api/opencode/analyze-brief/route.ts
+═══════════════════════════════════════════════════════════════════════════
+
+Location 3: promptAsync call in stream (line ~150-ish)
+┌────────────────────────────────────────────────────────────┐
+│ sendEvent({ type: "status", status: "Sending to AI..." });│
+│                                                            │
+│ await client.session.promptAsync({                        │
+│   sessionID: sessionId,                                   │
+│   directory: project.directoryPath,                       │
+│   model: {                                                │
+│     providerID: "github-copilot",                         │
+│     modelID: "claude-haiku-4.5",                          │
+│   },                                                      │
+│   agent: "quillbot",              ← ADD THIS              │
+│   parts: [{ type: "text", text: analysisPrompt }],       │
+│ });                                                       │
+│                                                            │
+│ console.log(                                              │
+│   "[Analyze Brief] Sent to claude-haiku-4.5..."         │
+│ );                                                        │
+└────────────────────────────────────────────────────────────┘
+
+
+SUMMARY OF CHANGES
+═══════════════════════════════════════════════════════════════════════════
+
+Total Changes Required: 5
+
+File: src/hooks/use-opencode-stream.ts
+├─ Change 1: Add agent?: string to SendMessageOptions interface
+└─ Change 2: Extract agent from options & pass in fetch body
+
+File: src/app/api/opencode/message/route.ts  
+├─ Change 3: Add agent?: string to RequestBody interface
+├─ Change 4: Add agent parameter to first promptAsync call
+└─ Change 5: Add agent parameter to second promptAsync call (in retry)
+
+File: src/app/api/opencode/analyze-brief/route.ts
+└─ Change 6: Add agent parameter to promptAsync call
+
+
+ALTERNATIVE: If agent should be ALWAYS "quillbot" with no option:
+
+1. Don't add to SendMessageOptions interface
+2. Hard-code "quillbot" in fetch body:
+   agent: "quillbot"  (no || fallback needed)
+3. Don't add to RequestBody interface  
+4. Hard-code "quillbot" in all promptAsync calls:
+   agent: "quillbot"  (no || fallback needed)
+
+Recommended: Use optional with fallback (agent || "quillbot")
+This allows future enhancement to support agent selection UI.
+
+
+═══════════════════════════════════════════════════════════════════════════
+Ready to Implement
+═══════════════════════════════════════════════════════════════════════════
