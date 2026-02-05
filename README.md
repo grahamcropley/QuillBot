@@ -28,11 +28,57 @@ A content authoring platform that connects to a headless OpenCode server, guidin
 ```bash
 # Install dependencies
 npm install
+```
 
-# Start OpenCode server (in separate terminal)
-opencode serve --port 9090
+### Running the Development Environment
 
-# Start development server
+**Option 1: Integrated tmux session (Recommended)**
+
+Start both OpenCode server and Next.js dev server in a single tmux session with split panes:
+
+```bash
+./start-dev.sh
+```
+
+This will:
+
+- Create a tmux session named `quillbot-dev`
+- Split the terminal into two panes side by side
+- Left pane: OpenCode server (port 9090)
+- Right pane: Next.js dev server (port 3000)
+- Display helpful tmux shortcuts
+
+**tmux keyboard shortcuts:**
+
+- `Ctrl+b` then `←/→` - Switch between panes
+- `Ctrl+b` then `z` - Zoom current pane (toggle fullscreen)
+- `Ctrl+b` then `[` - Scroll mode (press `q` to exit)
+- `Ctrl+b` then `d` - Detach from session (keeps running in background)
+
+**Reattach to session:**
+
+```bash
+tmux attach -t quillbot-dev
+```
+
+**Stop all servers:**
+
+```bash
+./stop-dev.sh
+# Or manually: tmux kill-session -t quillbot-dev
+```
+
+**Option 2: Separate terminals (Manual)**
+
+Terminal 1 - OpenCode server:
+
+```bash
+./start-opencode.sh
+```
+
+Terminal 2 - Next.js dev server:
+
+```bash
 npm run dev
 ```
 
