@@ -60,21 +60,11 @@ cmd_start() {
 
     # Create new detached tmux session with OpenCode window
     tmux new-session -d -s "$SESSION_NAME" -n "OpenCode"
-    tmux send-keys -t "$SESSION_NAME:0" "cd '$SCRIPT_DIR' && clear" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}╔════════════════════════════════════════╗${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}║    OpenCode Server (Port 9090)        ║${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "echo -e '${BLUE}╚════════════════════════════════════════╝${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "echo ''" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "export XDG_CONFIG_HOME='$SCRIPT_DIR/opencode-config' && cd '$SCRIPT_DIR/data/projects' && opencode serve --port 9090 --hostname 0.0.0.0 --log-level INFO --print-logs" C-m
+    tmux send-keys -t "$SESSION_NAME:0" "exec bash '$SCRIPT_DIR/.dev-startup-opencode.sh'" C-m
 
     # Create Next.js window in same session
     tmux new-window -t "$SESSION_NAME" -n "Next.js"
-    tmux send-keys -t "$SESSION_NAME:1" "cd '$SCRIPT_DIR' && clear" C-m
-    tmux send-keys -t "$SESSION_NAME:1" "echo -e '${GREEN}╔════════════════════════════════════════╗${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:1" "echo -e '${GREEN}║   Next.js Dev Server (Port 3000)      ║${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:1" "echo -e '${GREEN}╚════════════════════════════════════════╝${NC}'" C-m
-    tmux send-keys -t "$SESSION_NAME:1" "echo ''" C-m
-    tmux send-keys -t "$SESSION_NAME:1" "sleep 2 && npm run dev" C-m
+    tmux send-keys -t "$SESSION_NAME:1" "exec bash '$SCRIPT_DIR/.dev-startup-nextjs.sh'" C-m
 
     log_success "Development environment started (detached)"
     echo ""
