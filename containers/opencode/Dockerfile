@@ -6,5 +6,6 @@ WORKDIR /app
 
 RUN npm install -g opencode-ai@${OPENCODE_VERSION}
 
-COPY .opencode /app/.opencode
 COPY AGENTS.md /app/AGENTS.md
+
+RUN mkdir -p /app/.opencode
