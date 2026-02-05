@@ -174,26 +174,15 @@ export async function POST(request: NextRequest) {
 
           const promptPromise = (async () => {
             try {
-              await client.session.promptAsync({
-                sessionID: targetSessionId,
-                directory: project.directoryPath,
-                agent: body.agent || "quillbot",
-                parts: [
-                  {
-                    type: "text",
-                    text: message,
-                  },
-                ],
-              });
-            } catch (error) {
-              if (isSessionNotFoundError(error)) {
-                console.warn(
-                  "[OpenCode API] Session not found, recreating session...",
-                );
-                targetSessionId = await createNewSession();
-                streamBuffer = getOrCreateStreamBuffer(targetSessionId);
-                emitStatus(targetSessionId);
-
+              if (body.command) {
+                await client.session.command({
+                  sessionID: targetSessionId,
+                  directory: project.directoryPath,
+                  agent: body.agent || "quillbot",
+                  command: body.command,
+                  arguments: message,
+                });
+              } else {
                 await client.session.promptAsync({
                   sessionID: targetSessionId,
                   directory: project.directoryPath,
@@ -205,6 +194,37 @@ export async function POST(request: NextRequest) {
                     },
                   ],
                 });
+              }
+            } catch (error) {
+              if (isSessionNotFoundError(error)) {
+                console.warn(
+                  "[OpenCode API] Session not found, recreating session...",
+                );
+                targetSessionId = await createNewSession();
+                streamBuffer = getOrCreateStreamBuffer(targetSessionId);
+                emitStatus(targetSessionId);
+
+                if (body.command) {
+                  await client.session.command({
+                    sessionID: targetSessionId,
+                    directory: project.directoryPath,
+                    agent: body.agent || "quillbot",
+                    command: body.command,
+                    arguments: message,
+                  });
+                } else {
+                  await client.session.promptAsync({
+                    sessionID: targetSessionId,
+                    directory: project.directoryPath,
+                    agent: body.agent || "quillbot",
+                    parts: [
+                      {
+                        type: "text",
+                        text: message,
+                      },
+                    ],
+                  });
+                }
               } else {
                 throw error;
               }

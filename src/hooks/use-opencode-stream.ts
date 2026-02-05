@@ -211,7 +211,7 @@ export function useOpenCodeStream(
           body: JSON.stringify({
             sessionId: sessionId || undefined,
             projectId,
-            message: command ? `${command} ${message}` : message,
+            message,
             command,
             agent: messageOptions.agent || "quillbot",
           }),
