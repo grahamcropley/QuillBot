@@ -24,6 +24,7 @@ interface RequestBody {
   projectId: string;
   message: string;
   command?: string;
+  agent?: string;
 }
 
 function formatSseEvent(event: StreamEvent): string {
@@ -176,6 +177,7 @@ export async function POST(request: NextRequest) {
               await client.session.promptAsync({
                 sessionID: targetSessionId,
                 directory: project.directoryPath,
+                agent: body.agent || "quillbot",
                 parts: [
                   {
                     type: "text",
@@ -195,6 +197,7 @@ export async function POST(request: NextRequest) {
                 await client.session.promptAsync({
                   sessionID: targetSessionId,
                   directory: project.directoryPath,
+                  agent: body.agent || "quillbot",
                   parts: [
                     {
                       type: "text",

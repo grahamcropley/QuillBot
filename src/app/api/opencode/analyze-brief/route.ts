@@ -175,6 +175,7 @@ Extract key points from the brief and check if each is covered in the draft. For
         await client.session.promptAsync({
           sessionID: sessionId,
           directory: project.directoryPath,
+          agent: "quillbot",
           model: {
             providerID: "github-copilot",
             modelID: "claude-haiku-4.5",

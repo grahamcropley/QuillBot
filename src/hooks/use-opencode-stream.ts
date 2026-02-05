@@ -43,6 +43,7 @@ interface UseOpenCodeStreamOptions {
 interface SendMessageOptions {
   message: string;
   command?: string;
+  agent?: string;
 }
 
 export interface UseOpenCodeStreamReturn {
@@ -212,6 +213,7 @@ export function useOpenCodeStream(
             projectId,
             message: command ? `${command} ${message}` : message,
             command,
+            agent: messageOptions.agent || "quillbot",
           }),
           signal: abortController.signal,
         });
