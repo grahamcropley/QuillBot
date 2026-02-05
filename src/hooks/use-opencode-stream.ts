@@ -544,6 +544,9 @@ export function useOpenCodeStream(
           lastEventIndex = nextEventIndex;
 
           if (isComplete) {
+            await fetch(
+              `/api/opencode/buffer?sessionId=${encodeURIComponent(currentSessionId)}&clear=true`,
+            );
             break;
           }
 
@@ -552,6 +555,7 @@ export function useOpenCodeStream(
 
         if (isMountedRef.current) {
           setIsStreaming(false);
+          onComplete?.(resumedContent, currentSessionId);
         }
       } catch (err) {
         console.error(
@@ -567,6 +571,7 @@ export function useOpenCodeStream(
       onChunk,
       onStatus,
       onQuestion,
+      onComplete,
       onError,
       onFileEdited,
       onPart,

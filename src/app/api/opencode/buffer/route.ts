@@ -1,15 +1,11 @@
 import { NextRequest } from "next/server";
-import type { StreamEvent } from "@/types/opencode-events";
-
-const streamBuffers = new Map<
-  string,
-  { events: StreamEvent[]; isComplete: boolean }
->();
+import { getStreamBuffer, clearStreamBuffer } from "@/lib/stream-buffer";
 
 export async function GET(request: NextRequest) {
   try {
     const sessionId = request.nextUrl.searchParams.get("sessionId");
     const lastEventIndex = request.nextUrl.searchParams.get("lastEventIndex");
+    const shouldClear = request.nextUrl.searchParams.get("clear") === "true";
 
     if (!sessionId) {
       return new Response(JSON.stringify({ error: "sessionId required" }), {
@@ -18,7 +14,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const buffer = streamBuffers.get(sessionId);
+    const buffer = getStreamBuffer(sessionId);
 
     if (!buffer) {
       return new Response(
@@ -36,6 +32,10 @@ export async function GET(request: NextRequest) {
 
     const startIndex = lastEventIndex ? parseInt(lastEventIndex, 10) : 0;
     const events = buffer.events.slice(startIndex);
+
+    if (shouldClear && buffer.isComplete) {
+      clearStreamBuffer(sessionId);
+    }
 
     return new Response(
       JSON.stringify({
@@ -58,17 +58,4 @@ export async function GET(request: NextRequest) {
       },
     );
   }
-}
-
-export function registerStreamBuffer(
-  sessionId: string,
-  buffer: { events: StreamEvent[]; isComplete: boolean },
-): void {
-  streamBuffers.set(sessionId, buffer);
-}
-
-export function getStreamBuffer(
-  sessionId: string,
-): { events: StreamEvent[]; isComplete: boolean } | undefined {
-  return streamBuffers.get(sessionId);
 }

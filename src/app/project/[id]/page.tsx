@@ -141,103 +141,109 @@ export default function ProjectPage() {
     streamingActivitiesRef.current = [];
   }, []);
 
-  const { sendMessage, isStreaming, streamingContent, statusMessage } =
-    useOpenCodeStream({
-      projectId,
-      initialSessionId: currentProject?.opencodeSessionId ?? null,
-      onQuestion: (questionData) => {
-        console.log("[ProjectPage] onQuestion called with:", questionData);
-        addQuestion(questionData);
-      },
-      onStreamSplit: ({ tool, content }) => {
-        const parts = streamingPartsRef.current;
-        const activities = streamingActivitiesRef.current;
+  const {
+    sendMessage,
+    isStreaming,
+    streamingContent,
+    statusMessage,
+    sessionId: streamSessionId,
+    resumeBufferedStream,
+  } = useOpenCodeStream({
+    projectId,
+    initialSessionId: currentProject?.opencodeSessionId ?? null,
+    onQuestion: (questionData) => {
+      console.log("[ProjectPage] onQuestion called with:", questionData);
+      addQuestion(questionData);
+    },
+    onStreamSplit: ({ tool, content }) => {
+      const parts = streamingPartsRef.current;
+      const activities = streamingActivitiesRef.current;
 
-        if (!content.trim() && parts.length === 0 && activities.length === 0) {
-          return;
-        }
+      if (!content.trim() && parts.length === 0 && activities.length === 0) {
+        return;
+      }
 
-        commitStreamingSegment({
-          id: nextStreamSplitId(),
+      commitStreamingSegment({
+        id: nextStreamSplitId(),
+        role: "assistant",
+        content,
+        timestamp: new Date(),
+        parts,
+        activities,
+      });
+
+      resetStreamingCollections();
+      console.log("[ProjectPage] Stream split at tool:", tool);
+    },
+    onComplete: (content) => {
+      const finalParts = streamingPartsRef.current;
+      const finalActivities = streamingActivitiesRef.current;
+      const segmentsToStore = [...streamingSegmentsRef.current];
+
+      if (
+        content.trim() ||
+        finalParts.length > 0 ||
+        finalActivities.length > 0
+      ) {
+        segmentsToStore.push({
+          id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           role: "assistant",
           content,
           timestamp: new Date(),
-          parts,
-          activities,
+          parts: finalParts,
+          activities: finalActivities,
         });
+      }
 
-        resetStreamingCollections();
-        console.log("[ProjectPage] Stream split at tool:", tool);
-      },
-      onComplete: (content) => {
-        const finalParts = streamingPartsRef.current;
-        const finalActivities = streamingActivitiesRef.current;
-        const segmentsToStore = [...streamingSegmentsRef.current];
+      resetStreamingCollections();
+      clearMarkedSelections();
 
-        if (
-          content.trim() ||
-          finalParts.length > 0 ||
-          finalActivities.length > 0
-        ) {
-          segmentsToStore.push({
-            id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            role: "assistant",
-            content,
-            timestamp: new Date(),
-            parts: finalParts,
-            activities: finalActivities,
-          });
+      void (async () => {
+        for (const segment of segmentsToStore) {
+          await addMessageWithDetails(segment);
         }
 
-        resetStreamingCollections();
-        clearMarkedSelections();
+        setStreamingSegments([]);
+        streamingSegmentsRef.current = [];
+      })();
 
-        void (async () => {
-          for (const segment of segmentsToStore) {
-            await addMessageWithDetails(segment);
-          }
+      const markdownMatch = content.match(/```markdown\n([\s\S]*?)\n```/);
+      if (markdownMatch) {
+        updateDocument(markdownMatch[1]);
+      }
+    },
+    onPart: (part) => {
+      const current = streamingPartsRef.current;
+      const index = current.findIndex((p) => p.id === part.id);
+      const next =
+        index === -1
+          ? [...current, part]
+          : current.map((existing, idx) => (idx === index ? part : existing));
+      streamingPartsRef.current = next;
+      setStreamingParts(next);
+    },
+    onActivity: (activity) => {
+      const next = [...streamingActivitiesRef.current, activity];
+      streamingActivitiesRef.current = next;
+      setStreamingActivities(next);
+    },
+    onError: (error) => {
+      console.error("OpenCode stream error:", error);
+      const errorMsg = error.message || "Unknown error";
 
-          setStreamingSegments([]);
-          streamingSegmentsRef.current = [];
-        })();
-
-        const markdownMatch = content.match(/```markdown\n([\s\S]*?)\n```/);
-        if (markdownMatch) {
-          updateDocument(markdownMatch[1]);
-        }
-      },
-      onPart: (part) => {
-        const current = streamingPartsRef.current;
-        const index = current.findIndex((p) => p.id === part.id);
-        const next =
-          index === -1
-            ? [...current, part]
-            : current.map((existing, idx) => (idx === index ? part : existing));
-        streamingPartsRef.current = next;
-        setStreamingParts(next);
-      },
-      onActivity: (activity) => {
-        const next = [...streamingActivitiesRef.current, activity];
-        streamingActivitiesRef.current = next;
-        setStreamingActivities(next);
-      },
-      onError: (error) => {
-        console.error("OpenCode stream error:", error);
-        const errorMsg = error.message || "Unknown error";
-
-        // Detect server connection errors
-        if (
-          errorMsg.includes("fetch failed") ||
-          errorMsg.includes("HTTP 500") ||
-          errorMsg.includes("Failed to communicate with OpenCode")
-        ) {
-          setServerErrorMessage(
-            "Unable to connect to the OpenCode server. Please ensure it's running and try again.",
-          );
-          setIsServerErrorModalOpen(true);
-        }
-      },
-    });
+      // Detect server connection errors
+      if (
+        errorMsg.includes("fetch failed") ||
+        errorMsg.includes("HTTP 500") ||
+        errorMsg.includes("Failed to communicate with OpenCode")
+      ) {
+        setServerErrorMessage(
+          "Unable to connect to the OpenCode server. Please ensure it's running and try again.",
+        );
+        setIsServerErrorModalOpen(true);
+      }
+    },
+  });
 
   useResumeBufferedStream(
     {
@@ -245,13 +251,13 @@ export default function ProjectPage() {
       isStreaming,
       streamingContent,
       statusMessage,
-      sessionId: currentProject?.opencodeSessionId || null,
+      sessionId: streamSessionId || currentProject?.opencodeSessionId || null,
       error: null,
       lastFailedMessageId: null,
       clearError: () => {},
       reset: () => {},
       abort: async () => {},
-      resumeBufferedStream: async () => {},
+      resumeBufferedStream,
     },
     projectId,
     true,
@@ -325,6 +331,19 @@ export default function ProjectPage() {
     selectProject(projectId);
   }, [projectId, selectProject]);
 
+  const lastSyncedContentRef = useRef<string>("");
+
+  useEffect(() => {
+    if (
+      syncedContent &&
+      syncedContent !== lastSyncedContentRef.current &&
+      syncedContent !== currentProject?.documentContent
+    ) {
+      lastSyncedContentRef.current = syncedContent;
+      updateDocument(syncedContent);
+    }
+  }, [syncedContent, currentProject?.documentContent, updateDocument]);
+
   useEffect(() => {
     if (currentProject?.documentContent) {
       const metrics = analyzeContent(
@@ -338,22 +357,6 @@ export default function ProjectPage() {
     currentProject?.brief,
     setAnalysisMetrics,
   ]);
-
-  const handleSendMessage = useCallback(
-    async (content: string, isInitialMessage = false, messageId?: string) => {
-      if (!currentProject) return;
-
-      // Check for unsaved editor changes
-      if (hasUnsavedEditorChanges) {
-        setPendingMessage(content);
-        setIsUnsavedChangesModalOpen(true);
-        return;
-      }
-
-      await sendMessageInternal(content, isInitialMessage, messageId);
-    },
-    [currentProject, hasUnsavedEditorChanges],
-  );
 
   const sendMessageInternal = useCallback(
     async (content: string, isInitialMessage = false, messageId?: string) => {
@@ -434,6 +437,22 @@ export default function ProjectPage() {
       updateMessageStatus,
       resetStreamingCollections,
     ],
+  );
+
+  const handleSendMessage = useCallback(
+    async (content: string, isInitialMessage = false, messageId?: string) => {
+      if (!currentProject) return;
+
+      // Check for unsaved editor changes
+      if (hasUnsavedEditorChanges) {
+        setPendingMessage(content);
+        setIsUnsavedChangesModalOpen(true);
+        return;
+      }
+
+      await sendMessageInternal(content, isInitialMessage, messageId);
+    },
+    [currentProject, hasUnsavedEditorChanges, sendMessageInternal],
   );
 
   // Track initialization and trigger initial message send

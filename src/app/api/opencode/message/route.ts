@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getOpencodeClient } from "@/lib/opencode-client";
 import { updateProject, getProject } from "@/lib/storage";
+import { getOrCreateStreamBuffer } from "@/lib/stream-buffer";
 import type {
   StreamEvent,
   StreamMessagePartUpdated,
@@ -23,21 +24,6 @@ interface RequestBody {
   projectId: string;
   message: string;
   command?: string;
-}
-
-export const streamBuffers = new Map<
-  string,
-  { events: StreamEvent[]; isComplete: boolean }
->();
-
-function getOrCreateStreamBuffer(sessionId: string): {
-  events: StreamEvent[];
-  isComplete: boolean;
-} {
-  if (!streamBuffers.has(sessionId)) {
-    streamBuffers.set(sessionId, { events: [], isComplete: false });
-  }
-  return streamBuffers.get(sessionId)!;
 }
 
 function formatSseEvent(event: StreamEvent): string {
