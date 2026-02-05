@@ -50,15 +50,17 @@ Use the `dev-server.sh` script to manage both OpenCode and Next.js servers:
 ./dev-server.sh stop
 ```
 
-This creates a tmux session with split panes:
+This creates a tmux session with two windows (each fullscreen):
 
-- **Left pane**: OpenCode server (port 9090)
-- **Right pane**: Next.js dev server (port 3000)
+- **Window 0**: OpenCode server (port 9090)
+- **Window 1**: Next.js dev server (port 3000)
 
 **tmux keyboard shortcuts:**
 
-- `Ctrl+b` then `←/→` - Switch between panes
-- `Ctrl+b` then `z` - Zoom current pane (toggle fullscreen)
+- `Ctrl+b` then `n` - Next window
+- `Ctrl+b` then `p` - Previous window
+- `Ctrl+b` then `0` - Window 0 (OpenCode)
+- `Ctrl+b` then `1` - Window 1 (Next.js)
 - `Ctrl+b` then `[` - Scroll mode (press `q` to exit)
 - `Ctrl+b` then `d` - Detach from session (keeps running in background)
 
