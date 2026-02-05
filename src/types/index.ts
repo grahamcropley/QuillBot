@@ -70,12 +70,57 @@ export interface TextSelection {
   endOffset: number;
 }
 
+export interface MarkedSelection {
+  id: string;
+  text: string;
+  line: number;
+  column: number;
+  length: number;
+  source: "editor" | "preview";
+}
+
 export interface AnalysisMetrics {
-  readabilityScore: number;
+  gunningFogScore: number;
+  fleschReadingEase: number;
   wordCount: number;
   sentenceCount: number;
   avgWordsPerSentence: number;
   briefAdherenceScore: number;
+  complexWordPercentage: number;
+}
+
+export interface BriefPoint {
+  point: string;
+  status: "covered" | "missing";
+  citations?: Citation[];
+}
+
+export interface Citation {
+  excerpt: string;
+  context: string;
+}
+
+export interface BriefAdherenceCache {
+  draftHash: string;
+  adherenceScore: number;
+  pointsCovered: BriefPoint[];
+  timestamp: Date;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  contentType: ContentType;
+  brief: string;
+  wordCount: number;
+  styleHints: string;
+  documentContent: string;
+  messages: Message[];
+  opencodeSessionId?: string;
+  directoryPath: string;
+  createdAt: Date;
+  updatedAt: Date;
+  briefAdherenceCache?: BriefAdherenceCache;
 }
 
 export type Result<T, E = Error> =

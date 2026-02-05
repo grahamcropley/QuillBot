@@ -4,6 +4,7 @@ import type {
   Message,
   StarterFormData,
   TextSelection,
+  MarkedSelection,
   AnalysisMetrics,
   QuestionData,
 } from "@/types";
@@ -20,6 +21,7 @@ interface ProjectState {
   isLoading: boolean;
   isOpenCodeBusy: boolean;
   textSelection: TextSelection | null;
+  markedSelections: MarkedSelection[];
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
@@ -44,6 +46,9 @@ interface ProjectState {
   answerQuestion: (questionId: string, answers: string[][]) => Promise<void>;
   setOpenCodeBusy: (busy: boolean) => void;
   setTextSelection: (selection: TextSelection | null) => void;
+  addMarkedSelection: (selection: MarkedSelection) => void;
+  removeMarkedSelection: (id: string) => void;
+  clearMarkedSelections: () => void;
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
   setSessionStatus: (status: SessionStatus) => void;
@@ -74,6 +79,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   isLoading: false,
   isOpenCodeBusy: false,
   textSelection: null,
+  markedSelections: [],
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
@@ -438,6 +444,22 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
   setTextSelection: (selection) => {
     set({ textSelection: selection });
+  },
+
+  addMarkedSelection: (selection) => {
+    set((state) => ({
+      markedSelections: [...state.markedSelections, selection],
+    }));
+  },
+
+  removeMarkedSelection: (id) => {
+    set((state) => ({
+      markedSelections: state.markedSelections.filter((s) => s.id !== id),
+    }));
+  },
+
+  clearMarkedSelections: () => {
+    set({ markedSelections: [] });
   },
 
   setAnalysisMetrics: (metrics) => {

@@ -9,11 +9,49 @@ import {
   useEffect,
   useMemo,
   memo,
+  forwardRef,
+  useImperativeHandle,
 } from "react";
-import { Copy, Check, AlertCircle } from "lucide-react";
+import { Copy, Check, AlertCircle, Eye, EyeOff } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
-import type { TextSelection } from "@/types";
+import type { TextSelection, MarkedSelection } from "@/types";
+import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
+import { useProjectStore } from "@/stores/project-store";
+import { createRoot } from "react-dom/client";
+
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 9);
+}
+
+// Simple recursive visitor for MDAST
+function visit(
+  node: any,
+  callback: (node: any, index: number, parent: any) => void,
+) {
+  if (node.children) {
+    node.children.forEach((child: any, i: number) => {
+      callback(child, i, node);
+      visit(child, callback);
+    });
+  }
+}
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#+\s+/gm, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .trim();
+}
 
 const MarkdownEditor = lazy(() =>
   import("@/components/editor").then((mod) => ({
@@ -32,6 +70,10 @@ interface MarkdownPreviewProps {
   onDiscardChanges?: (discard: () => void) => void;
 }
 
+export interface MarkdownPreviewHandle {
+  findAndHighlight: (excerpt: string) => boolean;
+}
+
 function formatLastUpdated(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
@@ -44,18 +86,22 @@ interface HeaderProps {
   hasUnsavedChanges: boolean;
   lastUpdated: Date | null | undefined;
   copied: boolean;
+  isPreviewMode: boolean;
   onDiscard: () => void;
   onSave: () => void;
   onCopy: () => void;
+  onTogglePreview: () => void;
 }
 
 const EditorHeader = memo(function EditorHeader({
   hasUnsavedChanges,
   lastUpdated,
   copied,
+  isPreviewMode,
   onDiscard,
   onSave,
   onCopy,
+  onTogglePreview,
 }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
@@ -83,6 +129,18 @@ const EditorHeader = memo(function EditorHeader({
             Updated {formatLastUpdated(lastUpdated)}
           </span>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onTogglePreview}
+          title={isPreviewMode ? "Edit" : "Preview"}
+        >
+          {isPreviewMode ? (
+            <Eye className="w-4 h-4" />
+          ) : (
+            <EyeOff className="w-4 h-4" />
+          )}
+        </Button>
         <Button variant="ghost" size="sm" onClick={onCopy}>
           {copied ? (
             <Check className="w-4 h-4" />
@@ -95,20 +153,36 @@ const EditorHeader = memo(function EditorHeader({
   );
 });
 
-export function MarkdownPreview({
-  content,
-  onContentChange,
-  onTextSelect,
-  isEditable = true,
-  isOpenCodeBusy = false,
-  lastUpdated,
-  onUnsavedChangesChange,
-  onDiscardChanges,
-}: MarkdownPreviewProps) {
+export const MarkdownPreview = forwardRef<
+  MarkdownPreviewHandle,
+  MarkdownPreviewProps
+>(function MarkdownPreview(
+  {
+    content,
+    onContentChange,
+    onTextSelect,
+    isEditable = true,
+    isOpenCodeBusy = false,
+    lastUpdated,
+    onUnsavedChangesChange,
+    onDiscardChanges,
+  },
+  ref,
+) {
+  const { markedSelections, addMarkedSelection } = useProjectStore();
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const lastSyncedContentRef = useRef(content);
+  const editorRef = useRef<MarkdownEditorHandle>(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -126,6 +200,10 @@ export function MarkdownPreview({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [editContent]);
+
+  const handleTogglePreview = useCallback(() => {
+    setIsPreviewMode((prev) => !prev);
+  }, []);
 
   const handleEditorChange = useCallback((newContent: string) => {
     setEditContent(newContent);
@@ -169,18 +247,32 @@ export function MarkdownPreview({
       hasUnsavedChanges,
       lastUpdated,
       copied,
+      isPreviewMode,
       onDiscard: handleDiscardChanges,
       onSave: handleSaveEdit,
       onCopy: handleCopy,
+      onTogglePreview: handleTogglePreview,
     }),
     [
       hasUnsavedChanges,
       lastUpdated,
       copied,
+      isPreviewMode,
       handleDiscardChanges,
       handleSaveEdit,
       handleCopy,
+      handleTogglePreview,
     ],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      findAndHighlight: (excerpt: string) => {
+        return editorRef.current?.findAndHighlight(excerpt) ?? false;
+      },
+    }),
+    [],
   );
 
   return (
@@ -188,22 +280,92 @@ export function MarkdownPreview({
       <EditorHeader {...headerProps} />
 
       <div className="flex-1 overflow-hidden">
-        <Suspense
-          fallback={
-            <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-              Loading editor...
+        {isPreviewMode ? (
+          <div className="h-full overflow-auto p-6 bg-white dark:bg-gray-950">
+            <div className="prose dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  a: ({ node, ...props }) => (
+                    <a
+                      {...props}
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                    />
+                  ),
+                  code: ({
+                    node,
+                    inline,
+                    className,
+                    children,
+                    ...props
+                  }: any) => (
+                    <code
+                      {...props}
+                      className={
+                        inline
+                          ? "bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm"
+                          : className
+                      }
+                    >
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ node, ...props }) => (
+                    <pre
+                      {...props}
+                      className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto"
+                    />
+                  ),
+                  blockquote: ({ node, ...props }) => (
+                    <blockquote
+                      {...props}
+                      className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic"
+                    />
+                  ),
+                  table: ({ node, ...props }) => (
+                    <table
+                      {...props}
+                      className="border-collapse w-full border border-gray-300 dark:border-gray-600"
+                    />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th
+                      {...props}
+                      className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-800 text-left"
+                    />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td
+                      {...props}
+                      className="border border-gray-300 dark:border-gray-600 p-2"
+                    />
+                  ),
+                }}
+              >
+                {editContent}
+              </ReactMarkdown>
             </div>
-          }
-        >
-          <MarkdownEditor
-            content={editContent}
-            onChange={handleEditorChange}
-            onSave={handleSaveEdit}
-            disabled={!canEdit}
-            theme={theme}
-          />
-        </Suspense>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+                Loading editor...
+              </div>
+            }
+          >
+            <MarkdownEditor
+              ref={editorRef}
+              content={editContent}
+              onChange={handleEditorChange}
+              onSave={handleSaveEdit}
+              disabled={!canEdit}
+              theme={theme}
+            />
+          </Suspense>
+        )}
       </div>
     </div>
   );
-}
+});

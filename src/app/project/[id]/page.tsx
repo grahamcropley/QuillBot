@@ -28,6 +28,9 @@ export default function ProjectPage() {
   const router = useRouter();
   const projectId = params.id as string;
   const previewRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<{ findAndHighlight: (excerpt: string) => boolean }>(
+    null,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
@@ -505,6 +508,15 @@ export default function ProjectPage() {
     useProjectStore.getState().setTextSelection(selection);
   }, []);
 
+  const handleHighlightText = useCallback((excerpt: string) => {
+    if (editorRef.current) {
+      const found = editorRef.current.findAndHighlight(excerpt);
+      if (!found) {
+        console.warn("[ProjectPage] Text not found in editor:", excerpt);
+      }
+    }
+  }, []);
+
   const handleDeleteProject = useCallback(async () => {
     setIsDeleteModalOpen(true);
   }, []);
@@ -634,6 +646,12 @@ export default function ProjectPage() {
                   metrics={analysisMetrics}
                   targetWordCount={currentProject.wordCount}
                   isLoading={isStreaming}
+                  projectId={projectId}
+                  onSendMessage={handleSendMessage}
+                  onHighlightText={handleHighlightText}
+                  cachedBriefScore={
+                    currentProject.briefAdherenceCache?.adherenceScore
+                  }
                 />
               </PanelErrorBoundary>
             </div>
@@ -645,6 +663,7 @@ export default function ProjectPage() {
           >
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview
+                ref={editorRef}
                 content={
                   syncedFileName
                     ? syncedContent

@@ -1,18 +1,31 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { Project, Message, StarterFormData } from "@/types";
+import type {
+  Project,
+  Message,
+  StarterFormData,
+  BriefAdherenceCache,
+} from "@/types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PROJECTS_FILE = path.join(DATA_DIR, "projects.json");
 const PROJECTS_WORKSPACE_DIR = path.join(DATA_DIR, "projects");
 
+interface StoredBriefAdherenceCache extends Omit<
+  BriefAdherenceCache,
+  "timestamp"
+> {
+  timestamp: string;
+}
+
 interface StoredProject extends Omit<
   Project,
-  "createdAt" | "updatedAt" | "messages"
+  "createdAt" | "updatedAt" | "messages" | "briefAdherenceCache"
 > {
   createdAt: string;
   updatedAt: string;
   messages: Array<Omit<Message, "timestamp"> & { timestamp: string }>;
+  briefAdherenceCache?: StoredBriefAdherenceCache;
 }
 
 interface ProjectsData {
@@ -57,6 +70,12 @@ function hydrateProject(stored: StoredProject): Project {
       ...m,
       timestamp: new Date(m.timestamp),
     })),
+    briefAdherenceCache: stored.briefAdherenceCache
+      ? {
+          ...stored.briefAdherenceCache,
+          timestamp: new Date(stored.briefAdherenceCache.timestamp),
+        }
+      : undefined,
   };
 }
 
@@ -69,6 +88,12 @@ function serializeProject(project: Project): StoredProject {
       ...m,
       timestamp: m.timestamp.toISOString(),
     })),
+    briefAdherenceCache: project.briefAdherenceCache
+      ? {
+          ...project.briefAdherenceCache,
+          timestamp: project.briefAdherenceCache.timestamp.toISOString(),
+        }
+      : undefined,
   };
 }
 
@@ -124,7 +149,14 @@ export async function createProject(
 export async function updateProject(
   id: string,
   updates: Partial<
-    Pick<Project, "documentContent" | "messages" | "name" | "opencodeSessionId">
+    Pick<
+      Project,
+      | "documentContent"
+      | "messages"
+      | "name"
+      | "opencodeSessionId"
+      | "briefAdherenceCache"
+    >
   >,
 ): Promise<Project | null> {
   const data = await readProjectsFile();
