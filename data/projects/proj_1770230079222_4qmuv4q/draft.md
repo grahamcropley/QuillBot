@@ -2,11 +2,15 @@
 
 We're absolutely thrilled to shine a spotlight on someone who's been making serious waves in the Microsoft Teams community — our Principal Architect, Zach Bennett.
 
-For those who don't know, Zach was recently renewed as a Microsoft Most Valuable Professional (MVP) in Microsoft Teams. And here's the thing — he's one of only 18 Teams MVPs in the entire UK. That's not just a fancy title; it's recognition from Microsoft themselves that Zach is one of the go-to voices helping shape how organisations around the world use Teams Phone.
+Zach has just been renewed as a Microsoft Most Valuable Professional in Microsoft Teams — and let's be clear about what that means. Out of the millions of IT professionals working with Microsoft technologies across the United Kingdom, only 18 hold this title for Teams. Eighteen. Microsoft hand-picks these people because they're not just good at what they do — they're among the absolute best in the world, actively shaping the future of how enterprises communicate. Zach is one of them.
 
 ## From Cisco to Cloud Telephony Champion
 
 Zach's journey is one of those brilliant "follow your passion" stories. He studied Computer Science at Manchester Metropolitan University, and during his placement year at General Electric, he had a realisation that would shape his career: the big corporate life wasn't for him. He wanted somewhere more intimate, where he could wear many hats and really make an impact.
+
+That Computer Science foundation matters. It’s the kind of degree that forces you to think in systems: how complex parts connect, where failures actually come from, and how to troubleshoot methodically when the obvious answer isn’t the right one. Pair that with a real industry placement inside a huge organisation, and you get an engineer who can speak both languages — the technical detail _and_ the messy reality of how big enterprises operate.
+
+It also explains a lot about Zach today: he’s not just “good with Teams.” He’s good at the underlying problem—designing, debugging, and scaling real-world communications systems that have to work for thousands of people, across multiple countries, under real constraints.
 
 He started out managing Cisco phone systems, but quickly found his true calling in the Microsoft ecosystem — first with development work, then Skype for Business, and eventually discovering his passion in voice deployments. As he puts it: "The telephone totally revolutionized the way we could communicate… What's next?" That forward-thinking mindset has driven everything since.
 
