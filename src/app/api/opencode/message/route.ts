@@ -140,8 +140,21 @@ export async function POST(request: NextRequest) {
     let targetSessionId = effectiveSessionId;
     let aborted = false;
     let streamBuffer = getOrCreateStreamBuffer(targetSessionId);
+    let seqCounter = 0;
 
     const encoder = new TextEncoder();
+
+    const emitEvent = (
+      event: StreamEvent,
+      controller: ReadableStreamDefaultController,
+    ) => {
+      const stamped = { ...event, seq: seqCounter++ };
+      if (!aborted) {
+        controller.enqueue(encoder.encode(formatSseEvent(stamped)));
+      }
+      streamBuffer.events.push(stamped);
+    };
+
     const stream = new ReadableStream({
       async start(controller) {
         request.signal.addEventListener("abort", async () => {
@@ -162,10 +175,7 @@ export async function POST(request: NextRequest) {
               sessionStatus: { type: "busy" },
               sessionId: sessionIdToEmit,
             };
-            if (!aborted) {
-              controller.enqueue(encoder.encode(formatSseEvent(statusEvent)));
-            }
-            streamBuffer.events.push(statusEvent);
+            emitEvent(statusEvent, controller);
           };
 
           emitStatus(targetSessionId);
@@ -239,8 +249,7 @@ export async function POST(request: NextRequest) {
               error: error instanceof Error ? error.message : String(error),
               sessionId: targetSessionId,
             };
-            controller.enqueue(encoder.encode(formatSseEvent(errorEvent)));
-            streamBuffer.events.push(errorEvent);
+            emitEvent(errorEvent, controller);
             controller.close();
           });
 
@@ -248,11 +257,7 @@ export async function POST(request: NextRequest) {
             const streamEvent = transformSdkEvent(sdkEvent, targetSessionId);
             if (!streamEvent) continue;
 
-            if (!aborted) {
-              controller.enqueue(encoder.encode(formatSseEvent(streamEvent)));
-            }
-
-            streamBuffer.events.push(streamEvent);
+            emitEvent(streamEvent, controller);
 
             if (streamEvent.type === "done" || streamEvent.type === "error") {
               streamBuffer.isComplete = true;
@@ -271,10 +276,7 @@ export async function POST(request: NextRequest) {
             error: error instanceof Error ? error.message : String(error),
             sessionId: targetSessionId,
           };
-          if (!aborted) {
-            controller.enqueue(encoder.encode(formatSseEvent(errorEvent)));
-          }
-          streamBuffer.events.push(errorEvent);
+          emitEvent(errorEvent, controller);
           streamBuffer.isComplete = true;
         }
       },

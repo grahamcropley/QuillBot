@@ -5616,6 +5616,1242 @@
       "createdAt": "2026-02-05T16:04:52.294Z",
       "updatedAt": "2026-02-05T16:20:32.916Z",
       "opencodeSessionId": "ses_3d173644dffeK3Ei91dFDCg57S"
+    },
+    {
+      "id": "proj_1770326949962_zlztw2h",
+      "name": "New Test",
+      "contentType": "blog",
+      "brief": "Celebrate the achievements of our very own Zach Bennett, Teams MVP.",
+      "wordCount": 500,
+      "styleHints": "",
+      "documentContent": "# New Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nCelebrate the achievements of our very own Zach Bennett, Teams MVP.\n\nEmphasis: a balanced mix of community contribution, customer impact, and the work Zach does with the LoopUp team.\n",
+      "messages": [
+        {
+          "id": "msg_1770327231766_uoo1jk5",
+          "role": "user",
+          "content": "Celebrate the achievements of our very own Zach Bennett, Teams MVP.",
+          "timestamp": "2026-02-05T21:33:51.766Z"
+        },
+        {
+          "id": "msg_1770327265022_5356iz0",
+          "role": "question",
+          "content": "",
+          "questionData": {
+            "requestId": "que_c2fba4efb001RJ14DQO4zNdlns",
+            "sessionId": "ses_3d046316dffe4rxxzrvJ00BNTT",
+            "questions": [
+              {
+                "question": "Which 3 to 5 specific achievements should the post highlight about Zach Bennett as a Microsoft Teams MVP, for example community contributions, speaking, customer impact, internal work at LoopUp, and should we include any links or quotes?",
+                "header": "Key achievements",
+                "options": [
+                  {
+                    "label": "Share a short bullet list",
+                    "description": "You provide 3 to 5 achievements plus any links or quotes, I write from that."
+                  },
+                  {
+                    "label": "Focus on community and speaking",
+                    "description": "I emphasise public contributions, events, and thought leadership, light on internal details."
+                  },
+                  {
+                    "label": "Focus on customer impact",
+                    "description": "I emphasise programmes, deployments, outcomes, and lessons learned, with careful detail."
+                  },
+                  {
+                    "label": "Balanced mix",
+                    "description": "I cover community, customer impact, and LoopUp teamwork evenly."
+                  }
+                ],
+                "multiple": false
+              }
+            ],
+            "answered": true,
+            "answers": [
+              [
+                "Balanced mix"
+              ]
+            ]
+          },
+          "timestamp": "2026-02-05T21:34:25.022Z",
+          "parts": [
+            {
+              "id": "prt_c2fb9d2c7001eOahzHixS1cI3N",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2c6001YRgyIkigWqAzYM",
+              "type": "text",
+              "text": "[analyze-mode]\nANALYSIS MODE. Gather context before diving deep:\n\nCONTEXT GATHERING (parallel):\n- 1-2 explore agents (codebase patterns, implementations)\n- 1-2 librarian agents (if external library involved)\n- Direct tools: Grep, AST-grep, LSP for targeted searches\n\nIF COMPLEX - DO NOT STRUGGLE ALONE. Consult specialists:\n- **Oracle**: Conventional problems (architecture, debugging, complex logic)\n- **Artistry**: Non-conventional problems (different approach needed)\n\nSYNTHESIZE findings before proceeding.\n\n---\n\n**LoopUp Content Generator**\n\nThe text following these instructions is the content brief. Analyse and clarify\nwith the user before generating final output.\n\n=============================================================================\nHARD RULES (check output against these before delivering)\n=============================================================================\n\n1. NO em-dashes (—). Use commas, full stops, or restructure instead.\n\n2. NO colon-split headings. Never write \"Topic: Subtitle\" format.\n   BAD: \"The Challenge: Why Enterprises Struggle\"\n   GOOD: \"Why enterprises struggle with carrier fragmentation\"\n\n3. NO semicolon overuse. Maximum one per article.\n\n4. NO filler phrases: \"In today's world\", \"It's important to note\",\n   \"What this means is\", \"At the end of the day\".\n\n5. NO buzzwords: \"unlock\", \"leverage\", \"holistic\", \"cutting-edge\",\n   \"game-changing\", \"best-in-class\", \"seamless\", \"delve\", \"landscape\".\n\n6. NO one-shot responses. Always clarify format and brief first.\n\n7. BRIEF FILE ONLY: The content brief must live in brief.md in the project folder.\n   Create or update brief.md whenever the brief changes.\n\n8. DRAFT FILE ONLY: The marketing output must live in draft.md in the project\n   folder. Create or update draft.md for all content output and edits.\n\n9. NO OTHER FILES: Never create any other files. Do not create outline.md or\n   any helper files. Only brief.md and draft.md are allowed.\n\n10. QUESTIONS ONE AT A TIME: Ask only one question per reply and use the\n    question tool. Never ask multiple questions in a single reply.\n\n11. BRIEF CHANGES MUST UPDATE brief.md: After the initial response, any request\n    that changes the brief (new requirements, emphasis shifts, restructuring)\n    must update brief.md before editing draft.md.\n\n12. NO DELEGATION OR BACKGROUND TASKS: Do not delegate to subagents and do not\n    create background tasks.\n\n=============================================================================\nBEFORE WRITING: Mandatory Steps\n=============================================================================\n\n1. Ensure the brief exists in brief.md. If a brief is provided as text, write\n   it to brief.md. If instructed to look in brief.md, read it.\n2. Confirm output format (blog, whitepaper, solution page, social, email, other)\n3. Identify ambiguities or missing context in the brief\n4. Ask clarifying questions if needed. Ask one question at a time using the\n   question tool.\n5. Propose an outline aligned to the format in the conversation only. Do not\n   create an outline file.\n6. Wait for confirmation before producing final content in draft.md\n\n=============================================================================\nVOICE\n=============================================================================\n\nYou are writing as LoopUp, a single expert author embedded in the business.\n\n- Expert and human. Confident, business-first, pragmatic. Warmth welcome.\n- Peer, not lecturer. Think alongside the reader, not above them.\n- Have a point of view. Guidance over neutral information.\n- First-person permitted. \"We often see\" and occasional \"I\" add authenticity.\n- Recognition before solution. Articulate the reader's friction before solving.\n- Concrete over abstract. Specific examples beat vague statements.\n- Vary rhythm. Mix short and longer sentences. No monotonous cadence.\n\nAudience: Enterprise IT, UC, and digital transformation decision-makers\noperating at scale across multiple geographies. Frame around trade-offs,\noperational impact, and long-term implications, not features.\n\n=============================================================================\nSTRUCTURE\n=============================================================================\n\n- Start from business context, not technology\n- Progress logically: context → definitions → how it works → trade-offs → summary\n- Guide through reasoning; don't present conclusions upfront\n- Create recognition moments before introducing solutions\n- End with resolution, not just information\n\n=============================================================================\nMARKDOWN\n=============================================================================\n\n- Use Markdown formatting. Allowed elements: H1 (#), H2 (##), H3 (###),\n  bulleted lists (-), numbered lists (1.), bold (**), italic (*), links,\n  tables, and blockquotes.\n\n=============================================================================\nFORMAT-SPECIFIC GUIDANCE\n=============================================================================\n\n**Blog Article** (800-1500 words)\n\n- Conversational but substantive. More personality than whitepaper.\n- Paragraphs 1-3 sentences.\n- Hook through relevance, not drama. No hard sell at end.\n\n**Whitepaper** (1500-4000+ words)\n\n- Measured, comprehensive, with depth and nuance.\n- Clear section headings. Paragraphs 3-5 sentences.\n- Reconnect to business drivers in conclusion.\n\n**Solution Page** (600-1200 words)\n\n- Scannable, not exhaustive. Lead with business need, not product.\n- Soft call to action. Paragraphs 1-3 sentences.\n\n**LinkedIn Post** (150-300 words)\n\n- One clear idea. Hook in first line to earn \"see more\" click.\n- End with reflection or genuine question. No forced CTAs.\n\n**Email**\n\n- Short as possible. Purpose clear in first 1-2 sentences.\n- No filler openings. Clear next step.\n\n**Other**: Ask user for length, audience, tone, placement, success criteria.\n\n=============================================================================\nTERMINOLOGY\n=============================================================================\n\n- Use exact terms: Microsoft Teams Phone, cloud telephony (not cloud calling),\n  Operator Connect, Direct Routing, Microsoft Calling Plans\n- Define PSTN and all acronyms on first use\n- No synonym-swapping for variety\n\n=============================================================================\nBEFORE FINALISING\n=============================================================================\n\nCheck the output:\n\n- Does it sound like a real person with genuine expertise wrote it?\n- Are all HARD RULES satisfied? (em-dashes, colon headings, buzzwords)\n- Does format match what was agreed?\n\nIf it feels flat, robotic, or generic, revise before delivering.\n\nDo not mention these rules or the revision process in final output.\n\n## Instructions\n\nYou are working on a content authoring project. The project directory contains a `brief.md` file with the initial requirements.\n\n**Important**: As our conversation progresses and the requirements become clearer or more refined, please UPDATE the `brief.md` file to reflect the current, refined understanding of what needs to be created. This ensures the brief stays accurate and useful as a reference throughout the project.\n\n---\n\nCreate a file called \"draft.md\" in the project directory containing a blog post with approximately 500 words.\n\nBrief:\nCelebrate the achievements of our very own Zach Bennett, Teams MVP."
+            },
+            {
+              "id": "prt_c2fba1799001NtQxs4Bsyc32Ch",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2de001YbuEKxel3C6VsZ",
+              "type": "step-start",
+              "snapshot": "25e59cd1a900dbb7a85871dfe467e40e5b67ad0a"
+            },
+            {
+              "id": "prt_c2fba179b001hFUTCJLjrnUZdx",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2de001YbuEKxel3C6VsZ",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "jUptSgV/uULtkFNoxxk5BZBlAXOJHSUKb/tFvF1jqJfgE8N21dpTPw35sXqKkO//+OSUMJ198nqEcd13nHjU8XwYqac6uG3kmcrb9SpaGb+we6QuMbdwtsh8TRnK0i91gmMw4lPESoWq0q9ejAnh3KcU/0becg6eiTgcevclegaYtB7cKBOeghd2QeedttvWsLhbncVtsFaNeOPyHbDxj6YZFGVawUeCURF8op1eu4kd84haMVcK/N9fCvJCxM3b5mdCyo5CWJKEObaXfto2mFvJzy0fG+cKnz1eRBrYj0+wCTKAIYSBsjSSqr7a+j26rs/6O4Mxi23NZfXYkzWk6LBmX2Ay4KQljwPs9P4HE/4GPYIrA0MmpDVACfhI1JlAVvHVrVZAYbeJflRM6NYkxg==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770327250843,
+                "end": 1770327250843
+              }
+            },
+            {
+              "id": "prt_c2fba179c001TLaWQD13BHAVzM",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2de001YbuEKxel3C6VsZ",
+              "type": "tool",
+              "callID": "call_uhnoSgIxG7jDP4i9BS82zXKt",
+              "tool": "glob",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "pattern": "brief.md",
+                  "path": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h"
+                },
+                "output": "Found 1 file(s)\n\n/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n[Agent Usage Reminder]\n\nYou called a search/fetch tool directly without leveraging specialized agents.\n\nRECOMMENDED: Use delegate_task with explore/librarian agents for better results:\n\n```\n// Parallel exploration - fire multiple agents simultaneously\ndelegate_task(agent=\"explore\", prompt=\"Find all files matching pattern X\")\ndelegate_task(agent=\"explore\", prompt=\"Search for implementation of Y\") \ndelegate_task(agent=\"librarian\", prompt=\"Lookup documentation for Z\")\n\n// Then continue your work while they run in background\n// System will notify you when each completes\n```\n\nWHY:\n- Agents can perform deeper, more thorough searches\n- Background tasks run in parallel, saving time\n- Specialized agents have domain expertise\n- Reduces context window usage in main session\n\nALWAYS prefer: Multiple parallel delegate_task calls > Direct tool calls\n",
+                "title": "",
+                "metadata": {
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770327250845,
+                  "end": 1770327250861
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "N+rme6Donkngx++ywBx6LbadClY9LMPdzqajuyOc/H8grSOCdYBv9gPDo23G9xbfKwYkC8fUnTSijZKWjLArNcbz26hSJhBnjRWckOpjk/KWtQD2xxTRzb5ZiCjObck+u41CuhitrUTVF+B0qCEtuVzXBOzC+yB8zLIcSqSgofobuIlcyv42V1EpLyWS96OMzVx2vcZVlf9pwCuircQw0Duw5KeKhF/jBwgmRQ3ITvrW3g9l4pg1WakYyG8jVu39m3JAX2NTbwcGqE2uK6Zg6YpSAyfoBTD6nfDwSc1dvWxrVyp28YtRxGzEUfekbGe1ZaMmRY5aWvkve4jRM5XNu2hctpCBiCwSVaU9tiBGsdLXDi5CFUdNO8iCRTxCHOmR8O1Ebk4lkpGEHDxhPvkMMA=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fba17a2001YTMXBDwzRKea4M",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2de001YbuEKxel3C6VsZ",
+              "type": "tool",
+              "callID": "call_zDE4Gxd4ShnNrIyk8bD4rjmd",
+              "tool": "glob",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "pattern": "draft.md",
+                  "path": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h"
+                },
+                "output": "No files found\n[Agent Usage Reminder]\n\nYou called a search/fetch tool directly without leveraging specialized agents.\n\nRECOMMENDED: Use delegate_task with explore/librarian agents for better results:\n\n```\n// Parallel exploration - fire multiple agents simultaneously\ndelegate_task(agent=\"explore\", prompt=\"Find all files matching pattern X\")\ndelegate_task(agent=\"explore\", prompt=\"Search for implementation of Y\") \ndelegate_task(agent=\"librarian\", prompt=\"Lookup documentation for Z\")\n\n// Then continue your work while they run in background\n// System will notify you when each completes\n```\n\nWHY:\n- Agents can perform deeper, more thorough searches\n- Background tasks run in parallel, saving time\n- Specialized agents have domain expertise\n- Reduces context window usage in main session\n\nALWAYS prefer: Multiple parallel delegate_task calls > Direct tool calls\n",
+                "title": "",
+                "metadata": {
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770327250914,
+                  "end": 1770327250927
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "73BJFucMxrn3EgUlDp4JC9EkJ/hRHlEn+pV30lyjjGdamukO1S6IKWb5Agm1MO5zs91AmMStzkWgirS5O6x8jBr6nNgOCnRMHw2WQaEqfEkDC9Gwcp/oAaDizeJ90BUvFSy/jSe9gbWW1CK1C1Lw7OghaAYtOgnyzdWh1lWMyknrYV3JZChQOLFP+noVN8M4ox930d4lOKN2bGtdXB3igYhCKuX/f5+71KGSOacNsBuio1Dr7mCl1dLIkfb+pGqlJNcC/wNhigPoUXLw5fXZLWaFs7avjHTT19DC2YaDNyml3kj1ADRvp/hqWUaQMHycjJNMKi2R9ZhyDNZjkb14wnnsH8BQ8VzY5nyjMWpPpLhrZLzdtjfX5jxEje1PmmKX57sp9h0ix8Bzm6sgUVzGPA=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fba17f2001vkFBQGrAyFmvne",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fb9d2de001YbuEKxel3C6VsZ",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "25e59cd1a900dbb7a85871dfe467e40e5b67ad0a",
+              "cost": 0,
+              "tokens": {
+                "input": 15107,
+                "output": 905,
+                "reasoning": 799,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fba28db001nQK43nit35bkeN",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba180a0014cBG8Z0jbl0idX",
+              "type": "step-start",
+              "snapshot": "25e59cd1a900dbb7a85871dfe467e40e5b67ad0a"
+            },
+            {
+              "id": "prt_c2fba29370015KTQm7KeChicOw",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba180a0014cBG8Z0jbl0idX",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "KTkKJMY+yVF+PijoBPCROTnyIGuNo7QQ6aDvxzonSFaOlPPa1z6F2RbkcM6eDXsgdMn+4sx+/hAg3M1kFT/7CEYYg1yoSBqzzY75CIsfdqhj4tJ6g6uN/roGsfDt0sDdGq2gQ1b+0hoGnI7jZFKqii85xp8lBSatgnq2A5NISlzOIdImfDD4JZLCbzbX/pJixwcnAMlh/Ep592DizI09/E/LQKwovHycQNjsbossNPS6rNyV5UXttQnYiIitP2nLPqdddrvJ7u4viNmbB7Ek7siufn+6aMuxtiIP1bsfgRsIF6D8LWn+wOE4aL3hM8aHdsAFhbvzJJfSWw9pcZTXZR6aQiPk70HDqwpvjjpG7VqeTrdt6Y/iDP4yvsXOK+SigPnNVe6ZL67zxhF41jJpVg==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770327255351,
+                "end": 1770327255352
+              }
+            },
+            {
+              "id": "prt_c2fba2939001f2caO9CXjJIrkH",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba180a0014cBG8Z0jbl0idX",
+              "type": "tool",
+              "callID": "call_scBoLec5a7GWB2H3tFRcmdvx",
+              "tool": "read",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md"
+                },
+                "output": "<file>\n00001| # New Test\n00002| \n00003| **Type**: blog\n00004| **Word Count**: 500\n00005| \n00006| ## Brief\n00007| \n00008| Celebrate the achievements of our very own Zach Bennett, Teams MVP.\n00009| \n00010| \n\n(End of file - total 10 lines)\n</file>",
+                "title": "data/projects/proj_1770326949962_zlztw2h/brief.md",
+                "metadata": {
+                  "preview": "# New Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nCelebrate the achievements of our very own Zach Bennett, Teams MVP.\n\n",
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770327255642,
+                  "end": 1770327255656
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "aBwL4VFN4AaA4dOl7ukVJjmkEtadhj+shczIHWvZagrdIpOA7cgko9XaWNMfI+FzGx3ufgIlP0L1/zow8RRohoaO5Bl8quIvVj3zMXnctY3WpKEm0IjcufmC+EltMvJmFK8ClmBnwBTfp69nNZSrWLFYefUEOSTgqEJwmpGkss8qNfVrE/XOfSS6OOV8l17KVqgdfButzQJ0Cu2kfYRCUa8lzjWjrKIST9F/SenoDjItzzVxezdwTCPthDLk+/mG2fFhTAzEloUKcmADhcE06dlpBb8wY4oxRTwpIixI2suXYi2KFjc1AThCZVO6QVzNIIW72q6FZiBCHw8vQUiOejVfrLebKb8wohnCy8YsJNk85H3GDAnbcEe9yfX6AjNro9901Ox0i67xLXxU3z1+Aw=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fba2a68001lT15kenKNbG9g4",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba180a0014cBG8Z0jbl0idX",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "25e59cd1a900dbb7a85871dfe467e40e5b67ad0a",
+              "cost": 0,
+              "tokens": {
+                "input": 15601,
+                "output": 168,
+                "reasoning": 121,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fba3ffd001veAty5HtKM25gF",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba2a81001Lg77AKMUJexHrX",
+              "type": "step-start",
+              "snapshot": "25e59cd1a900dbb7a85871dfe467e40e5b67ad0a"
+            },
+            {
+              "id": "prt_c2fba3ffe001vOfh8jHmDexl6C",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba2a81001Lg77AKMUJexHrX",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "4P+AFI+r9DuNNVkoNilyx55dbUSXC9BrXLrQaZuhF+Bo+jZcFobXwxgKIgFSif0BNJ08yN5ZL9M9xYi6m4bksBuhlVTh0Bz3c8PtoMuhBz1VJ065yO+RdvrQo4iMXLK1UGOUrSaGE7McYF1T910VXkCfCgM+JI24SnwBs5ulQ8TvdpifiD7IT4AkCGykV488SEjYZPCDHpdCbvA3tnvmcFm/2klSDptY7JYAuioKCUWyh2RLqAtPfhJpvyvtT03R7aBT6o1kVYdvqWWGGPDxPQEw9SpVGY/QakC3C7lqxSbGIes4+ZQFtfpJDT6kaG6Spz3ChmzAaKjWSWxT0tJfxCelCEiNdmjW9LdA32HlWG0EUebw7qF70bVFzBF/1gFx/7J3wa2hmpfVav7llquAbw==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770327261182,
+                "end": 1770327261183
+              }
+            },
+            {
+              "id": "prt_c2fba3fff0013iTHOtnDEtQp7F",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba2a81001Lg77AKMUJexHrX",
+              "type": "tool",
+              "callID": "call_yGe8jS0bliYoVyrMXfykSzRW",
+              "tool": "question",
+              "state": {
+                "status": "running",
+                "input": {
+                  "questions": [
+                    {
+                      "header": "Key achievements",
+                      "question": "Which 3 to 5 specific achievements should the post highlight about Zach Bennett as a Microsoft Teams MVP, for example community contributions, speaking, customer impact, internal work at LoopUp, and should we include any links or quotes?",
+                      "options": [
+                        {
+                          "label": "Share a short bullet list",
+                          "description": "You provide 3 to 5 achievements plus any links or quotes, I write from that."
+                        },
+                        {
+                          "label": "Focus on community and speaking",
+                          "description": "I emphasise public contributions, events, and thought leadership, light on internal details."
+                        },
+                        {
+                          "label": "Focus on customer impact",
+                          "description": "I emphasise programmes, deployments, outcomes, and lessons learned, with careful detail."
+                        },
+                        {
+                          "label": "Balanced mix",
+                          "description": "I cover community, customer impact, and LoopUp teamwork evenly."
+                        }
+                      ],
+                      "multiple": false
+                    }
+                  ]
+                },
+                "time": {
+                  "start": 1770327265017
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "VJs0nBW1zdLAZJqCfRHvgOOXvQ+/zAeVdy/VwIg7R6d+MQgpAW23tfDK4+mAEJZekY396Qe0MYXKKc6E2MHA3up/zCX/WLr7TRf9+AajzGKBS6mNJ9PUjPNGKAhxCbWcae5++SUI+B8pQSqFasN/7mPzTp/R4bSTncHlZVlbJjsocJBNegD/cpxaouWaTTN3NPXnafrm6Wg6RdBMAor9RsylT9sQmZ+GbRdnwGCEVkOxnw7s3TWVQ6WJZ23D+XuBI0AoV+GJiLjxZvC4T2+41B9sQtIvuQ3puOiXSVjxzlOSTjY2OTF7XRXXd+SNaG32L+JI6b10SN6l96NCa7rAPwgmNYVEQlTHGrTQJXXO4R4lT9Ll0pZ4g1VKNObevp+dSQS/6TBibZ31oVN/bBBvyQ=="
+                }
+              }
+            }
+          ],
+          "activities": []
+        },
+        {
+          "id": "msg_1770327345492_zxdc9fn",
+          "role": "assistant",
+          "content": "Proposed blog outline (about 500 words)\n\n# Celebrating Zach Bennett, Microsoft Teams MVP\n\n## Why this recognition matters at LoopUp\n- Quick context on what the MVP award represents in practice, why it is meaningful for customers and the community.\n\n## The work behind the badge\n- The less visible effort, learning, testing, sharing what works, and being honest about what does not.\n\n## Community contribution that helps people do better work\n- Practical guidance, answering real questions, sharing patterns, speaking or writing, mentoring.\n\n## Customer impact we see in the real world\n- How Zach’s approach shows up in smoother Teams Phone rollouts, clearer decisions across Operator Connect and Direct Routing, and fewer operational surprises.\n\n## What it is like working with Zach\n- Short, specific examples of how he raises the bar internally, brings people along, and stays grounded.\n\n## Congratulations, and what comes next\n- Recognition, thanks, and a forward-looking close without a hard sell.\n\nNext step: I need 3 to 5 concrete achievements to feature so the post reads specific rather than generic.",
+          "timestamp": "2026-02-05T21:35:45.492Z",
+          "parts": [
+            {
+              "id": "prt_c2fba3fff0013iTHOtnDEtQp7F",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba2a81001Lg77AKMUJexHrX",
+              "type": "tool",
+              "callID": "call_yGe8jS0bliYoVyrMXfykSzRW",
+              "tool": "question",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "questions": [
+                    {
+                      "header": "Key achievements",
+                      "question": "Which 3 to 5 specific achievements should the post highlight about Zach Bennett as a Microsoft Teams MVP, for example community contributions, speaking, customer impact, internal work at LoopUp, and should we include any links or quotes?",
+                      "options": [
+                        {
+                          "label": "Share a short bullet list",
+                          "description": "You provide 3 to 5 achievements plus any links or quotes, I write from that."
+                        },
+                        {
+                          "label": "Focus on community and speaking",
+                          "description": "I emphasise public contributions, events, and thought leadership, light on internal details."
+                        },
+                        {
+                          "label": "Focus on customer impact",
+                          "description": "I emphasise programmes, deployments, outcomes, and lessons learned, with careful detail."
+                        },
+                        {
+                          "label": "Balanced mix",
+                          "description": "I cover community, customer impact, and LoopUp teamwork evenly."
+                        }
+                      ],
+                      "multiple": false
+                    }
+                  ]
+                },
+                "output": "User has answered your questions: \"Which 3 to 5 specific achievements should the post highlight about Zach Bennett as a Microsoft Teams MVP, for example community contributions, speaking, customer impact, internal work at LoopUp, and should we include any links or quotes?\"=\"Balanced mix\". You can now continue with the user's answers in mind.",
+                "title": "Asked 1 question",
+                "metadata": {
+                  "answers": [
+                    [
+                      "Balanced mix"
+                    ]
+                  ],
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770327265017,
+                  "end": 1770327313463
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "VJs0nBW1zdLAZJqCfRHvgOOXvQ+/zAeVdy/VwIg7R6d+MQgpAW23tfDK4+mAEJZekY396Qe0MYXKKc6E2MHA3up/zCX/WLr7TRf9+AajzGKBS6mNJ9PUjPNGKAhxCbWcae5++SUI+B8pQSqFasN/7mPzTp/R4bSTncHlZVlbJjsocJBNegD/cpxaouWaTTN3NPXnafrm6Wg6RdBMAor9RsylT9sQmZ+GbRdnwGCEVkOxnw7s3TWVQ6WJZ23D+XuBI0AoV+GJiLjxZvC4T2+41B9sQtIvuQ3puOiXSVjxzlOSTjY2OTF7XRXXd+SNaG32L+JI6b10SN6l96NCa7rAPwgmNYVEQlTHGrTQJXXO4R4lT9Ll0pZ4g1VKNObevp+dSQS/6TBibZ31oVN/bBBvyQ=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fbb0c38001nP1VcghKqjX3ap",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fba2a81001Lg77AKMUJexHrX",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "38de493a7bf9a45eaae10a3c9198496bc2bb3656",
+              "cost": 0,
+              "tokens": {
+                "input": 762,
+                "output": 487,
+                "reasoning": 300,
+                "cache": {
+                  "read": 14976,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fbb1b38001n314m4Nnq6LKEo",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb0c4d001AUiujw8XPgiNh3",
+              "type": "step-start",
+              "snapshot": "9bf84ee1f11e535528e6f992973568989dbe6ce1"
+            },
+            {
+              "id": "prt_c2fbb1b48001nR9WnzpWnqL0g3",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb0c4d001AUiujw8XPgiNh3",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "auvEuop6iN8VnoZxwK5YE6IwLdAoxFHCJ/vNTY5kjs7VLiBK7FvY1+qJgD8E7u16iARhG3mAhmv91wi/4pnVk0hRcpxU2AkDz/dmfuFkr2t+pxu/mX8yKyQF43ZL9p8dWFyC9eG82cD5keErfL8V3miDeo7hETyvNU4tofVlDfYV8+9JoctiQMPinKLvc2mqwQzdSxVTHGzYBRryMoRv9h6CB5nftEhwfjD9riK+FCjkxiugDisp/NCkCn4eeTGkWCrr6cg9nTuRkNVWuVreBFzHUco6iqMj7qGs0WUHrEkpv+NTQ6Pr35RmUYjIM3CIw/UJaNOV0ztgeVrefvQIpXve/7uauUutz+iD7Dbg4b7U9bicniNv2BUiDC8e5ZHA3EobzkFdDQKidItHbFLs+Q==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770327317320,
+                "end": 1770327317320
+              }
+            },
+            {
+              "id": "prt_c2fbb1b49001wyq28dHMQffpaW",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb0c4d001AUiujw8XPgiNh3",
+              "type": "tool",
+              "callID": "call_kvJS38NKc98UEnbfeHxtE5q7",
+              "tool": "apply_patch",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "patchText": "*** Begin Patch\n*** Update File: brief.md\n@@\n ## Brief\n \n Celebrate the achievements of our very own Zach Bennett, Teams MVP.\n+\n+Emphasis: a balanced mix of community contribution, customer impact, and the work Zach does with the LoopUp team.\n*** End Patch"
+                },
+                "output": "Success. Updated the following files:\nM data/projects/proj_1770326949962_zlztw2h/brief.md",
+                "title": "Success. Updated the following files:\nM data/projects/proj_1770326949962_zlztw2h/brief.md",
+                "metadata": {
+                  "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n@@ -6,4 +6,5 @@\n ## Brief\n \n Celebrate the achievements of our very own Zach Bennett, Teams MVP.\n \n+Emphasis: a balanced mix of community contribution, customer impact, and the work Zach does with the LoopUp team.\n\n",
+                  "files": [
+                    {
+                      "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md",
+                      "relativePath": "data/projects/proj_1770326949962_zlztw2h/brief.md",
+                      "type": "update",
+                      "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md\n@@ -6,4 +6,5 @@\n ## Brief\n \n Celebrate the achievements of our very own Zach Bennett, Teams MVP.\n \n+Emphasis: a balanced mix of community contribution, customer impact, and the work Zach does with the LoopUp team.\n",
+                      "before": "# New Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nCelebrate the achievements of our very own Zach Bennett, Teams MVP.\n\n",
+                      "after": "# New Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nCelebrate the achievements of our very own Zach Bennett, Teams MVP.\n\nEmphasis: a balanced mix of community contribution, customer impact, and the work Zach does with the LoopUp team.\n",
+                      "additions": 1,
+                      "deletions": 0
+                    }
+                  ],
+                  "diagnostics": {},
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770327318762,
+                  "end": 1770327318884
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "gT6Al5/MKDtMceCO8qGJm9wOgkQRqfg6Zvtep2HrFf+9UtlKHdGNi5QTT0AQJWv7VF65SlVyiXeB3CJ+JWiBAmccov4IqCt0+kz++mCxV+6ySvONRvwX3iLARodHPLJFNBeIM2kc9TfPZ18QEEZyvv3EPb6YG3iPR2jX5ooOZvzlJP4rgqPUI07zckozMIVsLY5kfhYcH7Y5DGo1nFLnffoEizOWGhr/PtRZRYqUOHWWQFkI2PUMyYV4ULBKMdMxHUuFLWB0NYahsI6ezmHul1SXptkcP79rXEzacR2S8y/eueYiFPuZi/zP2xv1jkgH96l8YKYShnXl3ZgzgNB3jkjAlj1DDxyuGNki8Cg7SDS4A7LVGNy/zvy5A58v/if+7Syr0eZqPCATIFT5f2Jf4w=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fbb2164001IyWL2Uti730YmG",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb0c4d001AUiujw8XPgiNh3",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "e06ef39f4c27bc696bfdaa62129483237ec0b187",
+              "cost": 0,
+              "tokens": {
+                "input": 1022,
+                "output": 278,
+                "reasoning": 194,
+                "cache": {
+                  "read": 14976,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fbb216e001VwzpMwA8Ozhn1S",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb0c4d001AUiujw8XPgiNh3",
+              "type": "patch",
+              "hash": "9bf84ee1f11e535528e6f992973568989dbe6ce1",
+              "files": [
+                "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md"
+              ]
+            },
+            {
+              "id": "prt_c2fbb7228001ADAL18IylXQr3L",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb217b0010Rl2mkYaEDyqtI",
+              "type": "step-start",
+              "snapshot": "e06ef39f4c27bc696bfdaa62129483237ec0b187"
+            },
+            {
+              "id": "prt_c2fbb7228002i9Q7uM8hDCnRBr",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb217b0010Rl2mkYaEDyqtI",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "dSiCRXyDmky7kZqbVBqpWghl1WSSFYB+VHIJ2dk3MFSujq1P8KLUqZcEm9Y31fizqrzlBEVPrJ2iW+nmKYvz75lGm/fW3w3LQ02+5IJLcKl63d6/TEcFg2KPNOvzS22x12vD7VEhckU09crugSVMYzXLL92J1/Nc3GgSaOp08SslWLs7DwTuz+q4PGrz2UzTcWGCrIdIbo+MBTvV4Jky2DNtpii4j/sb/7UVxBmUOxg1P3wdh/1sVq6ZHpMC9DpMSy3oB2otAFEHEu2Z6GZlcFCT2gKsfrT4j3suHTFMDjgXTDK73nnbxXX34u365MuxckdfMhtXrqaK89ZekyQlYW2nmuQk0fYyZNK47UizDZ5F1CE/JH+L2fvHpZNHLC2qyaErg38H41rErkk8Tt2Ozg==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770327339560,
+                "end": 1770327339561
+              }
+            },
+            {
+              "id": "prt_c2fbb7229001Zi3DV8d4QpqFh7",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb217b0010Rl2mkYaEDyqtI",
+              "type": "text",
+              "text": "Proposed blog outline (about 500 words)\n\n# Celebrating Zach Bennett, Microsoft Teams MVP\n\n## Why this recognition matters at LoopUp\n- Quick context on what the MVP award represents in practice, why it is meaningful for customers and the community.\n\n## The work behind the badge\n- The less visible effort, learning, testing, sharing what works, and being honest about what does not.\n\n## Community contribution that helps people do better work\n- Practical guidance, answering real questions, sharing patterns, speaking or writing, mentoring.\n\n## Customer impact we see in the real world\n- How Zach’s approach shows up in smoother Teams Phone rollouts, clearer decisions across Operator Connect and Direct Routing, and fewer operational surprises.\n\n## What it is like working with Zach\n- Short, specific examples of how he raises the bar internally, brings people along, and stays grounded.\n\n## Congratulations, and what comes next\n- Recognition, thanks, and a forward-looking close without a hard sell.\n\nNext step: I need 3 to 5 concrete achievements to feature so the post reads specific rather than generic.",
+              "time": {
+                "start": 1770327345386,
+                "end": 1770327345386
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "wkvKZaFwHyrh75QPZuZUxn/aMWn+b9Ezmj9LwaKqQQEgr6q/pMrHaFkZthkvwiPngKRyHG/7cKEM2tMIWjpIaW9kqDFscPz3ZxvGxQXAsW/hlSsgZxpUAahFpMNg6o8LqSfM1GXxpwIZF/fuI+XsrRidzrudUUsx3+Fy1HEdoxPdU4MIv7xtsGWdv8IEw/EJPE1NU7X7zvTJ0wIOkMGGlCg0oStLpGcMdinKX2rqkHSA/ym4FcZL7INAjwjsBcOGlL91z0V2rU2koQ089DgQqalP3xwMZJ+dT8JIKunk+e5xZS6Ps1bfExHn0WREMdxTkojNrD7YBIcGIOuV/4aKDGDVL/PNM7yvxpJ9pWNTTcxwK804xI1MYHDcneA98FtqcbR3oBF6CsA7++sTcjNXwms="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fbb8931001dQVQKxc5Kc5waP",
+              "sessionID": "ses_3d046316dffe4rxxzrvJ00BNTT",
+              "messageID": "msg_c2fbb217b0010Rl2mkYaEDyqtI",
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "e06ef39f4c27bc696bfdaa62129483237ec0b187",
+              "cost": 0,
+              "tokens": {
+                "input": 16115,
+                "output": 979,
+                "reasoning": 752,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            }
+          ],
+          "activities": [
+            {
+              "type": "activity",
+              "activityType": "file.edited",
+              "data": {
+                "file": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h/brief.md"
+              }
+            }
+          ]
+        }
+      ],
+      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770326949962_zlztw2h",
+      "createdAt": "2026-02-05T21:29:09.962Z",
+      "updatedAt": "2026-02-05T21:35:45.522Z",
+      "opencodeSessionId": "ses_3d046316dffe4rxxzrvJ00BNTT"
+    },
+    {
+      "id": "proj_1770328566798_gmuu65e",
+      "name": "Activity Test",
+      "contentType": "blog",
+      "brief": "Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.",
+      "wordCount": 500,
+      "styleHints": "",
+      "documentContent": "# Remote work that actually helps tech companies\n\nRemote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n\nThis is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n\n## Productivity goes up when focus goes up\n\nMany engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n\nThe productivity gain is not automatic. It comes from being deliberate about how work moves.\n\n- Write things down. Decisions, context, and requirements live in shared docs, not in someone else's memory.\n- Default to asynchronous updates. Not every question needs a meeting.\n- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n\nWhen teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n\n## Talent acquisition becomes a strategic advantage\n\nThe best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n\nIt also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n\nFor global companies, remote work can also improve coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n\n## The trade-offs are real, but manageable\n\nRemote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n\nThe fix is not to pull everyone back into the office. It is to design for remote.\n\n- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n- Protect time for connection. Regular team rituals that are not performative.\n- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n\n## A pragmatic way to think about it\n\nRemote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n\nIf you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+      "messages": [
+        {
+          "id": "msg_1770328567050_c676fo1",
+          "role": "user",
+          "content": "Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.",
+          "timestamp": "2026-02-05T21:56:07.050Z"
+        },
+        {
+          "id": "msg_1770328600097_khamxg0",
+          "role": "question",
+          "content": "",
+          "questionData": {
+            "requestId": "que_c2fceae1d001lFz21LUeDepv7K",
+            "sessionId": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+            "questions": [
+              {
+                "question": "To confirm before I write `draft.md`, what format should this be? (Your brief says blog, but ~500 words is shorter than our usual blog range.)",
+                "header": "Format",
+                "options": [
+                  {
+                    "label": "Blog (short, ~500 words)",
+                    "description": "Write a concise blog post at ~500 words, still using headings and a narrative flow."
+                  },
+                  {
+                    "label": "Solution page (600-1200)",
+                    "description": "More scannable, business-first page format."
+                  },
+                  {
+                    "label": "LinkedIn post (150-300)",
+                    "description": "Short social post with one idea and a closing reflection/question."
+                  },
+                  {
+                    "label": "Email",
+                    "description": "Very short email-style note with a clear next step."
+                  }
+                ]
+              }
+            ],
+            "answered": true,
+            "answers": [
+              [
+                "Blog (short, ~500 words)"
+              ]
+            ]
+          },
+          "timestamp": "2026-02-05T21:56:40.097Z",
+          "parts": [
+            {
+              "id": "prt_c2fce329d001ouFHKI6cWTi0k0",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce329c001cRCpYcbdllMNmi",
+              "type": "text",
+              "text": "[analyze-mode]\nANALYSIS MODE. Gather context before diving deep:\n\nCONTEXT GATHERING (parallel):\n- 1-2 explore agents (codebase patterns, implementations)\n- 1-2 librarian agents (if external library involved)\n- Direct tools: Grep, AST-grep, LSP for targeted searches\n\nIF COMPLEX - DO NOT STRUGGLE ALONE. Consult specialists:\n- **Oracle**: Conventional problems (architecture, debugging, complex logic)\n- **Artistry**: Non-conventional problems (different approach needed)\n\nSYNTHESIZE findings before proceeding.\n\n---\n\n**LoopUp Content Generator**\n\nThe text following these instructions is the content brief. Analyse and clarify\nwith the user before generating final output.\n\n=============================================================================\nHARD RULES (check output against these before delivering)\n=============================================================================\n\n1. NO em-dashes (—). Use commas, full stops, or restructure instead.\n\n2. NO colon-split headings. Never write \"Topic: Subtitle\" format.\n   BAD: \"The Challenge: Why Enterprises Struggle\"\n   GOOD: \"Why enterprises struggle with carrier fragmentation\"\n\n3. NO semicolon overuse. Maximum one per article.\n\n4. NO filler phrases: \"In today's world\", \"It's important to note\",\n   \"What this means is\", \"At the end of the day\".\n\n5. NO buzzwords: \"unlock\", \"leverage\", \"holistic\", \"cutting-edge\",\n   \"game-changing\", \"best-in-class\", \"seamless\", \"delve\", \"landscape\".\n\n6. NO one-shot responses. Always clarify format and brief first.\n\n7. BRIEF FILE ONLY: The content brief must live in brief.md in the project folder.\n   Create or update brief.md whenever the brief changes.\n\n8. DRAFT FILE ONLY: The marketing output must live in draft.md in the project\n   folder. Create or update draft.md for all content output and edits.\n\n9. NO OTHER FILES: Never create any other files. Do not create outline.md or\n   any helper files. Only brief.md and draft.md are allowed.\n\n10. QUESTIONS ONE AT A TIME: Ask only one question per reply and use the\n    question tool. Never ask multiple questions in a single reply.\n\n11. BRIEF CHANGES MUST UPDATE brief.md: After the initial response, any request\n    that changes the brief (new requirements, emphasis shifts, restructuring)\n    must update brief.md before editing draft.md.\n\n12. NO DELEGATION OR BACKGROUND TASKS: Do not delegate to subagents and do not\n    create background tasks.\n\n=============================================================================\nBEFORE WRITING: Mandatory Steps\n=============================================================================\n\n1. Ensure the brief exists in brief.md. If a brief is provided as text, write\n   it to brief.md. If instructed to look in brief.md, read it.\n2. Confirm output format (blog, whitepaper, solution page, social, email, other)\n3. Identify ambiguities or missing context in the brief\n4. Ask clarifying questions if needed. Ask one question at a time using the\n   question tool.\n5. Propose an outline aligned to the format in the conversation only. Do not\n   create an outline file.\n6. Wait for confirmation before producing final content in draft.md\n\n=============================================================================\nVOICE\n=============================================================================\n\nYou are writing as LoopUp, a single expert author embedded in the business.\n\n- Expert and human. Confident, business-first, pragmatic. Warmth welcome.\n- Peer, not lecturer. Think alongside the reader, not above them.\n- Have a point of view. Guidance over neutral information.\n- First-person permitted. \"We often see\" and occasional \"I\" add authenticity.\n- Recognition before solution. Articulate the reader's friction before solving.\n- Concrete over abstract. Specific examples beat vague statements.\n- Vary rhythm. Mix short and longer sentences. No monotonous cadence.\n\nAudience: Enterprise IT, UC, and digital transformation decision-makers\noperating at scale across multiple geographies. Frame around trade-offs,\noperational impact, and long-term implications, not features.\n\n=============================================================================\nSTRUCTURE\n=============================================================================\n\n- Start from business context, not technology\n- Progress logically: context → definitions → how it works → trade-offs → summary\n- Guide through reasoning; don't present conclusions upfront\n- Create recognition moments before introducing solutions\n- End with resolution, not just information\n\n=============================================================================\nMARKDOWN\n=============================================================================\n\n- Use Markdown formatting. Allowed elements: H1 (#), H2 (##), H3 (###),\n  bulleted lists (-), numbered lists (1.), bold (**), italic (*), links,\n  tables, and blockquotes.\n\n=============================================================================\nFORMAT-SPECIFIC GUIDANCE\n=============================================================================\n\n**Blog Article** (800-1500 words)\n\n- Conversational but substantive. More personality than whitepaper.\n- Paragraphs 1-3 sentences.\n- Hook through relevance, not drama. No hard sell at end.\n\n**Whitepaper** (1500-4000+ words)\n\n- Measured, comprehensive, with depth and nuance.\n- Clear section headings. Paragraphs 3-5 sentences.\n- Reconnect to business drivers in conclusion.\n\n**Solution Page** (600-1200 words)\n\n- Scannable, not exhaustive. Lead with business need, not product.\n- Soft call to action. Paragraphs 1-3 sentences.\n\n**LinkedIn Post** (150-300 words)\n\n- One clear idea. Hook in first line to earn \"see more\" click.\n- End with reflection or genuine question. No forced CTAs.\n\n**Email**\n\n- Short as possible. Purpose clear in first 1-2 sentences.\n- No filler openings. Clear next step.\n\n**Other**: Ask user for length, audience, tone, placement, success criteria.\n\n=============================================================================\nTERMINOLOGY\n=============================================================================\n\n- Use exact terms: Microsoft Teams Phone, cloud telephony (not cloud calling),\n  Operator Connect, Direct Routing, Microsoft Calling Plans\n- Define PSTN and all acronyms on first use\n- No synonym-swapping for variety\n\n=============================================================================\nBEFORE FINALISING\n=============================================================================\n\nCheck the output:\n\n- Does it sound like a real person with genuine expertise wrote it?\n- Are all HARD RULES satisfied? (em-dashes, colon headings, buzzwords)\n- Does format match what was agreed?\n\nIf it feels flat, robotic, or generic, revise before delivering.\n\nDo not mention these rules or the revision process in final output.\n\n## Instructions\n\nYou are working on a content authoring project. The project directory contains a `brief.md` file with the initial requirements.\n\n**Important**: As our conversation progresses and the requirements become clearer or more refined, please UPDATE the `brief.md` file to reflect the current, refined understanding of what needs to be created. This ensures the brief stays accurate and useful as a reference throughout the project.\n\n---\n\nCreate a file called \"draft.md\" in the project directory containing a blog post with approximately 500 words.\n\nBrief:\nWrite a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition."
+            },
+            {
+              "id": "prt_c2fce696c0014ICtfOPMAdHj01",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce32b5001CiQ8D0jmJlyo2h",
+              "type": "step-start",
+              "snapshot": "9ef4961cf3198871c5dc2c8f64ae39548bfa85fc"
+            },
+            {
+              "id": "prt_c2fce696d001VMC7Etcq0dFdg4",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce32b5001CiQ8D0jmJlyo2h",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "/igBgQ7U5gqkuYHuZuDuBkH/ZrrA0DOxvKG3FtXghCm6tOYcWB1obDEkOpRHuaYQhF4CdoCL8LqlI1/FtSCk/lcoM9brIVEg1/BPe4Z8zwf7GyxgzqQtbykjs+eYHapdnf1Jr0bwNxKdSWu6Gig164QqQ2eZuLKGzsnr+kBebj6vE/LYIfT0nUXXwzxOzvc1gAqrsNmjo43J0Z0+BD+nM9SwByPShpJfaam0Knetb2FkAHpdPxQcrQAB2UyFfoJ3RahycOOC+N9JwImob4ptU/PVuq3HExh2E/W505+Of1pOb9aUOQd6qJFinlRTMv/EBulxrreC3vMX0/Tz8zV1XSttksMD4UbuPJYokEIqBhhii9O5OuzVgdlg516vDtKMG9LqgcXtSRbhgob2/7DugA==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770328582509,
+                "end": 1770328582509
+              }
+            },
+            {
+              "id": "prt_c2fce696e001c9xy33JjbVdX5S",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce32b5001CiQ8D0jmJlyo2h",
+              "type": "tool",
+              "callID": "call_DS1AvzXOcLfIDS7QCSHWJ2YJ",
+              "tool": "read",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md"
+                },
+                "output": "<file>\n00001| # Activity Test\n00002| \n00003| **Type**: blog\n00004| **Word Count**: 500\n00005| \n00006| ## Brief\n00007| \n00008| Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n00009| \n00010| \n\n(End of file - total 10 lines)\n</file>",
+                "title": "data/projects/proj_1770328566798_gmuu65e/brief.md",
+                "metadata": {
+                  "preview": "# Activity Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nWrite a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n\n",
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770328582510,
+                  "end": 1770328582515
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "/KaJHNTMqp9yb4zAkuoGhPWncdtRbLM/MDDiU2CbgNQA/EsttKYadT2OcIFpsCi5/2uajuRPxyEcAq4AUCz5IysfajZgUuKa2VncxBqlAWLSlygjXlp2JwY6WcNenYaKbx4K/zKUYsTQaykAgV0GdG6DCkFAGeiDAL+uPCqWeXGZXBV2K1/8n9A/X5RoGOzWwd3sbxxeFd2WnACL1Aitxy0RkM/cBNMw6wSYR5COdPrvrPibhBPFf4zr6/lm0EH8tl7qaSwCzrHDjz5hFaG4P8oX5wUCgVDKCnqaGH+dRP3V5Tvxvjwr6/n4o8TAbJ2uTS18w2yOCvBpYCFNhP9UeyOvbxx2F9Mo/iSdRSKG3AdYqaOlrzBqXZ2EVi3optSbAVtUpjAKM7iuFoOnK+kb9Q=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fce696f001OjPVmwylkG9R9B",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce32b5001CiQ8D0jmJlyo2h",
+              "type": "tool",
+              "callID": "call_wRXHdUtlrUe6KGHTGaSKCBnJ",
+              "tool": "read",
+              "state": {
+                "status": "error",
+                "input": {
+                  "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+                },
+                "error": "Error: File not found: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "time": {
+                  "start": 1770328582512,
+                  "end": 1770328582514
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "avNWKrHbhXkWiC8fsD0gz0HBI9Yy81v3/G8Ep0nD0AQViU/njJpD5IAwuAHngMShs2fGlXuoqiECGdn6Lzlg8PC5ixv2LPh8UtO/lBywXxdyI8HYdjHHJBbuEge57ELbuAQUq8DaFOXqRjjrBMaTfQPPpFRf4SspuVaXtPz/1WBhy/ZTNlZTWTWu+rYdmZU1k/HrxGE55Ych60bs1ZYOVWYjNHLOkKmpIgHrJXCwG011OsdCrTVBcNClY+X3iXh3//PEtvB20boiOOCpzESLKeEqutDK8i5wmQqB0ExbuGjbtq/UoOiV0mUFoTp+y7TiRoqmQav0aDiIHnuqM2Kk0M5uO2IVDVVayx7PUEt1knr6ASHx6KZvUMuCvpQO4GELDmPDispiLgVycg3MZxvGMA=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fce69c3001rTfu2mKbt5e4ig",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce32b5001CiQ8D0jmJlyo2h",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "9ef4961cf3198871c5dc2c8f64ae39548bfa85fc",
+              "cost": 0,
+              "tokens": {
+                "input": 4492,
+                "output": 814,
+                "reasoning": 712,
+                "cache": {
+                  "read": 10624,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fcea11e001z8H52DGgMbEl37",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce69cf001Jypop1fGxQx2eA",
+              "type": "step-start",
+              "snapshot": "9ef4961cf3198871c5dc2c8f64ae39548bfa85fc"
+            },
+            {
+              "id": "prt_c2fcea11f001eqjtLfqsP7lPZ1",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fce69cf001Jypop1fGxQx2eA",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "JIEkkb+tNGGWeQKx9rxO1zHcbHhUEYtrZE61qsDZ+w6hnYcpgxWbqNTDFOU1DjAsDwCkdchVlCb7OvGoTAW/4Af+d33rhtGr8v6OO4SoHLfepYLL/TeJ1U6dYt/wHGmxwJMsZiu3mKWhUzGPClY06X6JYl6gRVWV630JyQlgr0gTrNGBE46cYGYP79uwTwTKD7VPPcQ+fiI413fXgcc8Iyk5aFiKKN5oC7KpF3JHBqSex5HvdA+Ij8T+OseUjj9CUkioO/eUDixck28m0bjAqX5zA6AecP1tRkYu7LX6rlhLfi9zhfDKokxuWdtCbx7JhxHVnDmvNVwwYNgvHzHPP0UtmTJUvFupJsJLG0CMrIa6qolHXlCwOfkVEqeJxJOOXIrhIkw1jh6mOmatVY0HMw==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770328596767,
+                "end": 1770328596767
+              }
+            }
+          ],
+          "activities": []
+        },
+        {
+          "id": "msg_1770328701802_pfwzgqp",
+          "role": "question",
+          "content": "",
+          "questionData": {
+            "requestId": "que_c2fd03b67001rA5YhtLvxF1Kqm",
+            "sessionId": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+            "questions": [
+              {
+                "question": "Here’s the outline I’ll use for the ~500-word blog. Do you want any changes before I write the full draft into `draft.md`?\n\nProposed outline\n1) Intro, remote work as operating model choice for tech companies\n2) Productivity gains, focus time, fewer context switches, outcome metrics\n3) Talent acquisition, wider geography, specialist roles, retention\n4) Trade-offs and mitigations, onboarding, async norms, meeting hygiene, hybrid fairness\n5) Close, pragmatic takeaway without a hard sell",
+                "header": "Outline OK?",
+                "options": [
+                  {
+                    "label": "Use this outline (recommended)",
+                    "description": "Proceed with this structure."
+                  },
+                  {
+                    "label": "Adjust emphasis",
+                    "description": "Shift weight more to productivity or more to talent."
+                  },
+                  {
+                    "label": "Add a section",
+                    "description": "Include another angle like cost, security, or culture."
+                  },
+                  {
+                    "label": "Change the structure",
+                    "description": "Reorder or change headings/flow."
+                  }
+                ]
+              }
+            ],
+            "answered": true,
+            "answers": [
+              [
+                "Use this outline (recommended)"
+              ]
+            ]
+          },
+          "timestamp": "2026-02-05T21:58:21.802Z",
+          "parts": [
+            {
+              "id": "prt_c2fcf6abc001lZLYjN2H8u5G9H",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf3a6e0015SGmCQz4RNiguE",
+              "type": "step-start",
+              "snapshot": "ae7848a5b95e2ea842ec39ae98187e738377f615"
+            },
+            {
+              "id": "prt_c2fcf6abe001FiGZyG71qV9Cmo",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf3a6e0015SGmCQz4RNiguE",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "yE4enzqcp1GuRKMtdMgGEAm8lC3OcGMB1bxQ8miAaf+ObNCwdMFUzQyni/1De1yWGvBk/rlaoqGinfzj2hc5lJbio90EKtzcStf9DFpV0N14Uu2+Zzv4dtnl9HJh8R0q4ZbN6weeiqEdCpWyKfeUTD1YwrqWpvdZb5Pj0xY0MyeNMlWMiSzqTR+vBLUYi1ZravSNHd1a3v3C2drESomyFRLwRD9HBQPbi5t/pv7satsfmXTohHXCRBej2UVaj1GroX8NUp2EFprEh+pMkfKFdKwl2AMmmCDo5WJpgi1uX6Gt9GrFr/3PzL9UbELbKo3ppvjnwn7cmv9b01ZGNMvz/WQcMKe07Fei41bQyorQYlICN1orzzSct/AMOapCaLzgBvbjh22ZpQMi6CTLT14h9A==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770328648382,
+                "end": 1770328648382
+              }
+            },
+            {
+              "id": "prt_c2fcf6abf001n6isdovdi5m5g5",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf3a6e0015SGmCQz4RNiguE",
+              "type": "tool",
+              "callID": "call_iL5ob8OHnGahzKTXNxuFCE2g",
+              "tool": "apply_patch",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "patchText": "*** Begin Patch\n*** Update File: brief.md\n@@\n-# Activity Test\n-\n-**Type**: blog\n-**Word Count**: 500\n-\n-## Brief\n-\n-Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n+# Remote Work Benefits For Technology Companies\n+\n+**Type**: blog (short)\n+**Word Count**: ~500\n+\n+## Brief\n+\n+Write a short blog post about the benefits of remote work for technology companies.\n+\n+## Focus\n+\n+- Productivity gains\n+- Talent acquisition\n+\n+## Audience\n+\n+Technology company decision-makers, including engineering, IT, and people leaders.\n+\n+## Notes\n+\n+- Business-first framing with pragmatic trade-offs and mitigations\n+- Define any acronyms on first use\n*** End Patch"
+                },
+                "output": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/brief.md",
+                "title": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/brief.md",
+                "metadata": {
+                  "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n@@ -1,9 +1,22 @@\n-# Activity Test\n+# Remote Work Benefits For Technology Companies\n \n-**Type**: blog\n-**Word Count**: 500\n+**Type**: blog (short)\n+**Word Count**: ~500\n \n ## Brief\n \n-Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n+Write a short blog post about the benefits of remote work for technology companies.\n \n+## Focus\n+\n+- Productivity gains\n+- Talent acquisition\n+\n+## Audience\n+\n+Technology company decision-makers, including engineering, IT, and people leaders.\n+\n+## Notes\n+\n+- Business-first framing with pragmatic trade-offs and mitigations\n+- Define any acronyms on first use\n\n",
+                  "files": [
+                    {
+                      "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md",
+                      "relativePath": "data/projects/proj_1770328566798_gmuu65e/brief.md",
+                      "type": "update",
+                      "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md\n@@ -1,9 +1,22 @@\n-# Activity Test\n+# Remote Work Benefits For Technology Companies\n \n-**Type**: blog\n-**Word Count**: 500\n+**Type**: blog (short)\n+**Word Count**: ~500\n \n ## Brief\n \n-Write a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n+Write a short blog post about the benefits of remote work for technology companies.\n \n+## Focus\n+\n+- Productivity gains\n+- Talent acquisition\n+\n+## Audience\n+\n+Technology company decision-makers, including engineering, IT, and people leaders.\n+\n+## Notes\n+\n+- Business-first framing with pragmatic trade-offs and mitigations\n+- Define any acronyms on first use\n",
+                      "before": "# Activity Test\n\n**Type**: blog\n**Word Count**: 500\n\n## Brief\n\nWrite a short blog post about the benefits of remote work for technology companies. Focus on productivity gains and talent acquisition.\n\n",
+                      "after": "# Remote Work Benefits For Technology Companies\n\n**Type**: blog (short)\n**Word Count**: ~500\n\n## Brief\n\nWrite a short blog post about the benefits of remote work for technology companies.\n\n## Focus\n\n- Productivity gains\n- Talent acquisition\n\n## Audience\n\nTechnology company decision-makers, including engineering, IT, and people leaders.\n\n## Notes\n\n- Business-first framing with pragmatic trade-offs and mitigations\n- Define any acronyms on first use\n",
+                      "additions": 17,
+                      "deletions": 4
+                    }
+                  ],
+                  "diagnostics": {},
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770328651513,
+                  "end": 1770328651647
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "UHCH6QvdhSTM2q1iC+FVKluYlgSr/POy+CaggD6ndgDu5+tg1MALFK612FS2h+g2VSnGXOfE3vE1zJIO6mKtaflqFlYY6Rgf8J0+eLz3mkFsVHZz5+XkuY7Q8ZN93NRTux7rhEC5i7hjogScXIuvepeYYsL0wqkYLcJY+ndX0/OS+4mEho9Qgif9zh44nugqa+w0/1o2NsUGdd4o8kO57csXmxvo4g3Nz8mUUND6Xw1cwvARm+Fu1QTLo75fUX1XECQz1HexViu9VwrEo+txe52SPdXt3vNVBKghaLOYyT1WajS6YkTA7ZPsdxU2akoSqM6Puw8l9pFn+mLZDx6fxr5W4WsFZLSwYFmR5WSSBR9hsm8TyUAc2nRO3wFS6s8kErredHlGcyn9iW01I83i/Q=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fcf7780001Hj6FOrZdI2pgVX",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf3a6e0015SGmCQz4RNiguE",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "858493ec15e3a2e9018de40c069401cf4db9f1b2",
+              "cost": 0,
+              "tokens": {
+                "input": 616,
+                "output": 775,
+                "reasoning": 559,
+                "cache": {
+                  "read": 14976,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fcf7793001LWa8ARUGQ6Irh1",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf3a6e0015SGmCQz4RNiguE",
+              "type": "patch",
+              "hash": "ae7848a5b95e2ea842ec39ae98187e738377f615",
+              "files": [
+                "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md"
+              ]
+            },
+            {
+              "id": "prt_c2fcf7f2c001qgjXCFS97mkB0j",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf77a1001faHiWR03si8iZ4",
+              "type": "step-start",
+              "snapshot": "858493ec15e3a2e9018de40c069401cf4db9f1b2"
+            },
+            {
+              "id": "prt_c2fcf7f34001Vx4IifIUxrz7Hm",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf77a1001faHiWR03si8iZ4",
+              "type": "tool",
+              "callID": "call_TjAkBMBCqgrQxe3VNG7Mkvza",
+              "tool": "apply_patch",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "patchText": "*** Begin Patch\n*** Add File: draft.md\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not magic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Access to talent becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n*** End Patch"
+                },
+                "output": "Success. Updated the following files:\nA data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "title": "Success. Updated the following files:\nA data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "metadata": {
+                  "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -0,0 +1,42 @@\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not magic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Access to talent becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n\n",
+                  "files": [
+                    {
+                      "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "relativePath": "data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "type": "add",
+                      "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -0,0 +1,42 @@\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not magic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Access to talent becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+                      "before": "",
+                      "after": "# Remote work that actually helps tech companies\n\nRemote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n\nThis is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n\n## Productivity goes up when focus goes up\n\nMany engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n\nThe productivity gain is not magic. It comes from being deliberate about how work moves.\n\n- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n- Default to asynchronous updates. Not every question needs a meeting.\n- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n\nWhen teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n\n## Access to talent becomes a strategic advantage\n\nThe best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n\nIt also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n\nFor global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n\n## The trade-offs are real, but manageable\n\nRemote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n\nThe fix is not to pull everyone back into the office. It is to design for remote.\n\n- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n- Protect time for connection. Regular team rituals that are not performative.\n- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n\n## A pragmatic way to think about it\n\nRemote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n\nIf you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+                      "additions": 42,
+                      "deletions": 0
+                    }
+                  ],
+                  "diagnostics": {},
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770328668800,
+                  "end": 1770328668945
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "UbmobK2pHq+CqjZn0cb1W6fer8546grfj4A0Hjc1wlsrP7hRzw6pG5DYAc4CSMeMGL6AOhX57J+lrRZbD3rIwLx2Z37bdlNlX9wWdC+IYChkbp6Sr1GT8ank7Y8F3HQkSrsFA6PG7J32F2Av4SbISikCbfH3qBpUCJvqz6P50+KTcr16sLEsC+KGe8FpN9PM0Oh/idycPeFTlRJ9jndwqfBzkONFwz88e5UXI1Q0chZ4arIL6rhQJEjsN9D+o3ajTXZXbsvOvKqwTldsuWQebc8OXZRqMjHvS/xIn0wg6/viouvDGC3q74ZiyrF245z0XRRMRttLY0NkJO9eGICm17E1Ceg5zme9vHJzx9zCzYcjvDp/wMFCddxqe68h3EKXYy4BNjy7VF3KSSa6vuNa+A=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fcfbb13001iivyKYGKcI8w0R",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf77a1001faHiWR03si8iZ4",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "2c61a0dcc95361f377595d67d217cc5c820fadbc",
+              "cost": 0,
+              "tokens": {
+                "input": 864,
+                "output": 784,
+                "reasoning": 0,
+                "cache": {
+                  "read": 14976,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fcfbb20001KgGg111A2FN8jA",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcf77a1001faHiWR03si8iZ4",
+              "type": "patch",
+              "hash": "858493ec15e3a2e9018de40c069401cf4db9f1b2",
+              "files": [
+                "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              ]
+            },
+            {
+              "id": "prt_c2fcff96a001kvUJQcZII083je",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcfbb2e001noda1VXVD4R70S",
+              "type": "step-start",
+              "snapshot": "2c61a0dcc95361f377595d67d217cc5c820fadbc"
+            },
+            {
+              "id": "prt_c2fcff96d001EBwWjJvqvARX9f",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcfbb2e001noda1VXVD4R70S",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "3uqXr6c+WmoGiGeCF33bSs8MME0K0y2gbvMbMaVKp2Ceu3OB0E8MVgV5eYoHWCnYEDehtTqskifcjhLNxv9d4Jb5KhDVnkj0qNZL7uIKZfq3xDXvKK/ZxPCoKGG2okhemjvMeOb1gbYpQDH2kFqzEs9Zqw0ALqyGKggzHLrPOrppEjhi/cNs6eLHIxQxUXabySnWTIQrB9bE4hKQtPfkJea+FBBdtCX6StVhaaVrvae9q3Pvuin/fs3Kj7mkin3SC3Vv/tBy5C9y5k4QiPsaL8+cSjalZ5ixvJkCnEwlqHrCrPRnhCnfjzapLEDxsw++CZjfd+iZmqzzwrjV4r/LP5XVdz+yyxRsjMLUvaCW23b3cw4t1khjl1F0cNESb5nvobir2AfI4giG89c8nRUC6Q==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770328684909,
+                "end": 1770328684909
+              }
+            },
+            {
+              "id": "prt_c2fcff96e001rU9FEnmWwLqaSM",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcfbb2e001noda1VXVD4R70S",
+              "type": "tool",
+              "callID": "call_ZrPNSqZAbqp4m0pdOZ9XJuNH",
+              "tool": "apply_patch",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "patchText": "*** Begin Patch\n*** Update File: draft.md\n@@\n-# Remote work that actually helps tech companies\n-\n-Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n-\n-This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n-\n-## Productivity goes up when focus goes up\n-\n-Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n-\n-The productivity gain is not magic. It comes from being deliberate about how work moves.\n-\n-- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n-- Default to asynchronous updates. Not every question needs a meeting.\n-- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n-- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n-\n-When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n-\n-## Access to talent becomes a strategic advantage\n-\n-The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n-\n-It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n-\n-For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n-\n-## The trade-offs are real, but manageable\n-\n-Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n-\n-The fix is not to pull everyone back into the office. It is to design for remote.\n-\n-- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n-- Protect time for connection. Regular team rituals that are not performative.\n-- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n-\n-## A pragmatic way to think about it\n-\n-Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n-\n-If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n+# Draft pending outline confirmation\n*** End Patch"
+                },
+                "output": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "title": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "metadata": {
+                  "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -1,42 +1,1 @@\n-# Remote work that actually helps tech companies\n-\n-Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n-\n-This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n-\n-## Productivity goes up when focus goes up\n-\n-Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n-\n-The productivity gain is not magic. It comes from being deliberate about how work moves.\n-\n-- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n-- Default to asynchronous updates. Not every question needs a meeting.\n-- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n-- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n-\n-When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n-\n-## Access to talent becomes a strategic advantage\n-\n-The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n-\n-It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n-\n-For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n-\n-## The trade-offs are real, but manageable\n-\n-Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n-\n-The fix is not to pull everyone back into the office. It is to design for remote.\n-\n-- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n-- Protect time for connection. Regular team rituals that are not performative.\n-- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n-\n-## A pragmatic way to think about it\n-\n-Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n-\n-If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n+# Draft pending outline confirmation\n\n",
+                  "files": [
+                    {
+                      "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "relativePath": "data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "type": "update",
+                      "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -1,42 +1,1 @@\n-# Remote work that actually helps tech companies\n-\n-Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n-\n-This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n-\n-## Productivity goes up when focus goes up\n-\n-Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n-\n-The productivity gain is not magic. It comes from being deliberate about how work moves.\n-\n-- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n-- Default to asynchronous updates. Not every question needs a meeting.\n-- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n-- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n-\n-When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n-\n-## Access to talent becomes a strategic advantage\n-\n-The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n-\n-It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n-\n-For global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n-\n-## The trade-offs are real, but manageable\n-\n-Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n-\n-The fix is not to pull everyone back into the office. It is to design for remote.\n-\n-- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n-- Protect time for connection. Regular team rituals that are not performative.\n-- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n-\n-## A pragmatic way to think about it\n-\n-Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n-\n-If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n+# Draft pending outline confirmation\n",
+                      "before": "# Remote work that actually helps tech companies\n\nRemote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n\nThis is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n\n## Productivity goes up when focus goes up\n\nMany engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n\nThe productivity gain is not magic. It comes from being deliberate about how work moves.\n\n- Write things down. Decisions, context, and requirements live in shared docs, not in someone\u0006s memory.\n- Default to asynchronous updates. Not every question needs a meeting.\n- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n\nWhen teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n\n## Access to talent becomes a strategic advantage\n\nThe best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n\nIt also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n\nFor global companies, remote work can also smooth coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n\n## The trade-offs are real, but manageable\n\nRemote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n\nThe fix is not to pull everyone back into the office. It is to design for remote.\n\n- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n- Protect time for connection. Regular team rituals that are not performative.\n- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n\n## A pragmatic way to think about it\n\nRemote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n\nIf you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+                      "after": "# Draft pending outline confirmation\n",
+                      "additions": 1,
+                      "deletions": 42
+                    }
+                  ],
+                  "diagnostics": {},
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770328694038,
+                  "end": 1770328694167
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "IGIz8c2104j04CMixMRhi7wDYMcDxDUUavu0Cl1rI3UjbUIv2CxkNxAXGQOm8j36AVr+REYoN7USp3AgpygkDgefKkTzVvb36SwkCWhVm28XolRpb+FTSEUpTgvhpoZyMluygver5WS2uMakWQjhZHxWPHI348HIfIVHTP91w9a9Pi1saefA6GizZBAPmCbAK/8E6R3TxZRpFlJeHeHK1c6oM903s16PgzkWrGzqxTkLt3mViFmIgD45+KtFgkUxjb9KPRHERqXZAdMj1GAVmIde047hc31EtSk9VStz9+Puz+kWYg1jptNFl2iScRp+ASs9GOo/qPxPVo5xmQQiZHHYF0p7oMPXWFA+aLdfJU8zVNEaOb9DC86pt4ow7LF7qx15dSj/UOjfoRPNNxFqCw=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fd01d98001Ni0JKwE05Q0cLC",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcfbb2e001noda1VXVD4R70S",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "493fa4df8e05277f41193b7846567f922535be5c",
+              "cost": 0,
+              "tokens": {
+                "input": 16658,
+                "output": 1500,
+                "reasoning": 708,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fd01db30013kWjeztwyYtHCT",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fcfbb2e001noda1VXVD4R70S",
+              "type": "patch",
+              "hash": "2c61a0dcc95361f377595d67d217cc5c820fadbc",
+              "files": [
+                "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              ]
+            },
+            {
+              "id": "prt_c2fd02e43001rtVodUCCAJZdtl",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd01dc5001bznji4e5nUdemU",
+              "type": "step-start",
+              "snapshot": "493fa4df8e05277f41193b7846567f922535be5c"
+            },
+            {
+              "id": "prt_c2fd02e4e001V2rECNzpLmgZLh",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd01dc5001bznji4e5nUdemU",
+              "type": "reasoning",
+              "text": "",
+              "metadata": {
+                "openai": {
+                  "itemId": "aAa0InceXwIiu2lVtJLwpWlzpqRAmEOBEMomIMYMQh1Xi61znUH9HDJWRjOog0Q+QGdf4UHahUwNCkf/XCz8Nix+eIrhB+U/80/xBJx5R+NqcUia2LWJHnUAE3vQCoVKkbLdy5bT4EiRxKNgV6mHK31Z4l1ZVAIDrRzf2RFkdgE8tWerbDqsvc+IPwHnwjodnhv9OLjXB5SnVS4KJesPntuptEjgZN87fmCkNksMLbSP4qhNiAjAuy4A39LOUhMs1CP8ed9ATQM3PoXUdle1V71LXsVB2p4R7MweoNNOCsXTX/YL4Ocu3EF4fZyjAhtLN+fRHeeNE8nrOKrdXgeaR1Q1RjWSW4lnJpeb7MTYbQfrHQKHqPck7Y5RkfzyXTiJCPT7x9SfaYrJL9XylZalzg==",
+                  "reasoningEncryptedContent": null
+                }
+              },
+              "time": {
+                "start": 1770328698446,
+                "end": 1770328698447
+              }
+            }
+          ],
+          "activities": [
+            {
+              "type": "activity",
+              "activityType": "file.edited",
+              "data": {
+                "file": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/brief.md"
+              }
+            },
+            {
+              "type": "activity",
+              "activityType": "file.edited",
+              "data": {
+                "file": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              }
+            },
+            {
+              "type": "activity",
+              "activityType": "file.edited",
+              "data": {
+                "file": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              }
+            }
+          ]
+        },
+        {
+          "id": "msg_1770328748714_jmu0vap",
+          "role": "assistant",
+          "content": "- Updated the brief in `brief.md` to reflect the confirmed format and focus.\n- Created the ~500-word blog post in `draft.md` (productivity gains + talent acquisition, with trade-offs and mitigations).",
+          "timestamp": "2026-02-05T21:59:08.714Z",
+          "parts": [
+            {
+              "id": "prt_c2fd0c66b001Snz6kFnzfu463K",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0bdac001Wqo11FGiyYR9CP",
+              "type": "step-start",
+              "snapshot": "540d619f5d085319f263208da80a541387552c18"
+            },
+            {
+              "id": "prt_c2fd0c66c001nLceq16kXzfpO1",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0bdac001Wqo11FGiyYR9CP",
+              "type": "tool",
+              "callID": "call_gRixiQOq0PPrUZsuiMH1BvoV",
+              "tool": "apply_patch",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "patchText": "*** Begin Patch\n*** Update File: draft.md\n@@\n-# Draft pending outline confirmation\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not automatic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone else's memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Talent acquisition becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also improve coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n*** End Patch"
+                },
+                "output": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "title": "Success. Updated the following files:\nM data/projects/proj_1770328566798_gmuu65e/draft.md",
+                "metadata": {
+                  "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -1,1 +1,42 @@\n-# Draft pending outline confirmation\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not automatic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone else's memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Talent acquisition becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also improve coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n\n",
+                  "files": [
+                    {
+                      "filePath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "relativePath": "data/projects/proj_1770328566798_gmuu65e/draft.md",
+                      "type": "update",
+                      "diff": "Index: /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n===================================================================\n--- /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n+++ /home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md\n@@ -1,1 +1,42 @@\n-# Draft pending outline confirmation\n+# Remote work that actually helps tech companies\n+\n+Remote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n+\n+This is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n+\n+## Productivity goes up when focus goes up\n+\n+Many engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n+\n+The productivity gain is not automatic. It comes from being deliberate about how work moves.\n+\n+- Write things down. Decisions, context, and requirements live in shared docs, not in someone else's memory.\n+- Default to asynchronous updates. Not every question needs a meeting.\n+- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n+- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n+\n+When teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n+\n+## Talent acquisition becomes a strategic advantage\n+\n+The best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n+\n+It also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n+\n+For global companies, remote work can also improve coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n+\n+## The trade-offs are real, but manageable\n+\n+Remote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n+\n+The fix is not to pull everyone back into the office. It is to design for remote.\n+\n+- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n+- Protect time for connection. Regular team rituals that are not performative.\n+- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n+\n+## A pragmatic way to think about it\n+\n+Remote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n+\n+If you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+                      "before": "# Draft pending outline confirmation\n",
+                      "after": "# Remote work that actually helps tech companies\n\nRemote work is often framed as a perk. In most technology companies, it is closer to an operating model choice. Done well, it can improve how work gets done and widen the pool of people you can hire. Done poorly, it can create delays, misalignment, and a slow drift in culture.\n\nThis is not about ideology. It is about results. Two outcomes tend to matter most for tech leaders making the decision at scale, productivity and talent.\n\n## Productivity goes up when focus goes up\n\nMany engineering and product teams do their best work in long, uninterrupted stretches. For some people, the office helps. For many, it does not. Remote work gives individuals more control over their focus time and the rhythm of their day. Fewer ad hoc interruptions, less time spent commuting, and more ability to structure deep work hours can translate into real output.\n\nThe productivity gain is not automatic. It comes from being deliberate about how work moves.\n\n- Write things down. Decisions, context, and requirements live in shared docs, not in someone else's memory.\n- Default to asynchronous updates. Not every question needs a meeting.\n- Use meetings for what they are good at. Unblocking, debate, and alignment, not status reporting.\n- Measure outcomes. Cycle time, incident rates, and customer impact tell you more than activity.\n\nWhen teams adopt these habits, remote work tends to push clarity. If you cannot explain a decision clearly in writing, it probably is not clear yet. That is a helpful pressure.\n\n## Talent acquisition becomes a strategic advantage\n\nThe best person for a role does not always live within commuting distance of your HQ. Remote work lets you recruit across geographies, which matters for hard-to-fill roles like senior engineers, security specialists, and experienced product managers.\n\nIt also helps with retention. People who have built a life around family, caregiving, or a particular location are less likely to churn when they do not have to choose between career growth and stability at home.\n\nFor global companies, remote work can also improve coverage. You can build teams that span time zones intentionally, using follow-the-sun handoffs for support and operations. That can reduce after-hours load and improve response times, as long as ownership and escalation paths stay clear.\n\n## The trade-offs are real, but manageable\n\nRemote work can fail in predictable ways. Onboarding can feel slower. New hires miss the informal context that used to come from overhearing conversations. Collaboration can become noisy if every interaction turns into a chat thread.\n\nThe fix is not to pull everyone back into the office. It is to design for remote.\n\n- Invest in onboarding. A written first-week plan, a buddy system, and a clear map of who owns what.\n- Protect time for connection. Regular team rituals that are not performative.\n- Make hybrid fair. If some people are in a room, make the meeting remote-first so nobody is a second-class participant.\n\n## A pragmatic way to think about it\n\nRemote work is a multiplier. Strong teams with clear goals and good habits often get better. Teams with fuzzy ownership and weak communication often feel the cracks faster.\n\nIf you treat remote work as an operating model, not a perk, it can improve productivity and open up access to talent you would otherwise never reach. For many technology companies, that combination is hard to ignore.\n",
+                      "additions": 42,
+                      "deletions": 1
+                    }
+                  ],
+                  "diagnostics": {},
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1770328745535,
+                  "end": 1770328745691
+                }
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "v9Szw9edu3FWqH2uMwK0q4j8Huqt0y4rudN6DFveRQet7p65KL9aglDRy8yiOCivq9LKwIHDVLZk5pbCM+1Z1gioOLYGzGfSoOB6tzwfewn7qcoMxbiCqNvmIRhQVbe9LQMsdznSKnmnp9mUBV2KBs9AKbdjN9xT/m56Jd9pdf/kMhzsB3yHmQWYdWumN447nc7LezHvhCh1Eqbumc8+2/Em8hPr7sZqBYRHshohONfSx5acBrF9Trh3NUrRUR9B4fyfPwLXx9gLXNLL/Gbfw5mjuKceNijGcEKzkjFR93r7LYp6c+XHFK/7kHnF9UhE5cPfe6nhuyzqoqhlsMunYBWvnWMi0LPOggzRS3ZAaHVfQUy0KJ8lyuFmEVSQ6nU7GYy7LKHWa27higDtfmzzSw=="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fd0e6dd00114r7Yul0D3K8Kt",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0bdac001Wqo11FGiyYR9CP",
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "c1f56e14f562acedbac6117a4ee910625d0a21e8",
+              "cost": 0,
+              "tokens": {
+                "input": 1064,
+                "output": 790,
+                "reasoning": 0,
+                "cache": {
+                  "read": 16768,
+                  "write": 0
+                }
+              }
+            },
+            {
+              "id": "prt_c2fd0e6f4001DNs3s81kq0wfo9",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0bdac001Wqo11FGiyYR9CP",
+              "type": "patch",
+              "hash": "540d619f5d085319f263208da80a541387552c18",
+              "files": [
+                "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              ]
+            },
+            {
+              "id": "prt_c2fd0ef8b001YdEe0ESxtLd0ld",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0e708001kkvEJyHri3NR5G",
+              "type": "step-start",
+              "snapshot": "c1f56e14f562acedbac6117a4ee910625d0a21e8"
+            },
+            {
+              "id": "prt_c2fd0ef92001yxNUJLj75Cni86",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0e708001kkvEJyHri3NR5G",
+              "type": "text",
+              "text": "- Updated the brief in `brief.md` to reflect the confirmed format and focus.\n- Created the ~500-word blog post in `draft.md` (productivity gains + talent acquisition, with trade-offs and mitigations).",
+              "time": {
+                "start": 1770328748667,
+                "end": 1770328748667
+              },
+              "metadata": {
+                "openai": {
+                  "itemId": "/BeR/RPmCtG9iuv6dV9jvCyK5zc/3XNh/ywQiZck46mO8EgbFUZKOSf5LC1GyU4aEqXZtSfparYO/BDksxtNks4ifsXlihIQVPbqVnw+GdmJRLBdzqAltHd8spf03spV8cA1DaxqRj3bpBsgd1UthF6vp48BAqQ1O7A2T2IZo5UmGEkc5VNhXIjxtKmLAiUrP+knjwWIi8UtekexZkBrdg0Z9TcenwqW3wXs/oLbXECjDl4sjZqRnQd3M/fkh7mH1KWBgDhzLgVcqB5vJ0xGYfw9jizQsuBQW7yLgfr+IKdTQn459mUwGsz+i5WnUYBdSRf7pGVPh23dzsX5dakWdlWQtUM4nbeRS+ygUNTvhcDCZkVfFnn01VAn0Fc8vHFXLFmlxbrOl4Hd0rqYyEwHFuU="
+                }
+              }
+            },
+            {
+              "id": "prt_c2fd0f283001fXAD7EuIcydmsB",
+              "sessionID": "ses_3d031d181ffeqFmZC7xQkVNpHL",
+              "messageID": "msg_c2fd0e708001kkvEJyHri3NR5G",
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "c1f56e14f562acedbac6117a4ee910625d0a21e8",
+              "cost": 0,
+              "tokens": {
+                "input": 1888,
+                "output": 49,
+                "reasoning": 0,
+                "cache": {
+                  "read": 16768,
+                  "write": 0
+                }
+              }
+            }
+          ],
+          "activities": [
+            {
+              "type": "activity",
+              "activityType": "file.edited",
+              "data": {
+                "file": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e/draft.md"
+              }
+            }
+          ]
+        }
+      ],
+      "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770328566798_gmuu65e",
+      "createdAt": "2026-02-05T21:56:06.798Z",
+      "updatedAt": "2026-02-05T22:00:26.367Z",
+      "opencodeSessionId": "ses_3d031d181ffeqFmZC7xQkVNpHL"
     }
   ]
 }

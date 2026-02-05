@@ -14,36 +14,163 @@ import {
   Terminal,
   HelpCircle,
   Clock,
+  Globe,
+  Users,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
-import type { ToolState } from "@/types/opencode-events";
+import type {
+  ToolState,
+  StreamStatus,
+  ToolCategory,
+} from "@/types/opencode-events";
 
-type StatusType =
-  | "idle"
-  | "connecting"
-  | "thinking"
-  | "tool"
-  | "waiting-for-answer"
-  | "processing-answer"
-  | "complete"
-  | "error";
-
-interface StatusLineProps {
-  status: StatusType;
-  message?: string;
-  toolName?: string;
-  showToolStates?: boolean;
-}
+// --- Tool icon mapping ---
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
   read: FileText,
   write: Pencil,
   edit: Pencil,
+  apply_patch: Pencil,
   grep: Search,
   glob: FolderOpen,
   bash: Terminal,
   question: HelpCircle,
+  webfetch: Globe,
+  websearch_web_search_exa: Globe,
+  context7_resolve_library_id: Globe,
+  "context7_resolve-library-id": Globe,
+  context7_query_docs: Globe,
+  "context7_query-docs": Globe,
+  delegate_task: Users,
+  task: Users,
 };
+
+function getToolIcon(
+  toolName?: string,
+  toolCategory?: ToolCategory,
+): LucideIcon {
+  if (toolName && TOOL_ICONS[toolName]) {
+    return TOOL_ICONS[toolName];
+  }
+  switch (toolCategory) {
+    case "file":
+      return FileText;
+    case "web":
+      return Globe;
+    case "delegation":
+      return Users;
+    case "question":
+      return HelpCircle;
+    default:
+      return Terminal;
+  }
+}
+
+// --- Visual config per StreamStatus.kind ---
+
+interface StatusVisualConfig {
+  icon: LucideIcon;
+  text: string;
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+  animate?: boolean;
+}
+
+function getStatusVisualConfig(status: StreamStatus): StatusVisualConfig {
+  switch (status.kind) {
+    case "idle":
+      return {
+        icon: CheckCircle2,
+        text: "Your turn",
+        bgColor: "bg-transparent",
+        borderColor: "border-transparent",
+        textColor: "text-gray-400 dark:text-gray-600",
+      };
+
+    case "connecting":
+      return {
+        icon: Loader2,
+        text:
+          status.label || "Connecting to OpenCode... this can take a moment",
+        bgColor: "bg-blue-50 dark:bg-blue-950",
+        borderColor: "border-blue-200 dark:border-blue-800",
+        textColor: "text-blue-700 dark:text-blue-300",
+        animate: true,
+      };
+
+    case "thinking":
+      return {
+        icon: Loader2,
+        text: status.label || "Working on it...",
+        bgColor: "bg-blue-50 dark:bg-blue-950",
+        borderColor: "border-blue-200 dark:border-blue-800",
+        textColor: "text-blue-700 dark:text-blue-300",
+        animate: true,
+      };
+
+    case "replying":
+      return {
+        icon: Loader2,
+        text: status.label || "Replying...",
+        bgColor: "bg-blue-50 dark:bg-blue-950",
+        borderColor: "border-blue-200 dark:border-blue-800",
+        textColor: "text-blue-700 dark:text-blue-300",
+        animate: true,
+      };
+
+    case "tool": {
+      const icon = getToolIcon(status.toolName, status.toolCategory);
+      return {
+        icon,
+        text: status.label || "Using a tool...",
+        bgColor: "bg-purple-50 dark:bg-purple-950",
+        borderColor: "border-purple-200 dark:border-purple-800",
+        textColor: "text-purple-700 dark:text-purple-300",
+        animate: status.toolName !== "question",
+      };
+    }
+
+    case "waiting-for-answer":
+      return {
+        icon: MessageSquare,
+        text: status.label || "Waiting for your response so I can continue",
+        bgColor: "bg-amber-50 dark:bg-amber-950",
+        borderColor: "border-amber-200 dark:border-amber-800",
+        textColor: "text-amber-700 dark:text-amber-300",
+      };
+
+    case "processing-answer":
+      return {
+        icon: Loader2,
+        text: status.label || "Got it—processing your answer...",
+        bgColor: "bg-blue-50 dark:bg-blue-950",
+        borderColor: "border-blue-200 dark:border-blue-800",
+        textColor: "text-blue-700 dark:text-blue-300",
+        animate: true,
+      };
+
+    case "complete":
+      return {
+        icon: CheckCircle2,
+        text: status.label || "All set",
+        bgColor: "bg-green-50 dark:bg-green-950",
+        borderColor: "border-green-200 dark:border-green-800",
+        textColor: "text-green-700 dark:text-green-300",
+      };
+
+    case "error":
+      return {
+        icon: AlertCircle,
+        text: status.label || "Something went wrong—try again",
+        bgColor: "bg-red-50 dark:bg-red-950",
+        borderColor: "border-red-200 dark:border-red-800",
+        textColor: "text-red-700 dark:text-red-300",
+      };
+  }
+}
+
+// --- Tool state display (per-tool status from store) ---
 
 interface ToolStateIconConfig {
   icon: LucideIcon;
@@ -90,94 +217,6 @@ function getToolStateIconConfig(state: ToolState): ToolStateIconConfig {
   }
 }
 
-interface StatusConfig {
-  icon: LucideIcon;
-  text: string;
-  bgColor: string;
-  borderColor: string;
-  textColor: string;
-  animate?: boolean;
-}
-
-const BASE_STATUS_CONFIG: Record<Exclude<StatusType, "tool">, StatusConfig> = {
-  idle: {
-    icon: CheckCircle2,
-    text: "Your turn",
-    bgColor: "bg-transparent",
-    borderColor: "border-transparent",
-    textColor: "text-gray-400 dark:text-gray-600",
-  },
-  connecting: {
-    icon: Loader2,
-    text: "Connecting to OpenCode... this can take a moment",
-    bgColor: "bg-blue-50 dark:bg-blue-950",
-    borderColor: "border-blue-200 dark:border-blue-800",
-    textColor: "text-blue-700 dark:text-blue-300",
-    animate: true,
-  },
-  thinking: {
-    icon: Loader2,
-    text: "Working on it...",
-    bgColor: "bg-blue-50 dark:bg-blue-950",
-    borderColor: "border-blue-200 dark:border-blue-800",
-    textColor: "text-blue-700 dark:text-blue-300",
-    animate: true,
-  },
-  "waiting-for-answer": {
-    icon: MessageSquare,
-    text: "Waiting for your response so I can continue",
-    bgColor: "bg-amber-50 dark:bg-amber-950",
-    borderColor: "border-amber-200 dark:border-amber-800",
-    textColor: "text-amber-700 dark:text-amber-300",
-  },
-  "processing-answer": {
-    icon: Loader2,
-    text: "Got it—processing your answer...",
-    bgColor: "bg-blue-50 dark:bg-blue-950",
-    borderColor: "border-blue-200 dark:border-blue-800",
-    textColor: "text-blue-700 dark:text-blue-300",
-    animate: true,
-  },
-  complete: {
-    icon: CheckCircle2,
-    text: "All set",
-    bgColor: "bg-green-50 dark:bg-green-950",
-    borderColor: "border-green-200 dark:border-green-800",
-    textColor: "text-green-700 dark:text-green-300",
-  },
-  error: {
-    icon: AlertCircle,
-    text: "Something went wrong—try again",
-    bgColor: "bg-red-50 dark:bg-red-950",
-    borderColor: "border-red-200 dark:border-red-800",
-    textColor: "text-red-700 dark:text-red-300",
-  },
-};
-
-function getStatusConfig(
-  status: StatusType,
-  toolName?: string,
-  message?: string,
-): StatusConfig {
-  if (status === "tool") {
-    const icon = toolName ? TOOL_ICONS[toolName] || Loader2 : Loader2;
-    return {
-      icon,
-      text: message || "Using a tool...",
-      bgColor: "bg-purple-50 dark:bg-purple-950",
-      borderColor: "border-purple-200 dark:border-purple-800",
-      textColor: "text-purple-700 dark:text-purple-300",
-      animate: toolName !== "question",
-    };
-  }
-
-  const config = BASE_STATUS_CONFIG[status];
-  return {
-    ...config,
-    text: message || config.text,
-  };
-}
-
 interface ToolStatusLineProps {
   toolState: ToolState;
   toolName: string;
@@ -186,8 +225,7 @@ interface ToolStatusLineProps {
 function ToolStatusLine({ toolState, toolName }: ToolStatusLineProps) {
   const config = getToolStateIconConfig(toolState);
   const IconComponent = config.icon;
-  const toolIcon = TOOL_ICONS[toolName] || Terminal;
-  const ToolIconComponent = toolIcon;
+  const ToolIconComponent = TOOL_ICONS[toolName] || Terminal;
 
   return (
     <div
@@ -287,26 +325,50 @@ function SessionStatusDisplay() {
   return null;
 }
 
+// --- Primary StatusLine component ---
+
+interface StatusLineProps {
+  streamStatus: StreamStatus;
+  showToolStates?: boolean;
+}
+
 export function StatusLine({
-  status,
-  message,
-  toolName,
+  streamStatus,
   showToolStates = true,
 }: StatusLineProps) {
-  if (status === "idle" && showToolStates) {
+  const config = getStatusVisualConfig(streamStatus);
+  const IconComponent = config.icon;
+
+  if (streamStatus.kind === "idle" && showToolStates) {
     return (
       <div>
         <SessionStatusDisplay />
         <ToolStatesDisplay />
         <div className="mt-2">
-          <IdleStatusLine />
+          <div
+            className={clsx(
+              "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200",
+              config.bgColor,
+              config.borderColor,
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <IconComponent
+              className={clsx(
+                "w-4 h-4 flex-shrink-0",
+                config.textColor,
+                config.animate && "animate-spin",
+              )}
+            />
+            <span className={clsx("text-sm font-medium", config.textColor)}>
+              {config.text}
+            </span>
+          </div>
         </div>
       </div>
     );
   }
-
-  const config = getStatusConfig(status, toolName, message);
-  const IconComponent = config.icon;
 
   return (
     <div>
@@ -338,87 +400,4 @@ export function StatusLine({
       )}
     </div>
   );
-}
-
-function IdleStatusLine() {
-  const config = BASE_STATUS_CONFIG.idle;
-  const IconComponent = config.icon;
-
-  return (
-    <div
-      className={clsx(
-        "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200",
-        config.bgColor,
-        config.borderColor,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <IconComponent
-        className={clsx(
-          "w-4 h-4 flex-shrink-0",
-          config.textColor,
-          config.animate && "animate-spin",
-        )}
-      />
-      <span className={clsx("text-sm font-medium", config.textColor)}>
-        {config.text}
-      </span>
-    </div>
-  );
-}
-
-export function parseStatusMessage(statusMessage: string): {
-  status: StatusType;
-  message: string;
-  toolName?: string;
-} {
-  if (!statusMessage) {
-    return { status: "idle", message: "" };
-  }
-
-  const lowerMessage = statusMessage.toLowerCase();
-
-  if (lowerMessage.includes("connecting")) {
-    return { status: "connecting", message: statusMessage };
-  }
-
-  if (
-    lowerMessage.includes("thinking") ||
-    lowerMessage.includes("processing")
-  ) {
-    return { status: "thinking", message: statusMessage };
-  }
-
-  if (lowerMessage.includes("waiting for your")) {
-    return { status: "waiting-for-answer", message: statusMessage };
-  }
-
-  if (lowerMessage.includes("processing your answer")) {
-    return { status: "processing-answer", message: statusMessage };
-  }
-
-  const toolPatterns: Array<{ pattern: RegExp; tool: string }> = [
-    { pattern: /creating\s+/i, tool: "write" },
-    { pattern: /editing\s+/i, tool: "edit" },
-    { pattern: /reading\s+/i, tool: "read" },
-    { pattern: /searching/i, tool: "grep" },
-    { pattern: /finding files/i, tool: "glob" },
-    { pattern: /running/i, tool: "bash" },
-    { pattern: /using tool/i, tool: "unknown" },
-  ];
-
-  for (const { pattern, tool } of toolPatterns) {
-    if (pattern.test(statusMessage)) {
-      return { status: "tool", message: statusMessage, toolName: tool };
-    }
-  }
-
-  // If the message is just "busy" or other generic state, use empty message
-  // so the default config text is used
-  if (lowerMessage === "busy" || lowerMessage === "idle") {
-    return { status: "thinking", message: "" };
-  }
-
-  return { status: "thinking", message: statusMessage };
 }

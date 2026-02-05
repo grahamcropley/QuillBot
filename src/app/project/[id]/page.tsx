@@ -124,6 +124,7 @@ export default function ProjectPage() {
   const streamingSegmentsRef = useRef<Message[]>([]);
   const streamSplitCounterRef = useRef(0);
   const completionProcessedRef = useRef(false);
+  const partIdToSegmentIndexRef = useRef<Map<string, number>>(new Map());
 
   const nextStreamSplitId = useCallback(() => {
     streamSplitCounterRef.current += 1;
@@ -132,6 +133,12 @@ export default function ProjectPage() {
 
   const commitStreamingSegment = useCallback((segment: Message) => {
     setStreamingSegments((prev) => {
+      const segmentIndex = prev.length;
+      if (segment.parts) {
+        for (const part of segment.parts) {
+          partIdToSegmentIndexRef.current.set(part.id, segmentIndex);
+        }
+      }
       const next = [...prev, segment];
       streamingSegmentsRef.current = next;
       return next;
@@ -150,6 +157,7 @@ export default function ProjectPage() {
     isStreaming,
     streamingContent,
     statusMessage,
+    streamStatus,
     sessionId: streamSessionId,
     resumeBufferedStream,
     reset,
@@ -174,8 +182,8 @@ export default function ProjectPage() {
       addMessageWithDetails(questionMessage);
     },
     onStreamSplit: ({ tool, content }) => {
-      const parts = streamingPartsRef.current;
-      const activities = streamingActivitiesRef.current;
+      const parts = [...streamingPartsRef.current];
+      const activities = [...streamingActivitiesRef.current];
 
       console.log("[ProjectPage] onStreamSplit called:", {
         tool,
@@ -259,6 +267,7 @@ export default function ProjectPage() {
       // Clear streaming segments BEFORE persisting to avoid duplicates in displayedMessages
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
+      partIdToSegmentIndexRef.current.clear();
 
       void (async () => {
         for (const segment of segmentsToStore) {
@@ -272,27 +281,78 @@ export default function ProjectPage() {
         updateDocument(markdownMatch[1]);
       }
     },
-    onPart: (part, delta) => {
+    onPart: (part: Part, delta) => {
+      if (part.type === "tool" && part.tool === "question") return;
+
+      if (part.type === "step-finish") {
+        const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
+        if (segmentIndex !== undefined) {
+          setStreamingSegments((prev) => {
+            const updated = [...prev];
+            const segment = updated[segmentIndex];
+            if (!segment?.parts) return prev;
+            updated[segmentIndex] = {
+              ...segment,
+              parts: [...segment.parts, part],
+            };
+            streamingSegmentsRef.current = updated;
+            return updated;
+          });
+        } else if (streamingPartsRef.current.length > 0) {
+          const next = [...streamingPartsRef.current, part];
+          streamingPartsRef.current = next;
+          setStreamingParts(next);
+        }
+        return;
+      }
+
+      const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
+
+      if (segmentIndex !== undefined) {
+        let updatedPart = part as Part;
+        if (part.type === "reasoning") {
+          const existingSegment = streamingSegmentsRef.current[segmentIndex];
+          const existingPart = existingSegment?.parts?.find(
+            (p) => p.id === part.id,
+          );
+          const existingText =
+            existingPart && existingPart.type === "reasoning"
+              ? (existingPart as Record<string, unknown>).text || ""
+              : "";
+          const partText = (part as Record<string, unknown>).text || "";
+          const newText =
+            partText || (delta ? String(existingText) + delta : existingText);
+          updatedPart = { ...part, text: newText } as Part;
+        }
+
+        setStreamingSegments((prev) => {
+          const updated = [...prev];
+          const segment = updated[segmentIndex];
+          if (!segment?.parts) return prev;
+          const updatedParts = segment.parts.map((p) =>
+            p.id === part.id ? updatedPart : p,
+          );
+          updated[segmentIndex] = { ...segment, parts: updatedParts };
+          streamingSegmentsRef.current = updated;
+          return updated;
+        });
+        return;
+      }
+
       const current = streamingPartsRef.current;
       const index = current.findIndex((p) => p.id === part.id);
 
-      let updatedPart = part;
+      let updatedPart = part as Part;
       if (part.type === "reasoning") {
         const existingPart = index !== -1 ? current[index] : null;
         const existingText =
           existingPart && existingPart.type === "reasoning"
-            ? (existingPart as any).text || ""
+            ? (existingPart as Record<string, unknown>).text || ""
             : "";
-
-        // Use part.text if available, otherwise accumulate from delta
-        const partText = (part as any).text || "";
+        const partText = (part as Record<string, unknown>).text || "";
         const newText =
-          partText || (delta ? existingText + delta : existingText);
-
-        updatedPart = {
-          ...part,
-          text: newText,
-        } as any;
+          partText || (delta ? String(existingText) + delta : existingText);
+        updatedPart = { ...part, text: newText } as Part;
       }
 
       const next =
@@ -333,6 +393,7 @@ export default function ProjectPage() {
       isStreaming,
       streamingContent,
       statusMessage,
+      streamStatus,
       sessionId: streamSessionId || currentProject?.opencodeSessionId || null,
       error: null,
       lastFailedMessageId: null,
@@ -474,6 +535,7 @@ export default function ProjectPage() {
       resetStreamingCollections();
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
+      partIdToSegmentIndexRef.current.clear();
       completionProcessedRef.current = false;
 
       const result = await sendMessage({
@@ -774,7 +836,7 @@ export default function ProjectPage() {
                   onAnswerQuestion={answerQuestion}
                   onRetryMessage={handleRetryMessage}
                   isLoading={isStreaming}
-                  statusMessage={statusMessage}
+                  streamStatus={streamStatus}
                   textSelection={textSelection}
                   onClearSelection={clearTextSelection}
                   currentFileName={syncedFileName || "draft.md"}

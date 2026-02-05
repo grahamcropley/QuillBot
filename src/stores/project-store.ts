@@ -13,6 +13,7 @@ import type {
   ToolState,
   SessionStatus,
   ToolPart,
+  ActivityToggleLevel,
 } from "@/types/opencode-events";
 
 interface ProjectState {
@@ -25,6 +26,7 @@ interface ProjectState {
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
+  activityToggleLevel: ActivityToggleLevel;
   currentToolStates: Map<string, { state: ToolState; toolName: string }>;
   retryAttempt?: number;
 
@@ -52,6 +54,7 @@ interface ProjectState {
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
   setSessionStatus: (status: SessionStatus) => void;
+  setActivityToggleLevel: (level: ActivityToggleLevel) => void;
   updateToolState: (
     partId: string,
     state: ToolState,
@@ -83,6 +86,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
+  activityToggleLevel: "all-activities",
   currentToolStates: new Map(),
 
   fetchProjects: async () => {
@@ -502,6 +506,10 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       sessionStatus: status.type,
       retryAttempt: status.type === "retry" ? status.attempt : undefined,
     });
+  },
+
+  setActivityToggleLevel: (level) => {
+    set({ activityToggleLevel: level });
   },
 
   updateToolState: (partId, state, toolName = "unknown") => {
