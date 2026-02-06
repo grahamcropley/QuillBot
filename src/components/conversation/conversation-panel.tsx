@@ -13,6 +13,7 @@ import { Send } from "lucide-react";
 import { Button, Textarea } from "@/components/ui";
 import { ActivityToggle } from "./activity-toggle";
 import { MessageBubble } from "./message-bubble";
+import { QuestionPrompt } from "./question-prompt";
 import { SelectionsIndicator } from "./selections-indicator";
 import { StatusLine } from "./status-line";
 import type { Message, TextSelection } from "@/types";
@@ -60,24 +61,30 @@ export function ConversationPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  const hasUnansweredQuestion = useMemo(() => {
-    return messages.some(
-      (message) =>
-        message.role === "question" &&
-        message.questionData &&
-        !message.questionData.answered,
+  const pendingQuestion = useMemo(() => {
+    return (
+      messages.find(
+        (message) =>
+          message.role === "question" &&
+          message.questionData &&
+          !message.questionData.answered,
+      ) ?? null
     );
   }, [messages]);
 
+  const visibleMessages = useMemo(() => {
+    return messages.filter((message) => message.role !== "question");
+  }, [messages]);
+
   const resolvedStatus = useMemo((): StreamStatus => {
-    if (hasUnansweredQuestion && !isLoading) {
+    if (pendingQuestion && !isLoading) {
       return {
         kind: "waiting-for-answer",
         label: "Waiting for your response...",
       };
     }
     return streamStatusProp ?? { kind: "idle", label: "" };
-  }, [streamStatusProp, hasUnansweredQuestion, isLoading]);
+  }, [streamStatusProp, pendingQuestion, isLoading]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -160,16 +167,15 @@ export function ConversationPanel({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto p-3 space-y-3"
       >
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>
           </div>
         ) : (
-          messages.map((message) => (
+          visibleMessages.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
-              onAnswerQuestion={onAnswerQuestion}
               onRetry={onRetryMessage}
               activityToggleLevel={activityToggleLevel}
             />
@@ -206,34 +212,41 @@ export function ConversationPanel({
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-3 border-t border-gray-200 dark:border-gray-800"
-      >
-        <div className="flex w-full gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              hasUnansweredQuestion
-                ? "Please answer the question above first..."
-                : "Type your message... (Shift+Enter for new line)"
+      {pendingQuestion ? (
+        <div className="border-t border-gray-200 dark:border-gray-800 p-3 bg-blue-50/50 dark:bg-blue-950/30">
+          <QuestionPrompt
+            questionData={pendingQuestion.questionData!}
+            onSubmit={(answers) =>
+              onAnswerQuestion?.(pendingQuestion.id, answers)
             }
-            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
-            disabled={hasUnansweredQuestion}
+            variant="input-area"
           />
-          <Button
-            type="submit"
-            disabled={!inputValue.trim() || isLoading || hasUnansweredQuestion}
-            isLoading={isLoading}
-            className="flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
         </div>
-      </form>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="p-3 border-t border-gray-200 dark:border-gray-800"
+        >
+          <div className="flex w-full gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message... (Shift+Enter for new line)"
+              className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
+            />
+            <Button
+              type="submit"
+              disabled={!inputValue.trim() || isLoading}
+              isLoading={isLoading}
+              className="flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

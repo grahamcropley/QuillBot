@@ -16,6 +16,7 @@ import type { QuestionData, QuestionInfo } from "@/types";
 interface QuestionPromptProps {
   questionData: QuestionData;
   onSubmit: (answers: string[][]) => void;
+  variant?: "card" | "input-area";
 }
 
 interface QuestionBlockProps {
@@ -265,6 +266,7 @@ function QuestionBlock({
 export function QuestionPrompt({
   questionData,
   onSubmit,
+  variant = "card",
 }: QuestionPromptProps) {
   const [answers, setAnswers] = useState<string[][]>(
     questionData.questions.map(
@@ -290,6 +292,50 @@ export function QuestionPrompt({
   };
 
   const isValid = answers.every((a) => a.length > 0);
+
+  if (variant === "input-area") {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+          <Info className="h-4 w-4" />
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            Action Required
+          </span>
+        </div>
+
+        {questionData.questions.map((question, index) => (
+          <div
+            key={question.question}
+            className={
+              index > 0
+                ? "pt-4 border-t border-gray-100 dark:border-gray-800"
+                : ""
+            }
+          >
+            <QuestionBlock
+              info={question}
+              selectedAnswers={answers[index]}
+              onAnswerChange={(newAnswers) =>
+                handleAnswerChange(index, newAnswers)
+              }
+              disabled={isAnswered}
+            />
+          </div>
+        ))}
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={!isValid}
+            variant="primary"
+            size="md"
+          >
+            Submit Answer
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card

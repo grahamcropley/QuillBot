@@ -41,6 +41,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (body.message) {
       const hasFullMessage =
         body.message.role === "question" ||
+        body.message.role === "question-answered" ||
         body.message.parts ||
         body.message.activities ||
         body.message.questionData ||

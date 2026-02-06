@@ -76,6 +76,50 @@ function hydrateProject(p: Project): Project {
   };
 }
 
+function buildQuestionAnsweredMessage(
+  questionMessage: Message | undefined,
+  answers: string[][],
+): Message | null {
+  if (!questionMessage?.questionData) return null;
+
+  const summaryParts: string[] = [];
+
+  questionMessage.questionData.questions.forEach((q, index) => {
+    const selected = answers[index] ?? [];
+    if (selected.length === 0) return;
+
+    const predefinedLabels = new Set(q.options.map((o) => o.label));
+    const customAnswers = selected.filter((a) => !predefinedLabels.has(a));
+    const predefinedAnswers = selected.filter((a) => predefinedLabels.has(a));
+
+    const parts: string[] = [];
+    if (predefinedAnswers.length > 0) {
+      parts.push(predefinedAnswers.join(", "));
+    }
+    if (customAnswers.length > 0) {
+      parts.push(customAnswers.map((a) => `"${a}"`).join(", "));
+    }
+
+    if (questionMessage.questionData!.questions.length > 1) {
+      summaryParts.push(`**${q.header}:** ${parts.join(", ")}`);
+    } else {
+      summaryParts.push(parts.join(", "));
+    }
+  });
+
+  return {
+    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    role: "question-answered",
+    content: summaryParts.join("\n"),
+    timestamp: new Date(),
+    questionData: {
+      ...questionMessage.questionData,
+      answered: true,
+      answers,
+    },
+  };
+}
+
 export const useProjectStore = create<ProjectState>()((set, get) => ({
   projects: [],
   currentProjectId: null,
@@ -374,6 +418,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const { currentProjectId } = get();
     if (!currentProjectId) return;
 
+    const projectBefore = get().projects.find((p) => p.id === currentProjectId);
+    const questionMessage = projectBefore?.messages.find(
+      (m) => m.id === questionId,
+    );
+
     set((state) => ({
       projects: state.projects.map((p) => {
         if (p.id !== currentProjectId) return p;
@@ -395,6 +444,34 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         return { ...p, messages: updatedMessages, updatedAt: new Date() };
       }),
     }));
+
+    const answeredMessage = buildQuestionAnsweredMessage(
+      questionMessage,
+      answers,
+    );
+    if (answeredMessage) {
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId
+            ? {
+                ...p,
+                messages: [...p.messages, answeredMessage],
+                updatedAt: new Date(),
+              }
+            : p,
+        ),
+      }));
+
+      try {
+        await fetch(`/api/projects/${currentProjectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: answeredMessage }),
+        });
+      } catch (error) {
+        console.error("Failed to persist question-answered message:", error);
+      }
+    }
 
     const project = get().projects.find((p) => p.id === currentProjectId);
     const message = project?.messages.find((m) => m.id === questionId);
