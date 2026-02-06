@@ -47,6 +47,7 @@ interface UseOpenCodeStreamOptions {
 interface SendMessageOptions {
   message: string;
   command?: string;
+  commandArgs?: string;
   agent?: string;
 }
 
@@ -201,7 +202,7 @@ export function useOpenCodeStream(
     async (
       messageOptions: SendMessageOptions,
     ): Promise<Result<{ sessionId: string; content: string }>> => {
-      const { message, command } = messageOptions;
+      const { message, command, commandArgs } = messageOptions;
 
       if (!isMountedRef.current) {
         return { success: false, error: new Error("Component unmounted") };
@@ -231,6 +232,7 @@ export function useOpenCodeStream(
             projectId,
             message,
             command,
+            commandArgs,
             agent: messageOptions.agent || "quillbot",
           }),
           signal: abortController.signal,

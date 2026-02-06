@@ -48,58 +48,34 @@ Then include `updatedParts` in the message update and persist via PATCH API.
 
 ---
 
-### 2. Orphaned Step-Finish Bubbles ❌
+### 2. Orphaned Step-Finish Bubbles ✅ FIXED
 
 **Symptoms**:
 
-- Multiple standalone "[TOOL] Step finished (tool-calls)" bubbles appear in assistant messages
-- They should merge into the preceding tool bubble but don't
-
-**Test Case**: Same as above (Test B project)
+- Multiple standalone "[TOOL] Step finished (tool-calls)" bubbles appeared in assistant messages
+- They tried to merge into the preceding tool bubble but couldn't
 
 **Root Cause**:
-In `getActivityItems()` (`src/components/conversation/conversation-panel.tsx`, lines 544-562), step-finish parts try to merge into `lastToolIndex` (the last tool bubble). However:
+Step-finish parts with `reason: "tool-calls"` are purely token count metadata. Tool completions are already signaled via explicit `part.state.status` updates (pending → running → completed/error). These step-finish events added no user-visible value and created orphan bubbles when no mergeable tool existed.
 
-1. Question tool parts are now skipped in assistant messages (line 441-443)
-2. Apply_patch tool parts are skipped (line 436-438)
-3. No tools remain to set `lastToolIndex`
-4. Step-finish parts have nowhere to merge → create standalone bubbles
+**Solution Implemented**:
+Skip step-finish parts when `reason === "tool-calls"` in `deriveActivityItems()`. Keep step-finish for meaningful reasons (stop, length, etc.).
 
-**Solution Options**:
+**Files Modified**:
 
-**Option A: Process But Hide** (more complex)
+- `src/utils/conversation-render-model.ts` - lines 238-270
 
-- Remove skip at line 441-443
-- Process question tool to set `lastToolIndex`
-- Add `hidden: true` flag to ActivityItem
-- Skip rendering hidden items
-- Requires modifying ActivityItem type
-
-**Option B: Cross-Message Merge** (very complex)
-
-- Track last tool from previous message
-- Have step-finish reference that for merging
-- Requires significant refactoring
-
-**Option C: Hide Step-Finish with tool-calls** (RECOMMENDED - simplest)
-
-- Skip step-finish parts when `reason === "tool-calls"` in `getActivityItems()`
-- Only show step-finish for meaningful reasons (stop, length, etc.)
-- These seem like internal metadata not useful to users
-
-**Files to Modify**:
-
-- `src/components/conversation/conversation-panel.tsx` - `getActivityItems()` function
-
-**Recommended Implementation (Option C)**:
+**Implementation**:
 
 ```typescript
-// Around line 560 in getActivityItems()
 if (part.type === "step-finish") {
-  // Skip internal tool-calls step-finish events
+  // Skip internal tool-calls metadata - these only show token counts
+  // Tool completions are already signaled via part.state.status updates
   if (part.reason === "tool-calls") {
     continue;
   }
+
+  // Keep step-finish for meaningful reasons (stop, length, etc.)
   // ... rest of step-finish handling
 }
 ```

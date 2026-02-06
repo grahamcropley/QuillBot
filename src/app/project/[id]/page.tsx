@@ -18,7 +18,7 @@ import {
 } from "@/hooks";
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
-import { buildPrompt } from "@/utils/prompt-builder";
+import { buildCommandArgs } from "@/utils/prompt-builder";
 import type { TextSelection, Message } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
@@ -523,25 +523,26 @@ export default function ProjectPage() {
         updateMessageStatus(userMessageId, "pending");
       }
 
-      const messageContent = isInitialMessage
-        ? buildPrompt({
-            contentType: currentProject.contentType,
-            wordCount: currentProject.wordCount,
-            styleHints: currentProject.styleHints,
-            brief: content,
-          })
-        : content;
-
       resetStreamingCollections();
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
       partIdToSegmentIndexRef.current.clear();
       completionProcessedRef.current = false;
 
-      const result = await sendMessage({
-        message: messageContent,
-        command: isInitialMessage ? "write-content" : undefined,
-      });
+      const result = isInitialMessage
+        ? await sendMessage({
+            message: content,
+            command: "write-content",
+            commandArgs: buildCommandArgs({
+              contentType: currentProject.contentType,
+              wordCount: currentProject.wordCount,
+              styleHints: currentProject.styleHints,
+              brief: content,
+            }),
+          })
+        : await sendMessage({
+            message: content,
+          });
 
       if (result.success) {
         // Mark as sent

@@ -24,6 +24,7 @@ interface RequestBody {
   projectId: string;
   message: string;
   command?: string;
+  commandArgs?: string;
   agent?: string;
 }
 
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
                   directory: project.directoryPath,
                   agent: body.agent || "quillbot",
                   command: body.command,
-                  arguments: message,
+                  arguments: body.commandArgs || message,
                 });
               } else {
                 await client.session.promptAsync({
@@ -220,7 +221,7 @@ export async function POST(request: NextRequest) {
                     directory: project.directoryPath,
                     agent: body.agent || "quillbot",
                     command: body.command,
-                    arguments: message,
+                    arguments: body.commandArgs || message,
                   });
                 } else {
                   await client.session.promptAsync({

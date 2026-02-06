@@ -236,6 +236,13 @@ export function deriveActivityItems(
     }
 
     if (part.type === "step-finish") {
+      // Skip internal tool-calls metadata - these only show token counts
+      // Tool completions are already signaled via part.state.status updates
+      if (part.reason === "tool-calls") {
+        continue;
+      }
+
+      // Keep step-finish for meaningful reasons (stop, length, etc.)
       const tokens = `Tokens: input ${part.tokens.input}, output ${part.tokens.output}`;
       const lastToolIdx = findLastToolActivityIndex(items);
       if (lastToolIdx !== null) {

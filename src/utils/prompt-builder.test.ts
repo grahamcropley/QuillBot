@@ -3,7 +3,7 @@ import { buildPrompt } from "./prompt-builder";
 import type { StarterFormData } from "@/types";
 
 describe("buildPrompt", () => {
-  it("instructs OpenCode to create a file called draft.md", () => {
+  it("formats arguments for /write-content command with content type", () => {
     const formData: StarterFormData = {
       contentType: "blog",
       wordCount: 1000,
@@ -13,26 +13,10 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    expect(result).toContain('Create a file called "draft.md"');
-    expect(result).toContain("in the project directory");
+    expect(result).toContain("Content Type Required: blog");
   });
 
-  it("includes instructions about updating brief.md", () => {
-    const formData: StarterFormData = {
-      contentType: "blog",
-      wordCount: 1000,
-      styleHints: "",
-      brief: "Test brief",
-    };
-
-    const result = buildPrompt(formData);
-
-    expect(result).toContain("brief.md");
-    expect(result).toContain("UPDATE");
-    expect(result).toContain("refined");
-  });
-
-  it("includes content type and word count in file creation instruction", () => {
+  it("includes desired word count", () => {
     const formData: StarterFormData = {
       contentType: "white-paper",
       wordCount: 2500,
@@ -42,8 +26,7 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    expect(result).toContain("containing a white paper");
-    expect(result).toContain("approximately 2500 words");
+    expect(result).toContain("Desired Length: 2500");
   });
 
   it("includes style hints when provided", () => {
@@ -56,10 +39,10 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    expect(result).toContain("Style guidance: Casual and humorous");
+    expect(result).toContain("Additional Style Comments: Casual and humorous");
   });
 
-  it("omits style hints when empty", () => {
+  it("includes empty style hints line when not provided", () => {
     const formData: StarterFormData = {
       contentType: "blog",
       wordCount: 500,
@@ -69,7 +52,7 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    expect(result).not.toContain("Style guidance:");
+    expect(result).toContain("Additional Style Comments: ");
   });
 
   it("includes the brief with label", () => {
@@ -82,11 +65,10 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    expect(result).toContain("Brief:");
-    expect(result).toContain("Announce new product launch");
+    expect(result).toContain("Content Brief: Announce new product launch");
   });
 
-  it("structures prompt with system instructions first", () => {
+  it("formats all fields in correct order", () => {
     const formData: StarterFormData = {
       contentType: "social-post",
       wordCount: 100,
@@ -96,10 +78,36 @@ describe("buildPrompt", () => {
 
     const result = buildPrompt(formData);
 
-    const instructionsIndex = result.indexOf("## Instructions");
-    const briefIndex = result.indexOf("Brief:");
+    const lines = result.split("\n");
+    expect(lines[0]).toContain("Content Type Required:");
+    expect(lines[1]).toContain("Desired Length:");
+    expect(lines[2]).toContain("Additional Style Comments:");
+    expect(lines[3]).toContain("Content Brief:");
+  });
 
-    expect(instructionsIndex).toBeGreaterThan(-1);
-    expect(briefIndex).toBeGreaterThan(instructionsIndex);
+  it("handles white-paper content type", () => {
+    const formData: StarterFormData = {
+      contentType: "white-paper",
+      wordCount: 3000,
+      styleHints: "",
+      brief: "Research paper",
+    };
+
+    const result = buildPrompt(formData);
+
+    expect(result).toContain("Content Type Required: white-paper");
+  });
+
+  it("handles social-post content type", () => {
+    const formData: StarterFormData = {
+      contentType: "social-post",
+      wordCount: 150,
+      styleHints: "",
+      brief: "Social media content",
+    };
+
+    const result = buildPrompt(formData);
+
+    expect(result).toContain("Content Type Required: social-post");
   });
 });
