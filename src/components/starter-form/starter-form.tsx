@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useCallback, type FormEvent } from 'react';
-import { Button, Input, Textarea, Select } from '@/components/ui';
-import type { StarterFormData, ContentType } from '@/types';
+import { useState, useCallback, type FormEvent } from "react";
+import { Button, Input, Textarea, Select } from "@/components/ui";
+import type { StarterFormData, ContentType } from "@/types";
 
 interface StarterFormProps {
   onSubmit: (data: StarterFormData) => void;
@@ -11,35 +11,43 @@ interface StarterFormProps {
 }
 
 const CONTENT_TYPE_OPTIONS = [
-  { value: 'blog', label: 'Blog Post' },
-  { value: 'white-paper', label: 'White Paper' },
-  { value: 'social-post', label: 'Social Media Post' },
-  { value: 'email', label: 'Email' },
+  { value: "blog", label: "Blog Post" },
+  { value: "white-paper", label: "White Paper" },
+  { value: "social-post", label: "Social Media Post" },
+  { value: "email", label: "Email" },
+  { value: "case-study", label: "Case Study" },
+  { value: "landing-page", label: "Landing Page" },
 ];
 
 const WORD_COUNT_OPTIONS = [
-  { value: '300', label: '~300 words (Short)' },
-  { value: '500', label: '~500 words (Medium)' },
-  { value: '1000', label: '~1000 words (Long)' },
-  { value: '2000', label: '~2000 words (Extended)' },
+  { value: "300", label: "~300 words (Short)" },
+  { value: "500", label: "~500 words (Medium)" },
+  { value: "1000", label: "~1000 words (Long)" },
+  { value: "2000", label: "~2000 words (Extended)" },
 ];
 
-export function StarterForm({ onSubmit, isLoading, initialData }: StarterFormProps) {
+export function StarterForm({
+  onSubmit,
+  isLoading,
+  initialData,
+}: StarterFormProps) {
   const [contentType, setContentType] = useState<ContentType>(
-    initialData?.contentType || 'blog'
+    initialData?.contentType || "blog",
   );
-  const [wordCount, setWordCount] = useState<number>(initialData?.wordCount || 500);
-  const [styleHints, setStyleHints] = useState(initialData?.styleHints || '');
-  const [brief, setBrief] = useState(initialData?.brief || '');
+  const [wordCount, setWordCount] = useState<number>(
+    initialData?.wordCount || 500,
+  );
+  const [styleHints, setStyleHints] = useState(initialData?.styleHints || "");
+  const [brief, setBrief] = useState(initialData?.brief || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = useCallback(() => {
     const newErrors: Record<string, string> = {};
 
     if (!brief.trim()) {
-      newErrors.brief = 'Please provide a content brief';
+      newErrors.brief = "Please provide a content brief";
     } else if (brief.trim().length < 20) {
-      newErrors.brief = 'Brief should be at least 20 characters';
+      newErrors.brief = "Brief should be at least 20 characters";
     }
 
     setErrors(newErrors);
@@ -58,7 +66,7 @@ export function StarterForm({ onSubmit, isLoading, initialData }: StarterFormPro
         brief: brief.trim(),
       });
     },
-    [contentType, wordCount, styleHints, brief, validate, onSubmit]
+    [contentType, wordCount, styleHints, brief, validate, onSubmit],
   );
 
   return (

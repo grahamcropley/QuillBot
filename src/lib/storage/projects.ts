@@ -43,6 +43,11 @@ interface ProjectsData {
   projects: StoredProject[];
 }
 
+interface ProjectActor {
+  id: string;
+  name: string;
+}
+
 async function ensureDataDir(): Promise<void> {
   try {
     await fs.access(DATA_DIR);
@@ -126,6 +131,7 @@ function generateId(): string {
 export function createProject(
   name: string,
   formData: StarterFormData,
+  actor?: ProjectActor,
 ): Promise<Project> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -147,6 +153,10 @@ export function createProject(
       directoryPath,
       createdAt: now,
       updatedAt: now,
+      createdBy: actor?.id,
+      createdByName: actor?.name,
+      lastModifiedBy: actor?.id,
+      lastModifiedByName: actor?.name,
     };
 
     data.projects.push(serializeProject(newProject));
@@ -164,10 +174,15 @@ export function updateProject(
       | "documentContent"
       | "messages"
       | "name"
+      | "contentType"
+      | "wordCount"
+      | "styleHints"
+      | "brief"
       | "opencodeSessionId"
       | "briefAdherenceCache"
     >
   >,
+  actor?: ProjectActor,
 ): Promise<Project | null> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -176,10 +191,20 @@ export function updateProject(
     if (index === -1) return null;
 
     const existing = hydrateProject(data.projects[index]);
+    const shouldResetBriefCache =
+      typeof updates.brief === "string" && updates.brief !== existing.brief;
+
     const updated: Project = {
       ...existing,
       ...updates,
+      briefAdherenceCache: shouldResetBriefCache
+        ? undefined
+        : (updates.briefAdherenceCache ?? existing.briefAdherenceCache),
       updatedAt: new Date(),
+      createdBy: existing.createdBy ?? actor?.id,
+      createdByName: existing.createdByName ?? actor?.name,
+      lastModifiedBy: actor?.id ?? existing.lastModifiedBy,
+      lastModifiedByName: actor?.name ?? existing.lastModifiedByName,
     };
 
     data.projects[index] = serializeProject(updated);
@@ -193,6 +218,7 @@ export function addMessageToProject(
   id: string,
   role: Message["role"],
   content: string,
+  actor?: ProjectActor,
 ): Promise<Project | null> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -212,6 +238,10 @@ export function addMessageToProject(
       ...existing,
       messages: [...existing.messages, newMessage],
       updatedAt: new Date(),
+      createdBy: existing.createdBy ?? actor?.id,
+      createdByName: existing.createdByName ?? actor?.name,
+      lastModifiedBy: actor?.id ?? existing.lastModifiedBy,
+      lastModifiedByName: actor?.name ?? existing.lastModifiedByName,
     };
 
     data.projects[index] = serializeProject(updated);
@@ -224,6 +254,7 @@ export function addMessageToProject(
 export function addMessageObjectToProject(
   id: string,
   message: Message,
+  actor?: ProjectActor,
 ): Promise<Project | null> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -247,6 +278,10 @@ export function addMessageObjectToProject(
       ...existing,
       messages: [...existing.messages, messageWithTimestamp],
       updatedAt: new Date(),
+      createdBy: existing.createdBy ?? actor?.id,
+      createdByName: existing.createdByName ?? actor?.name,
+      lastModifiedBy: actor?.id ?? existing.lastModifiedBy,
+      lastModifiedByName: actor?.name ?? existing.lastModifiedByName,
     };
 
     data.projects[index] = serializeProject(updated);
@@ -260,6 +295,7 @@ export function updateMessageInProject(
   id: string,
   messageId: string,
   updates: Partial<Message>,
+  actor?: ProjectActor,
 ): Promise<Project | null> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -282,6 +318,10 @@ export function updateMessageInProject(
       ...existing,
       messages: updatedMessages,
       updatedAt: new Date(),
+      createdBy: existing.createdBy ?? actor?.id,
+      createdByName: existing.createdByName ?? actor?.name,
+      lastModifiedBy: actor?.id ?? existing.lastModifiedBy,
+      lastModifiedByName: actor?.name ?? existing.lastModifiedByName,
     };
 
     data.projects[index] = serializeProject(updated);

@@ -5,6 +5,8 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   "white-paper": "white-paper",
   "social-post": "social-post",
   email: "email",
+  "case-study": "case-study",
+  "landing-page": "landing-page",
 };
 
 function escapeShellArg(arg: string): string {

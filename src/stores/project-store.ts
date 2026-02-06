@@ -34,6 +34,12 @@ interface ProjectState {
   getCurrentProject: () => Project | null;
   selectProject: (id: string) => void;
   createProject: (name: string, formData: StarterFormData) => Promise<string>;
+  updateProjectInfo: (
+    updates: Pick<
+      Project,
+      "name" | "contentType" | "wordCount" | "styleHints" | "brief"
+    >,
+  ) => Promise<void>;
   updateDocument: (content: string) => Promise<void>;
   addMessage: (role: Message["role"], content: string) => Promise<void>;
   addMessageWithDetails: (message: Message) => Promise<void>;
@@ -180,6 +186,56 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     } catch (error) {
       console.error("Failed to create project:", error);
       set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  updateProjectInfo: async (updates) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    const previousProject = get().projects.find(
+      (p) => p.id === currentProjectId,
+    );
+    if (!previousProject) return;
+
+    const optimisticProject: Project = {
+      ...previousProject,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === currentProjectId ? optimisticProject : p,
+      ),
+    }));
+
+    try {
+      const response = await fetch(`/api/projects/${currentProjectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update project info");
+      }
+
+      const data = await response.json();
+      const updatedProject = hydrateProject(data.project);
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId ? updatedProject : p,
+        ),
+      }));
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId ? previousProject : p,
+        ),
+      }));
+      console.error("Failed to update project info:", error);
       throw error;
     }
   },

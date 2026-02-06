@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, PenLine, Trash2 } from "lucide-react";
 import { ConversationPanel } from "@/components/conversation";
 import { MarkdownPreview } from "@/components/preview";
 import { AnalysisPanel } from "@/components/analysis";
@@ -20,10 +20,19 @@ import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
 import { buildCommandArgs } from "@/utils/prompt-builder";
 import { formatSelectionsContext } from "@/utils/format-selections";
-import type { TextSelection, Message } from "@/types";
+import type { TextSelection, Message, ContentType } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
 import { FileExplorer } from "@/components/preview/file-explorer";
+import { ProjectInfoModal } from "@/components/project-info-modal";
+
+interface ProjectInfoValues {
+  name: string;
+  contentType: ContentType;
+  wordCount: number;
+  styleHints: string;
+  brief: string;
+}
 
 export default function ProjectPage() {
   const params = useParams();
@@ -36,6 +45,10 @@ export default function ProjectPage() {
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
   const [serverErrorMessage, setServerErrorMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isProjectInfoModalOpen, setIsProjectInfoModalOpen] = useState(false);
+  const [isSavingProjectInfo, setIsSavingProjectInfo] = useState(false);
+  const [projectInfoSaveError, setProjectInfoSaveError] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] =
     useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -72,6 +85,7 @@ export default function ProjectPage() {
   const addQuestion = useProjectStore((state) => state.addQuestion);
   const answerQuestion = useProjectStore((state) => state.answerQuestion);
   const updateDocument = useProjectStore((state) => state.updateDocument);
+  const updateProjectInfo = useProjectStore((state) => state.updateProjectInfo);
   const deleteProject = useProjectStore((state) => state.deleteProject);
   const analysisMetrics = useProjectStore((state) => state.analysisMetrics);
   const setAnalysisMetrics = useProjectStore(
@@ -504,7 +518,7 @@ export default function ProjectPage() {
     };
 
     fetchDraftContent();
-  }, [projectId, projectReady, projectFiles]);
+  }, [projectId, projectReady]);
 
   useEffect(() => {
     if (draftContent && currentProject?.brief) {
@@ -764,6 +778,53 @@ export default function ProjectPage() {
     setIsDeleteModalOpen(true);
   }, []);
 
+  const handleSaveProjectInfo = useCallback(
+    async (values: ProjectInfoValues) => {
+      setProjectInfoSaveError("");
+      setIsSavingProjectInfo(true);
+      try {
+        await updateProjectInfo(values);
+        setIsProjectInfoModalOpen(false);
+      } catch (error) {
+        setProjectInfoSaveError(
+          error instanceof Error
+            ? error.message
+            : "Failed to save project details",
+        );
+      } finally {
+        setIsSavingProjectInfo(false);
+      }
+    },
+    [updateProjectInfo],
+  );
+
+  const handleGenerateAiSummary = useCallback(async () => {
+    setProjectInfoSaveError("");
+    setIsGeneratingSummary(true);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/ai-summary`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate AI summary");
+      }
+
+      return data.summary as string;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate AI summary";
+      setProjectInfoSaveError(errorMessage);
+      throw error;
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  }, [projectId]);
+
   const handleConfirmDelete = useCallback(async () => {
     setIsDeleteModalOpen(false);
     await deleteProject(projectId);
@@ -879,9 +940,23 @@ export default function ProjectPage() {
               {currentProject.contentType.replace("-", " ")} •{" "}
               {currentProject.wordCount} words target
             </p>
+            <p className="text-xs text-gray-500">
+              Created by {currentProject.createdByName ?? "Unknown"} • Last
+              modified by {currentProject.lastModifiedByName ?? "Unknown"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setProjectInfoSaveError("");
+              setIsProjectInfoModalOpen(true);
+            }}
+          >
+            <PenLine className="w-4 h-4 mr-2" />
+            Edit Details
+          </Button>
           <Button
             variant="secondary"
             onClick={() => setIsExportModalOpen(true)}
@@ -935,12 +1010,14 @@ export default function ProjectPage() {
           </Card>
         </div>
 
-        <div
+        <button
+          type="button"
           className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize flex-shrink-0 transition-colors z-10 flex items-center justify-center group mx-2.5"
           onMouseDown={startResizing}
+          aria-label="Resize conversation panel"
         >
           <div className="h-8 w-1 bg-gray-300 rounded-full group-hover:bg-blue-500" />
-        </div>
+        </button>
 
         <div className="flex-1 min-h-0 flex flex-col gap-3 pr-4 overflow-hidden">
           <div className="flex flex-wrap gap-3 pr-2">
@@ -1083,6 +1160,28 @@ export default function ProjectPage() {
           pendingFileSwitch ? "Discard & Switch" : "Discard & Leave"
         }
         cancelText="Cancel"
+      />
+
+      <ProjectInfoModal
+        isOpen={isProjectInfoModalOpen}
+        initialValues={{
+          name: currentProject.name,
+          contentType: currentProject.contentType,
+          wordCount: currentProject.wordCount,
+          styleHints: currentProject.styleHints,
+          brief: currentProject.brief,
+        }}
+        isSaving={isSavingProjectInfo}
+        errorMessage={projectInfoSaveError}
+        onClose={() => {
+          if (!isSavingProjectInfo) {
+            setIsProjectInfoModalOpen(false);
+            setProjectInfoSaveError("");
+          }
+        }}
+        onSave={handleSaveProjectInfo}
+        onGenerateSummary={handleGenerateAiSummary}
+        isGeneratingSummary={isGeneratingSummary}
       />
     </div>
   );
