@@ -28,6 +28,7 @@ import {
 interface UseOpenCodeStreamOptions {
   projectId: string;
   initialSessionId?: string | null;
+  onRequestAccepted?: () => void;
   onChunk?: (content: string) => void;
   onStatus?: (status: string) => void;
   onStreamStatus?: (status: StreamStatus) => void;
@@ -124,6 +125,7 @@ export function useOpenCodeStream(
   const {
     projectId,
     initialSessionId,
+    onRequestAccepted,
     onChunk,
     onStatus,
     onStreamStatus,
@@ -259,6 +261,8 @@ export function useOpenCodeStream(
           }
           return { success: false, error: err };
         }
+
+        onRequestAccepted?.();
 
         const decoder = new TextDecoder();
 
@@ -450,6 +454,17 @@ export function useOpenCodeStream(
         setIsStreaming(false);
         onComplete?.(accumulatedContent, currentSessionId);
 
+        if (currentSessionId) {
+          void fetch(
+            `/api/opencode/buffer?sessionId=${encodeURIComponent(currentSessionId)}&clear=true`,
+          ).catch((clearError) => {
+            console.warn(
+              "[useOpenCodeStream] Failed to clear stream buffer:",
+              clearError,
+            );
+          });
+        }
+
         return {
           success: true,
           data: {
@@ -487,6 +502,7 @@ export function useOpenCodeStream(
       onPart,
       onActivity,
       onStreamSplit,
+      onRequestAccepted,
     ],
   );
 

@@ -62,7 +62,6 @@ export default function ProjectPage() {
   const projectReady = isHydrated && !!currentProject;
   const fetchProjects = useProjectStore((state) => state.fetchProjects);
   const selectProject = useProjectStore((state) => state.selectProject);
-  const addMessage = useProjectStore((state) => state.addMessage);
   const addMessageWithDetails = useProjectStore(
     (state) => state.addMessageWithDetails,
   );
@@ -128,6 +127,7 @@ export default function ProjectPage() {
   const streamSplitCounterRef = useRef(0);
   const completionProcessedRef = useRef(false);
   const partIdToSegmentIndexRef = useRef<Map<string, number>>(new Map());
+  const pendingMessageIdRef = useRef<string | null>(null);
 
   const nextStreamSplitId = useCallback(() => {
     streamSplitCounterRef.current += 1;
@@ -155,6 +155,13 @@ export default function ProjectPage() {
     streamingActivitiesRef.current = [];
   }, []);
 
+  const markPendingMessageSent = useCallback(() => {
+    const pendingId = pendingMessageIdRef.current;
+    if (!pendingId) return;
+    updateMessageStatus(pendingId, "sent");
+    pendingMessageIdRef.current = null;
+  }, [updateMessageStatus]);
+
   const {
     sendMessage,
     isStreaming,
@@ -167,6 +174,7 @@ export default function ProjectPage() {
   } = useOpenCodeStream({
     projectId,
     initialSessionId: currentProject?.opencodeSessionId ?? null,
+    onRequestAccepted: markPendingMessageSent,
     onQuestion: (questionData) => {
       console.log("[ProjectPage] onQuestion called with:", questionData);
 
@@ -542,9 +550,17 @@ export default function ProjectPage() {
       } else {
         const tempId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         userMessageId = tempId;
-        await addMessage("user", content);
-        // Mark new message as pending
-        updateMessageStatus(userMessageId, "pending");
+        await addMessageWithDetails({
+          id: tempId,
+          role: "user",
+          content,
+          timestamp: new Date(),
+          status: "pending",
+        });
+      }
+
+      if (userMessageId) {
+        pendingMessageIdRef.current = userMessageId;
       }
 
       resetStreamingCollections();
@@ -571,6 +587,7 @@ export default function ProjectPage() {
       if (result.success) {
         // Mark as sent
         updateMessageStatus(userMessageId, "sent");
+        pendingMessageIdRef.current = null;
       } else if (userMessageId) {
         updateMessageStatus(
           userMessageId,
@@ -578,11 +595,12 @@ export default function ProjectPage() {
           result.error.message || "Failed to send message",
           retryAttempt,
         );
+        pendingMessageIdRef.current = null;
       }
     },
     [
       currentProject,
-      addMessage,
+      addMessageWithDetails,
       sendMessage,
       updateMessageStatus,
       resetStreamingCollections,

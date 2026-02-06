@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
     let targetSessionId = effectiveSessionId;
     let aborted = false;
     let streamBuffer = getOrCreateStreamBuffer(targetSessionId);
+    streamBuffer.events = [];
+    streamBuffer.isComplete = false;
     let seqCounter = 0;
 
     const encoder = new TextEncoder();
