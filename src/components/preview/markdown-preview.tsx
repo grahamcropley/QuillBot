@@ -28,6 +28,7 @@ import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
 import { markdownToHtml } from "@/lib/markdown-to-html";
+import { useProjectStore } from "@/stores/project-store";
 import type { TextSelection } from "@/types";
 import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
 
@@ -59,6 +60,9 @@ interface MarkdownPreviewProps {
   lastUpdated?: Date | null;
   onUnsavedChangesChange?: (hasChanges: boolean) => void;
   onDiscardChanges?: (discard: () => void) => void;
+  onSelectionExpand?: () => void;
+  onSelectionReduce?: () => void;
+  onSelectionImprovePoint?: () => void;
 }
 
 export interface MarkdownPreviewHandle {
@@ -100,6 +104,11 @@ interface HeaderProps {
   inMarkedSection: boolean;
   onMark: () => void;
   onClear: () => void;
+  showSelectionActions: boolean;
+  selectionActionsDisabled: boolean;
+  onExpandSelection: () => void;
+  onReduceSelection: () => void;
+  onImprovePointSelection: () => void;
 }
 
 const EditorHeader = memo(function EditorHeader({
@@ -117,6 +126,11 @@ const EditorHeader = memo(function EditorHeader({
   inMarkedSection,
   onMark,
   onClear,
+  showSelectionActions,
+  selectionActionsDisabled,
+  onExpandSelection,
+  onReduceSelection,
+  onImprovePointSelection,
 }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
@@ -165,6 +179,34 @@ const EditorHeader = memo(function EditorHeader({
             </>
           )}
         </Button>
+        {showSelectionActions && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onExpandSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Expand
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onReduceSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Reduce
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onImprovePointSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Improve Point
+            </Button>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         {lastUpdated && (
@@ -226,6 +268,9 @@ export const MarkdownPreview = forwardRef<
     lastUpdated,
     onUnsavedChangesChange,
     onDiscardChanges,
+    onSelectionExpand,
+    onSelectionReduce,
+    onSelectionImprovePoint,
   },
   ref,
 ) {
@@ -240,6 +285,7 @@ export const MarkdownPreview = forwardRef<
   const lastSyncedContentRef = useRef(content);
   const editorRef = useRef<MarkdownEditorHandle>(null);
   const theme = useTheme();
+  const markedSelections = useProjectStore((state) => state.markedSelections);
 
   useEffect(() => {
     setEditContent(content);
@@ -325,6 +371,12 @@ export const MarkdownPreview = forwardRef<
     editorRef.current?.clear?.();
   }, []);
 
+  const canShowSelectionActions =
+    markedSelections.length > 0 &&
+    !!onSelectionExpand &&
+    !!onSelectionReduce &&
+    !!onSelectionImprovePoint;
+
   const headerProps = useMemo(
     () => ({
       hasUnsavedChanges,
@@ -341,6 +393,11 @@ export const MarkdownPreview = forwardRef<
       inMarkedSection: selectionState.inMarkedSection,
       onMark: handleMark,
       onClear: handleClear,
+      showSelectionActions: canShowSelectionActions,
+      selectionActionsDisabled: isOpenCodeBusy,
+      onExpandSelection: onSelectionExpand ?? (() => {}),
+      onReduceSelection: onSelectionReduce ?? (() => {}),
+      onImprovePointSelection: onSelectionImprovePoint ?? (() => {}),
     }),
     [
       hasUnsavedChanges,
@@ -356,6 +413,11 @@ export const MarkdownPreview = forwardRef<
       selectionState,
       handleMark,
       handleClear,
+      canShowSelectionActions,
+      isOpenCodeBusy,
+      onSelectionExpand,
+      onSelectionReduce,
+      onSelectionImprovePoint,
     ],
   );
 

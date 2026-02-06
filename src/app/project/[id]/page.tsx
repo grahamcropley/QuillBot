@@ -19,6 +19,7 @@ import {
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
 import { buildCommandArgs } from "@/utils/prompt-builder";
+import { formatSelectionsContext } from "@/utils/format-selections";
 import type { TextSelection, Message } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
@@ -79,6 +80,7 @@ export default function ProjectPage() {
   const clearMarkedSelections = useProjectStore(
     (state) => state.clearMarkedSelections,
   );
+  const markedSelections = useProjectStore((state) => state.markedSelections);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -705,6 +707,50 @@ export default function ProjectPage() {
     useProjectStore.getState().setTextSelection(selection);
   }, []);
 
+  const buildSelectionActionMessage = useCallback(
+    (instruction: string) => {
+      let messageContent = instruction;
+
+      if (markedSelections.length > 0) {
+        const selectionContext = formatSelectionsContext(
+          markedSelections,
+          syncedFileName || "draft.md",
+        );
+        messageContent = selectionContext + "\n" + messageContent;
+      }
+
+      if (textSelection) {
+        const selectionContext = `[Lines ${textSelection.startLine}-${textSelection.endLine}] Selected: "${textSelection.text}"\n\n`;
+        messageContent = selectionContext + messageContent;
+        clearTextSelection();
+      }
+
+      return messageContent;
+    },
+    [markedSelections, syncedFileName, textSelection, clearTextSelection],
+  );
+
+  const handleExpandSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Expand the highlighted sections with more detail, depth, and specific context. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
+  const handleReduceSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Reduce the impact and wordiness of the highlighted sections. Make them concise and straightforward. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
+  const handleImprovePointSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Strengthen the highlighted sections to make a clearer point and tie them into the narrative so they feel more relevant. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
   const handleHighlightText = useCallback((excerpt: string) => {
     if (editorRef.current) {
       const found = editorRef.current.findAndHighlight(excerpt);
@@ -945,6 +991,9 @@ export default function ProjectPage() {
                 lastUpdated={syncedLastUpdated}
                 onUnsavedChangesChange={setHasUnsavedEditorChanges}
                 onDiscardChanges={setEditorDiscardFn}
+                onSelectionExpand={handleExpandSelection}
+                onSelectionReduce={handleReduceSelection}
+                onSelectionImprovePoint={handleImprovePointSelection}
               />
             </PanelErrorBoundary>
           </div>
