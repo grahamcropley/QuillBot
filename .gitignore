@@ -43,7 +43,6 @@ next-env.d.ts
 # project files
 /projects/
 
-# opencode config (local)
-opencode-config/*
-!opencode-config/.gitkeep
-!opencode-config/README.md
+# opencode config (contains secrets)
+opencode-config/auth.json
+opencode-config/opencode/auth.json

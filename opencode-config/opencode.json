@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "github-copilot/gpt-4.1",
+  "mcp": {},
+  "agent": {
+    "quillbot": {
+      "model": "github-copilot/gpt-5.2",
+      "temperature": 0.7,
+      "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "apply_patch": true,
+        "question": true,
+        "websearch_web_search_exa": true,
+        "webfetch": true,
+        "bash": false,
+        "lsp_goto_definition": false,
+        "lsp_find_references": false,
+        "lsp_symbols": false,
+        "lsp_diagnostics": false,
+        "lsp_prepare_rename": false,
+        "lsp_rename": false
+      },
+      "commands": {
+        "write-content": "commands/write-content.md",
+        "rewrite-content": "commands/rewrite-content.md"
+      }
+    }
+  }
+}
