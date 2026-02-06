@@ -135,9 +135,6 @@ export function createProject(
 
     await fs.mkdir(directoryPath, { recursive: true });
 
-    const brief = `# ${name}\n\n**Type**: ${formData.contentType}\n**Word Count**: ${formData.wordCount}\n\n## Brief\n\n${formData.brief}\n\n${formData.styleHints ? `## Style Hints\n\n${formData.styleHints}\n\n` : ""}`;
-    await fs.writeFile(path.join(directoryPath, "brief.md"), brief, "utf-8");
-
     const newProject: Project = {
       id: projectId,
       name,
