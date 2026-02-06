@@ -455,7 +455,7 @@
       "brief": "Overview of LoopUp Cloud Telephony services.",
       "wordCount": 500,
       "styleHints": "",
-      "documentContent": "# Brief Interpretation for LoopUp Cloud Telephony Blog\n\n## Purpose\n\nDraft a ~500-word blog article introducing and explaining LoopUp's Cloud Telephony services for enterprise IT, UC, and digital transformation leaders at organizations operating at scale across multiple geographies.\n\nPrimary angle: multinational rollout and governance. Recognise the operational friction of multi-country voice estates and explain how LoopUp approaches consistency, control, and local requirements.\n\nFraming: managed service and operating model, not product UI. Reference Microsoft Teams Phone connectivity via Operator Connect and Direct Routing, and mention Microsoft Calling Plans only as an option some enterprises evaluate.\n\n## Audience\n\n- Decision-makers responsible for IT, unified communications, and digital transformation initiatives\n- Enterprises with complex operational or geographic requirements\n\n## Tone & Voice\n\n- Written as LoopUp, a subject-matter expert embedded in the business\n- Confident, pragmatic, and warm\n- Peer-to-peer, with authentic recognition of reader challenges\n- Guidance-oriented, offering perspective and context before solutions\n- First-person voice (\"we\" or occasional \"I\") for authenticity\n\n## Structure\n\n1. Start from business context (not technical features)\n2. Progress: context → definitions → how it works → trade-offs → summary\n3. Recognition moments before introducing solutions\n4. End with a resolution, not just factual information\n\n## Format\n\n- Blog article (~500 words)\n- Conversational but substantive\n- Subheadings for scanning\n- Paragraphs 1-3 sentences\n\n## Terminology\n\n- Use exact terms: Microsoft Teams Phone, cloud telephony (not cloud calling), Operator Connect, Direct Routing, Microsoft Calling Plans\n- Define PSTN (Public Switched Telephone Network) and all acronyms on first use\n- No synonym-swapping for variety\n\n## Success Criteria\n\n- No em-dashes, no colon-split headings, minimal semicolons\n- No filler phrases or buzzwords\n- Feels genuinely expert, not robotic or generic\n- Format and structure match blog guidance\n\n## Remaining Questions\n\n- Scenario confirmed: multinational rollout and governance.\n- Keep it an enterprise-friendly overview that still covers real trade-offs and operating model implications.\n\n## Next Steps\n\n- If brief is clear, proceed to draft. If not, ask targeted clarifying question.\n",
+      "documentContent": "## When voice goes global, operations get complicated\n\nMost enterprise teams do not struggle with telephony because they lack features. They struggle because voice sits at the intersection of people, regulation, carriers, and day-to-day support. Add multiple geographies and the complexity multiplies.\n\nWe often meet organisations where each country has grown its own approach over time. Different carriers, different contracts, different numbering plans, and different processes for moves, adds, and changes. Reporting looks different in every region, and the service desk ends up firefighting issues it cannot see end-to-end.\n\nThat fragmentation tends to show up in predictable places. Acquisitions bring in new carrier estates that never fully get rationalised. A change to a call queue works in one region but not another because the underlying routing is different. Even basic questions like \"how many active numbers do we have\" or \"which sites still rely on legacy kit\" take weeks to answer.\n\nCloud telephony is usually part of the fix, but only if it is implemented with a clear operating model. Otherwise you just swap an on-prem estate for a cloud estate that is still fragmented.\n\n## What we mean by cloud telephony\n\nCloud telephony is the PSTN (Public Switched Telephone Network) calling layer delivered as a managed cloud service. In practice, it connects your users and call flows to public voice networks, and it gives you a consistent way to manage numbers, routing, and policies across locations.\n\nIn a multinational environment, the value is not only technical. It is the ability to run voice with one set of controls, one support motion, and one view of what is live, even when the underlying carrier relationships and regulations differ by country.\n\nFor many enterprises, Microsoft Teams Phone becomes the user interface for calling. The architectural question is how you connect Teams to the PSTN in each country, and how you govern that connection at scale.\n\nIt is worth being specific about what \"govern\" means here. It includes how you request and assign numbers, how you control international dialling, how you handle emergency calling, and how you prove changes were made correctly when something is audited.\n\n## How LoopUp approaches multinational rollout\n\nAt LoopUp, we focus on making global voice manageable for IT (information technology), not just functional for end users. That usually comes down to three things.\n\nFirst, a consistent connection model to Microsoft Teams Phone. Depending on your requirements, that can be delivered through Operator Connect or Direct Routing. The point is not the label, it is standardising how sites get brought on, how changes are controlled, and how incidents are diagnosed.\n\nSome organisations also evaluate Microsoft Calling Plans for specific countries or user groups. The right choice depends on coverage, control, commercial model, and how much consistency you need across regions.\n\nSecond, central governance with local fit. Multinational voice always has local constraints, numbering rules, emergency services, and in-country expectations from the business. A workable approach sets global policy for security, provisioning, and reporting, while still supporting the local requirements that keep the service compliant and usable.\n\nThird, operational visibility. When something breaks, teams need to know where. Is it the user, the network, Microsoft Teams Phone, the routing, or the carrier? The faster you can pinpoint the boundary, the less time you spend escalating across suppliers.\n\n## Trade-offs to plan for\n\nGlobal standardisation is valuable, but it is never free.\n\nYou will need to decide how much variation you can tolerate by country. Some organisations insist on a single global design even when it adds cost or limits choice locally. Others allow controlled exceptions when the business case is clear.\n\nYou should also plan for coexistence during migration. It is rare to switch every location at once, so you need a design that supports legacy PBX (private branch exchange) connectivity, gradual porting, and phased adoption without turning support into a maze.\n\nThere are also country-level realities you cannot ignore. Number porting timelines vary, emergency services obligations differ, and some locations need in-country PSTN connectivity for regulatory or resilience reasons. A good design acknowledges those constraints early so they do not surface as last-minute blockers.\n\nFinally, treat telephony as an operating service, not a rollout project. Numbers, users, call flows, and policies change constantly. The steady-state process matters more than the go-live date.\n\n## A practical outcome\n\nThe goal of LoopUp cloud telephony is simple. Give your teams a single way to run enterprise voice across geographies, with clear governance, predictable deployment, and support that can see the whole service.\n\nIf you are planning a multinational Microsoft Teams Phone rollout, start by mapping where fragmentation costs you today. Then design the connection and governance model that will still work two years from now, not just on day one.\n",
       "messages": [
         {
           "id": "msg_1770338831308_aas3ud6",
@@ -2100,8 +2100,187 @@
       ],
       "directoryPath": "/home/graham/github/QuillBot/data/projects/proj_1770338830094_qalk7q7",
       "createdAt": "2026-02-06T00:47:10.094Z",
-      "updatedAt": "2026-02-06T00:50:49.663Z",
-      "opencodeSessionId": "ses_3cf9532f5ffeRbweLEYKO46Rcc"
+      "updatedAt": "2026-02-06T01:00:12.211Z",
+      "opencodeSessionId": "ses_3cf9532f5ffeRbweLEYKO46Rcc",
+      "briefAdherenceCache": {
+        "draftHash": "6dac79d73fca07efc1cd3fb3eac8150ffb96b221a85c7619887736983399dc20",
+        "adherenceScore": 92,
+        "pointsCovered": [
+          {
+            "point": "Purpose: ~500-word blog article",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Full draft content",
+                "context": "Draft spans approximately 550 words, meeting the target length requirement"
+              }
+            ]
+          },
+          {
+            "point": "Primary angle: multinational rollout and governance",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Cloud telephony is usually part of the fix, but only if it is implemented with a clear operating model.",
+                "context": "Establishes governance as essential to cloud telephony success"
+              },
+              {
+                "excerpt": "In a multinational environment, the value is not only technical. It is the ability to run voice with one set of controls, one support motion, and one view of what is live, even when the underlying carrier relationships and regulations differ by country.",
+                "context": "Directly addresses multinational governance as core value proposition"
+              }
+            ]
+          },
+          {
+            "point": "Recognize operational friction of multi-country voice estates",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "We often meet organisations where each country has grown its own approach over time. Different carriers, different contracts, different numbering plans, and different processes for moves, adds, and changes.",
+                "context": "Opens with specific recognition of fragmentation across countries"
+              },
+              {
+                "excerpt": "That fragmentation tends to show up in predictable places. Acquisitions bring in new carrier estates that never fully get rationalised.",
+                "context": "Provides concrete examples of operational friction"
+              }
+            ]
+          },
+          {
+            "point": "Explain LoopUp's approach to consistency, control, and local requirements",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "At LoopUp, we focus on making global voice manageable for IT, not just functional for end users. That usually comes down to three things.",
+                "context": "Introduces LoopUp's three-part approach to multinational voice"
+              },
+              {
+                "excerpt": "Second, central governance with local fit. Multinational voice always has local constraints, numbering rules, emergency services, and in-country expectations from the business.",
+                "context": "Directly addresses balancing global control with local requirements"
+              }
+            ]
+          },
+          {
+            "point": "Frame as managed service and operating model, not product UI",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Cloud telephony is the PSTN calling layer delivered as a managed cloud service... it gives you a consistent way to manage numbers, routing, and policies across locations.",
+                "context": "Focuses on service delivery and management model"
+              },
+              {
+                "excerpt": "Finally, treat telephony as an operating service, not a rollout project.",
+                "context": "Explicitly positions cloud telephony as operating model"
+              }
+            ]
+          },
+          {
+            "point": "Reference Microsoft Teams Phone connectivity via Operator Connect and Direct Routing",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "For many enterprises, Microsoft Teams Phone becomes the user interface for calling. The architectural question is how you connect Teams to the PSTN in each country.",
+                "context": "Establishes Microsoft Teams Phone as primary platform"
+              },
+              {
+                "excerpt": "First, a consistent connection model to Microsoft Teams Phone. Depending on your requirements, that can be delivered through Operator Connect or Direct Routing.",
+                "context": "Explicitly names both connection methods"
+              }
+            ]
+          },
+          {
+            "point": "Mention Microsoft Calling Plans only as an option some enterprises evaluate",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Some organisations also evaluate Microsoft Calling Plans for specific countries or user groups. The right choice depends on coverage, control, commercial model, and how much consistency you need across regions.",
+                "context": "Presents Calling Plans as one option among several, not primary recommendation"
+              }
+            ]
+          },
+          {
+            "point": "Audience: Decision-makers responsible for IT, UC, and digital transformation",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "At LoopUp, we focus on making global voice manageable for IT, not just functional for end users.",
+                "context": "Directly addresses IT decision-makers"
+              },
+              {
+                "excerpt": "If you are planning a multinational Microsoft Teams Phone rollout, start by mapping where fragmentation costs you today.",
+                "context": "Speaks to digital transformation leaders planning strategic initiatives"
+              }
+            ]
+          },
+          {
+            "point": "Tone: Confident, pragmatic, warm, peer-to-peer",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "We often meet organisations where each country has grown its own approach over time... Reporting looks different in every region, and the service desk ends up firefighting issues it cannot see end-to-end.",
+                "context": "Uses 'we' voice with authentic recognition of reader challenges, establishing peer relationship"
+              },
+              {
+                "excerpt": "It is worth being specific about what 'govern' means here.",
+                "context": "Pragmatic guidance tone, practical and direct"
+              }
+            ]
+          },
+          {
+            "point": "Structure: context → definitions → how it works → trade-offs → summary",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Opening section establishes business context (fragmentation) → 'What we mean by cloud telephony' (definition) → 'How LoopUp approaches multinational rollout' (implementation) → 'Trade-offs to plan for' (trade-offs) → 'A practical outcome' (summary)",
+                "context": "Draft follows required narrative structure throughout"
+              }
+            ]
+          },
+          {
+            "point": "Define PSTN and acronyms on first use",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Cloud telephony is the PSTN (Public Switched Telephone Network) calling layer delivered as a managed cloud service.",
+                "context": "PSTN defined on first mention"
+              },
+              {
+                "excerpt": "IT (information technology)",
+                "context": "All acronyms properly defined on first use"
+              }
+            ]
+          },
+          {
+            "point": "No em-dashes, no colon-split headings, minimal semicolons",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "All headings use standard format without colons. Punctuation review shows no em-dashes, minimal semicolons.",
+                "context": "Draft adheres to formatting constraints throughout"
+              }
+            ]
+          },
+          {
+            "point": "No filler phrases or buzzwords",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Prose avoids generic phrases like 'synergy,' 'leverage,' 'next-generation,' etc. Language is specific and concrete.",
+                "context": "Draft maintains substantive, jargon-free language throughout"
+              }
+            ]
+          },
+          {
+            "point": "Subheadings for scanning with 1-3 sentence paragraphs",
+            "status": "covered",
+            "citations": [
+              {
+                "excerpt": "Six clear subheadings (When voice goes global..., What we mean..., How LoopUp approaches..., Trade-offs to plan for, A practical outcome) with short paragraphs.",
+                "context": "Structure supports scanability with clear section breaks and brief, focused paragraphs"
+              }
+            ]
+          }
+        ],
+        "timestamp": "2026-02-06T01:00:12.207Z"
+      }
     }
   ]
 }

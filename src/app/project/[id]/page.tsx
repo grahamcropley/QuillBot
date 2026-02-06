@@ -114,6 +114,9 @@ export default function ProjectPage() {
     enabled: projectReady,
   });
 
+  // Track draft.md content separately for analysis (regardless of selected file)
+  const [draftContent, setDraftContent] = useState<string>("");
+
   const [streamingParts, setStreamingParts] = useState<Part[]>([]);
   const [streamingActivities, setStreamingActivities] = useState<
     StreamActivity[]
@@ -467,19 +470,40 @@ export default function ProjectPage() {
     }
   }, [syncedContent, currentProject?.documentContent, updateDocument]);
 
+  // Load draft.md content for analysis (independent of selected file)
   useEffect(() => {
-    if (currentProject?.documentContent) {
-      const metrics = analyzeContent(
-        currentProject.documentContent,
-        currentProject.brief,
-      );
+    if (!projectReady) return;
+
+    const fetchDraftContent = async () => {
+      try {
+        const response = await fetch(
+          `/api/projects/${projectId}/files?path=draft.md`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.content) {
+            setDraftContent(data.content);
+          }
+        } else {
+          setDraftContent("");
+        }
+      } catch (error) {
+        console.error("Failed to fetch draft.md for analysis:", error);
+        setDraftContent("");
+      }
+    };
+
+    fetchDraftContent();
+  }, [projectId, projectReady, projectFiles]);
+
+  useEffect(() => {
+    if (draftContent && currentProject?.brief) {
+      const metrics = analyzeContent(draftContent, currentProject.brief);
       setAnalysisMetrics(metrics);
+    } else {
+      setAnalysisMetrics(null);
     }
-  }, [
-    currentProject?.documentContent,
-    currentProject?.brief,
-    setAnalysisMetrics,
-  ]);
+  }, [draftContent, currentProject?.brief, setAnalysisMetrics]);
 
   const sendMessageInternal = useCallback(
     async (content: string, isInitialMessage = false, messageId?: string) => {
