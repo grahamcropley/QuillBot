@@ -15,6 +15,7 @@ import {
   useTextSelection,
   useMarkdownSync,
   useFileWatcher,
+  useFileVersionHistory,
 } from "@/hooks";
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
@@ -51,7 +52,9 @@ export default function ProjectPage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] =
     useState(false);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingBranchSaveContent, setPendingBranchSaveContent] = useState<
+    string | null
+  >(null);
   const [hasUnsavedEditorChanges, setHasUnsavedEditorChanges] = useState(false);
   const [editorDiscardFn, setEditorDiscardFn] = useState<(() => void) | null>(
     null,
@@ -123,6 +126,132 @@ export default function ProjectPage() {
     projectId,
     enabled: projectReady,
   });
+
+  const activeFilePath = projectReady ? (syncedFileName ?? "draft.md") : null;
+
+  const {
+    record: versionRecord,
+    baselineContent: baselineVersionContent,
+    refresh: refreshVersionHistory,
+    selectedVersionId,
+    setSelectedVersionId,
+    selectedVersionContent,
+    loadVersionContent,
+    createSnapshot,
+    branchToVersion,
+    setLastModified: setFileLastModified,
+  } = useFileVersionHistory({
+    projectId,
+    filePath: activeFilePath,
+    enabled: projectReady,
+  });
+
+  useEffect(() => {
+    if (!projectReady || !activeFilePath) return;
+
+    // If the file just became populated, ensure Version 1 exists and the
+    // baseline content is correct.
+    const fileHasContent = syncedContent.trim().length > 0;
+    const needsInitialVersion =
+      fileHasContent && (versionRecord?.versions.length ?? 0) === 0;
+    const needsBaselineHeal = fileHasContent && baselineVersionContent === null;
+
+    if (needsInitialVersion || needsBaselineHeal) {
+      void refreshVersionHistory();
+    }
+  }, [
+    activeFilePath,
+    baselineVersionContent,
+    projectReady,
+    refreshVersionHistory,
+    syncedContent,
+    versionRecord?.versions.length,
+  ]);
+
+  useEffect(() => {
+    if (!projectReady) return;
+    if (!activeFilePath) return;
+    if (!versionRecord?.latestVersionId) return;
+    if (!selectedVersionId) return;
+    if (selectedVersionId === versionRecord.latestVersionId) return;
+    void loadVersionContent(selectedVersionId);
+  }, [
+    activeFilePath,
+    loadVersionContent,
+    projectReady,
+    selectedVersionId,
+    versionRecord?.latestVersionId,
+  ]);
+
+  const versions = useMemo(() => {
+    const list = versionRecord?.versions ?? [];
+    return [...list]
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((v) => ({
+        id: v.id,
+        timestamp: new Date(v.createdAt),
+        author: v.createdBy.name,
+        label: v.label,
+      }));
+  }, [versionRecord?.versions]);
+
+  const latestVersionId = versionRecord?.latestVersionId ?? null;
+  const isViewingLatestVersion =
+    !latestVersionId || selectedVersionId === latestVersionId;
+
+  const baselineReady =
+    baselineVersionContent !== null &&
+    (versionRecord?.versions.length ?? 0) > 0;
+
+  const [liveExternalUpdateSource, setLiveExternalUpdateSource] = useState<
+    "ai" | "system"
+  >("system");
+
+  const prevActiveFilePathRef = useRef<string | null>(activeFilePath);
+  const prevSyncedContentRef = useRef<string>(syncedContent);
+
+  useEffect(() => {
+    // File switches should never be attributed as AI edits.
+    if (prevActiveFilePathRef.current !== activeFilePath) {
+      setLiveExternalUpdateSource("system");
+    }
+    prevActiveFilePathRef.current = activeFilePath;
+  }, [activeFilePath]);
+
+  useEffect(() => {
+    // One-shot: after we observe the disk content update, reset attribution.
+    if (liveExternalUpdateSource !== "ai") {
+      prevSyncedContentRef.current = syncedContent;
+      return;
+    }
+
+    if (syncedContent !== prevSyncedContentRef.current) {
+      setLiveExternalUpdateSource("system");
+    }
+
+    prevSyncedContentRef.current = syncedContent;
+  }, [liveExternalUpdateSource, syncedContent]);
+
+  const [hasNewerLiveUpdates, setHasNewerLiveUpdates] = useState(false);
+  const lastLiveContentRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!projectReady) return;
+
+    if (isViewingLatestVersion) {
+      setHasNewerLiveUpdates(false);
+      lastLiveContentRef.current = syncedContent;
+      return;
+    }
+
+    if (syncedContent !== lastLiveContentRef.current) {
+      if (lastLiveContentRef.current) {
+        setHasNewerLiveUpdates(true);
+      }
+      lastLiveContentRef.current = syncedContent;
+    }
+  }, [isViewingLatestVersion, projectReady, syncedContent]);
 
   const { files: projectFiles, refetch: refreshFiles } = useFileWatcher({
     projectId,
@@ -412,6 +541,17 @@ export default function ProjectPage() {
         setIsServerErrorModalOpen(true);
       }
     },
+    onFileEdited: (file) => {
+      const name = file.split("/").pop() ?? file;
+      if (activeFilePath && name === activeFilePath) {
+        setLiveExternalUpdateSource("ai");
+        void setFileLastModified({
+          id: "opencode",
+          name: "OpenCode",
+          kind: "ai",
+        });
+      }
+    },
   });
 
   useResumeBufferedStream(
@@ -627,16 +767,12 @@ export default function ProjectPage() {
     async (content: string, isInitialMessage = false, messageId?: string) => {
       if (!currentProject) return;
 
-      // Check for unsaved editor changes
-      if (hasUnsavedEditorChanges) {
-        setPendingMessage(content);
-        setIsUnsavedChangesModalOpen(true);
-        return;
-      }
+      // Ensure any debounced file writes are flushed before sending.
+      editorRef.current?.flushPendingWrites?.();
 
       await sendMessageInternal(content, isInitialMessage, messageId);
     },
-    [currentProject, hasUnsavedEditorChanges, sendMessageInternal],
+    [currentProject, sendMessageInternal],
   );
 
   // Track initialization and trigger initial message send
@@ -673,11 +809,50 @@ export default function ProjectPage() {
     [handleSendMessage],
   );
 
-  const handleContentChange = useCallback(
-    (content: string) => {
-      updateDocument(content);
+  const writeActiveFile = useCallback(
+    async (nextContent: string) => {
+      if (!activeFilePath) return;
+      await fetch(`/api/projects/${projectId}/files`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: activeFilePath, content: nextContent }),
+      }).catch((err) => {
+        console.error("Failed to write file:", err);
+      });
+
+      // Keep project metadata up to date for draft analysis.
+      if (activeFilePath === "draft.md") {
+        void updateDocument(nextContent);
+      }
     },
-    [updateDocument],
+    [activeFilePath, projectId, updateDocument],
+  );
+
+  const handleCreateSnapshot = useCallback(
+    async (nextContent: string): Promise<boolean> => {
+      if (!activeFilePath) return false;
+
+      if (!latestVersionId || !selectedVersionId || isViewingLatestVersion) {
+        const result = await createSnapshot(nextContent);
+        if (!result.success) {
+          console.error("Failed to create snapshot:", result.error);
+          return false;
+        }
+        return true;
+      }
+
+      // Historical save: prune future versions, then continue from here.
+      setIsUnsavedChangesModalOpen(true);
+      setPendingBranchSaveContent(nextContent);
+      return false;
+    },
+    [
+      activeFilePath,
+      createSnapshot,
+      isViewingLatestVersion,
+      latestVersionId,
+      selectedVersionId,
+    ],
   );
 
   const startResizing = useCallback(() => {
@@ -853,27 +1028,26 @@ export default function ProjectPage() {
   );
 
   const handleNavigationConfirm = useCallback(() => {
-    editorRef.current?.save?.();
-    setHasUnsavedEditorChanges(false);
-    setIsNavigationModalOpen(false);
-    if (pendingMessage) {
-      sendMessageInternal(pendingMessage);
-      setPendingMessage(null);
-    } else if (pendingFileSwitch) {
-      selectFile(pendingFileSwitch);
-      setPendingFileSwitch(null);
-    } else if (pendingNavigation) {
-      router.push(pendingNavigation);
-      setPendingNavigation(null);
-    }
-  }, [
-    pendingMessage,
-    pendingFileSwitch,
-    pendingNavigation,
-    selectFile,
-    sendMessageInternal,
-    router,
-  ]);
+    void (async () => {
+      editorRef.current?.flushPendingWrites?.();
+
+      // IMPORTANT: "Save" here means "create a new version snapshot",
+      // not merely flushing disk writes.
+      const ok = await editorRef.current?.saveSnapshot?.();
+      if (!ok) return;
+
+      setHasUnsavedEditorChanges(false);
+      setIsNavigationModalOpen(false);
+
+      if (pendingFileSwitch) {
+        selectFile(pendingFileSwitch);
+        setPendingFileSwitch(null);
+      } else if (pendingNavigation) {
+        router.push(pendingNavigation);
+        setPendingNavigation(null);
+      }
+    })();
+  }, [pendingFileSwitch, pendingNavigation, selectFile, router]);
 
   const handleNavigationCancel = useCallback(() => {
     setIsNavigationModalOpen(false);
@@ -1055,19 +1229,42 @@ export default function ProjectPage() {
           >
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview
+                key={activeFilePath ?? "no-file"}
                 ref={editorRef}
                 content={
-                  syncedFileName
-                    ? syncedContent
-                    : currentProject.documentContent
+                  isViewingLatestVersion
+                    ? syncedFileName
+                      ? syncedContent
+                      : currentProject.documentContent
+                    : (selectedVersionContent ?? "")
                 }
-                onContentChange={handleContentChange}
+                documentKey={activeFilePath ?? undefined}
+                onContentChange={writeActiveFile}
+                baselineContent={baselineVersionContent ?? undefined}
+                onCreateSnapshot={handleCreateSnapshot}
+                onDiscardToBaseline={writeActiveFile}
                 onTextSelect={handleTextSelect}
-                isEditable={!isStreaming}
+                isEditable={!isStreaming && baselineReady}
                 isOpenCodeBusy={isStreaming}
+                baselineReady={baselineReady}
+                liveExternalUpdateSource={liveExternalUpdateSource}
                 lastUpdated={syncedLastUpdated}
+                lastModifiedByName={
+                  versionRecord?.lastModifiedBy?.name ??
+                  currentProject.lastModifiedByName
+                }
+                versions={versions}
+                selectedVersionId={selectedVersionId ?? undefined}
+                onSelectVersion={setSelectedVersionId}
+                latestVersionId={latestVersionId}
+                onReturnToLatest={() => {
+                  if (latestVersionId) setSelectedVersionId(latestVersionId);
+                }}
+                hasNewerLiveUpdates={hasNewerLiveUpdates}
                 onUnsavedChangesChange={setHasUnsavedEditorChanges}
-                onDiscardChanges={setEditorDiscardFn}
+                onDiscardChanges={(discard) => {
+                  setEditorDiscardFn(() => discard);
+                }}
                 onSelectionExpand={handleExpandSelection}
                 onSelectionReduce={handleReduceSelection}
                 onSelectionImprovePoint={handleImprovePointSelection}
@@ -1113,34 +1310,43 @@ export default function ProjectPage() {
 
       <Modal
         isOpen={isUnsavedChangesModalOpen}
-        title="Unsaved Changes"
-        description="You have unsaved changes in the editor. Save them before sending a message, or discard them and continue."
+        title="Save From Older Version"
+        description="You're editing an older version. Saving now will delete all newer versions and continue versioning from here."
         onClose={() => {
           setIsUnsavedChangesModalOpen(false);
-          setPendingMessage(null);
+          setPendingBranchSaveContent(null);
         }}
         onConfirm={() => {
-          editorRef.current?.save?.();
-          setHasUnsavedEditorChanges(false);
-          setIsUnsavedChangesModalOpen(false);
-          setTimeout(() => {
-            if (pendingMessage) {
-              sendMessageInternal(pendingMessage);
-              setPendingMessage(null);
+          void (async () => {
+            if (
+              !activeFilePath ||
+              !pendingBranchSaveContent ||
+              !selectedVersionId
+            )
+              return;
+
+            const branched = await branchToVersion(selectedVersionId, false);
+            if (!branched.success) {
+              console.error("Failed to branch:", branched.error);
+              return;
             }
-          }, 100);
+
+            await writeActiveFile(pendingBranchSaveContent);
+            const snap = await createSnapshot(pendingBranchSaveContent);
+            if (!snap.success) {
+              console.error("Failed to snapshot:", snap.error);
+            }
+
+            setIsUnsavedChangesModalOpen(false);
+            setPendingBranchSaveContent(null);
+          })();
         }}
         onSecondary={() => {
-          editorDiscardFn?.();
-          setHasUnsavedEditorChanges(false);
           setIsUnsavedChangesModalOpen(false);
-          if (pendingMessage) {
-            sendMessageInternal(pendingMessage);
-            setPendingMessage(null);
-          }
+          setPendingBranchSaveContent(null);
         }}
-        confirmText="Save & Send"
-        secondaryText="Discard & Send"
+        confirmText="Continue From Here"
+        secondaryText="Cancel"
         cancelText="Cancel"
       />
 
