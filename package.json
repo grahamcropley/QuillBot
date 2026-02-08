@@ -20,9 +20,9 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@agent-chat/react": "file:../AgentChat/agent-chat-react-0.1.0.tgz",
-    "@agent-chat/server-core": "file:../AgentChat/agent-chat-server-core-0.1.0.tgz",
-    "@agent-chat/server-next": "file:../AgentChat/agent-chat-server-next-0.1.0.tgz",
+    "@agent-chat/react": "file:./agent-chat-react-0.1.0.tgz",
+    "@agent-chat/server-core": "file:./agent-chat-server-core-0.1.0.tgz",
+    "@agent-chat/server-next": "file:./agent-chat-server-next-0.1.0.tgz",
     "@codemirror/commands": "^6.10.1",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.12.1",
