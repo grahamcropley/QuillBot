@@ -23,6 +23,7 @@ import {
   StateField,
   StateEffect,
   RangeSet,
+  type ChangeSet,
 } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -33,7 +34,6 @@ import {
 } from "@codemirror/language";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { useProjectStore } from "@/stores/project-store";
-import { Bookmark, X } from "lucide-react";
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
@@ -64,6 +64,11 @@ interface MarkdownEditorProps {
   className?: string;
   theme?: "light" | "dark";
   onSelectionChange?: (state: SelectionState) => void;
+  /**
+   * When the parent updates `content` (e.g. from disk/OpenCode), this controls
+   * how change highlights are attributed.
+   */
+  externalUpdateSource?: "ai" | "system";
 }
 
 export interface MarkdownEditorHandle {
@@ -71,6 +76,15 @@ export interface MarkdownEditorHandle {
   getSelectionState: () => SelectionState;
   mark: () => void;
   clear: () => void;
+  clearChangeHighlights: () => void;
+  getChangeHighlights: () => {
+    user: Array<[number, number]>;
+    ai: Array<[number, number]>;
+  };
+  setChangeHighlights: (highlights: {
+    user: Array<[number, number]>;
+    ai: Array<[number, number]>;
+  }) => void;
 }
 
 interface SelectionState {
@@ -125,6 +139,149 @@ const markedHighlightField = StateField.define<DecorationSet>({
 const themeCompartment = new Compartment();
 const readOnlyCompartment = new Compartment();
 
+const externalUpdateSource = StateEffect.define<"ai" | "system">();
+
+const appendUserChangeRanges = StateEffect.define<Array<[number, number]>>();
+const appendAiChangeRanges = StateEffect.define<Array<[number, number]>>();
+const clearUserChangeHighlights = StateEffect.define<void>();
+const clearAiChangeHighlights = StateEffect.define<void>();
+const setUserChangeHighlights = StateEffect.define<DecorationSet>();
+const setAiChangeHighlights = StateEffect.define<DecorationSet>();
+
+const userChangeDecoration = Decoration.mark({ class: "cm-change-user" });
+const aiChangeDecoration = Decoration.mark({ class: "cm-change-ai" });
+
+function rangesFromChanges(changes: ChangeSet): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  changes.iterChanges(
+    (
+      _fromA: number,
+      _toA: number,
+      fromB: number,
+      toB: number,
+      _inserted: unknown,
+    ) => {
+      if (toB > fromB) {
+        ranges.push([fromB, toB]);
+      }
+    },
+  );
+  return ranges;
+}
+
+function decorationSetFromRanges(
+  ranges: Array<[number, number]>,
+  deco: Decoration,
+): DecorationSet {
+  const marks = ranges
+    .filter(([from, to]) => to > from)
+    .map(([from, to]) => deco.range(from, to));
+  marks.sort((a, b) => a.from - b.from);
+  return RangeSet.of(marks, true);
+}
+
+function decorationSetToRanges(
+  decorations: DecorationSet,
+  docLength: number,
+): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  decorations.between(0, docLength, (from, to) => {
+    if (to > from) ranges.push([from, to]);
+  });
+  return ranges;
+}
+
+function computeMinimalChange(
+  oldText: string,
+  newText: string,
+): {
+  from: number;
+  to: number;
+  insert: string;
+} {
+  let start = 0;
+  const oldLen = oldText.length;
+  const newLen = newText.length;
+
+  while (
+    start < oldLen &&
+    start < newLen &&
+    oldText.charCodeAt(start) === newText.charCodeAt(start)
+  ) {
+    start += 1;
+  }
+
+  let endOld = oldLen;
+  let endNew = newLen;
+
+  while (
+    endOld > start &&
+    endNew > start &&
+    oldText.charCodeAt(endOld - 1) === newText.charCodeAt(endNew - 1)
+  ) {
+    endOld -= 1;
+    endNew -= 1;
+  }
+
+  return {
+    from: start,
+    to: endOld,
+    insert: newText.slice(start, endNew),
+  };
+}
+
+const userChangeHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(appendUserChangeRanges)) {
+        decorations = decorations.update({
+          add: effect.value.map(([from, to]) =>
+            userChangeDecoration.range(from, to),
+          ),
+        });
+      }
+      if (effect.is(clearUserChangeHighlights)) {
+        decorations = Decoration.none;
+      }
+      if (effect.is(setUserChangeHighlights)) {
+        decorations = effect.value;
+      }
+    }
+    return decorations;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
+
+const aiChangeHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(appendAiChangeRanges)) {
+        decorations = decorations.update({
+          add: effect.value.map(([from, to]) =>
+            aiChangeDecoration.range(from, to),
+          ),
+        });
+      }
+      if (effect.is(clearAiChangeHighlights)) {
+        decorations = Decoration.none;
+      }
+      if (effect.is(setAiChangeHighlights)) {
+        decorations = effect.value;
+      }
+    }
+    return decorations;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
+
 const baseTheme = EditorView.theme({
   "&": {
     height: "100%",
@@ -155,6 +312,12 @@ const baseTheme = EditorView.theme({
     backgroundColor: "#fbbf24",
     position: "relative",
   },
+  ".cm-change-user": {
+    backgroundColor: "rgba(59, 130, 246, 0.18)",
+  },
+  ".cm-change-ai": {
+    backgroundColor: "rgba(16, 185, 129, 0.18)",
+  },
   "@keyframes fadeOut": {
     "0%": { backgroundColor: "#fbbf24" },
     "100%": { backgroundColor: "transparent" },
@@ -184,6 +347,7 @@ export const MarkdownEditor = forwardRef<
     className = "",
     theme = "light",
     onSelectionChange,
+    externalUpdateSource: externalUpdateSourceProp = "ai",
   },
   ref,
 ) {
@@ -195,6 +359,12 @@ export const MarkdownEditor = forwardRef<
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
   const onSelectionChangeRef = useRef(onSelectionChange);
+  const initialDocRef = useRef(content);
+  const themeRef = useRef(theme);
+  const disabledRef = useRef(disabled);
+
+  themeRef.current = theme;
+  disabledRef.current = disabled;
   const [selectionState, setSelectionState] = useState<SelectionState>({
     hasSelection: false,
     selectionFrom: 0,
@@ -254,7 +424,31 @@ export const MarkdownEditor = forwardRef<
 
     const handleUpdate = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
-        onChangeRef.current(update.state.doc.toString());
+        let source: "ai" | "system" | null = null;
+        for (const tr of update.transactions) {
+          for (const eff of tr.effects) {
+            if (eff.is(externalUpdateSource)) {
+              source = eff.value;
+            }
+          }
+        }
+
+        // Only notify parent for user-originated edits. Programmatic updates
+        // (disk/OpenCode sync) are already reflected via the `content` prop.
+        if (source === null) {
+          onChangeRef.current(update.state.doc.toString());
+        }
+
+        const ranges = rangesFromChanges(update.changes);
+        if (ranges.length > 0) {
+          if (source === "ai") {
+            update.view.dispatch({ effects: appendAiChangeRanges.of(ranges) });
+          } else if (source === null) {
+            update.view.dispatch({
+              effects: appendUserChangeRanges.of(ranges),
+            });
+          }
+        }
       }
       // Update selection state on any selection/doc change
       updateSelectionState(update.view);
@@ -272,8 +466,8 @@ export const MarkdownEditor = forwardRef<
 
     const extensions = [
       baseTheme,
-      themeCompartment.of(theme === "dark" ? oneDark : lightTheme),
-      readOnlyCompartment.of(EditorState.readOnly.of(disabled)),
+      themeCompartment.of(themeRef.current === "dark" ? oneDark : lightTheme),
+      readOnlyCompartment.of(EditorState.readOnly.of(disabledRef.current)),
       lineNumbers(),
       highlightActiveLine(),
       drawSelection(),
@@ -286,11 +480,13 @@ export const MarkdownEditor = forwardRef<
       handleUpdate,
       highlightField,
       markedHighlightField,
+      userChangeHighlightField,
+      aiChangeHighlightField,
       EditorView.lineWrapping,
     ];
 
     const state = EditorState.create({
-      doc: content,
+      doc: initialDocRef.current,
       extensions,
     });
 
@@ -298,7 +494,7 @@ export const MarkdownEditor = forwardRef<
       state,
       parent: editorContainerRef.current,
     });
-  }, [theme, disabled, updateSelectionState]);
+  }, [updateSelectionState]);
 
   useEffect(() => {
     if (editorRef.current) return;
@@ -320,7 +516,7 @@ export const MarkdownEditor = forwardRef<
     const editor = editorRef.current;
     if (!editor) return;
 
-    const decorations: any[] = [];
+    const decorations: Array<ReturnType<typeof markedDecoration.range>> = [];
     const doc = editor.state.doc;
 
     for (const sel of markedSelections) {
@@ -349,15 +545,17 @@ export const MarkdownEditor = forwardRef<
 
     const currentContent = editor.state.doc.toString();
     if (currentContent !== content) {
+      const minimal = computeMinimalChange(currentContent, content);
       editor.dispatch({
         changes: {
-          from: 0,
-          to: currentContent.length,
-          insert: content,
+          from: minimal.from,
+          to: minimal.to,
+          insert: minimal.insert,
         },
+        effects: externalUpdateSource.of(externalUpdateSourceProp),
       });
     }
-  }, [content]);
+  }, [content, externalUpdateSourceProp]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -430,6 +628,45 @@ export const MarkdownEditor = forwardRef<
       getSelectionState: () => selectionState,
       mark: handleMark,
       clear: handleClear,
+      clearChangeHighlights: () => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        editor.dispatch({
+          effects: [
+            clearUserChangeHighlights.of(),
+            clearAiChangeHighlights.of(),
+          ],
+        });
+      },
+      getChangeHighlights: () => {
+        const editor = editorRef.current;
+        if (!editor) return { user: [], ai: [] };
+        const docLength = editor.state.doc.length;
+        const user = decorationSetToRanges(
+          editor.state.field(userChangeHighlightField),
+          docLength,
+        );
+        const ai = decorationSetToRanges(
+          editor.state.field(aiChangeHighlightField),
+          docLength,
+        );
+        return { user, ai };
+      },
+      setChangeHighlights: (highlights) => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        const user = decorationSetFromRanges(
+          highlights.user,
+          userChangeDecoration,
+        );
+        const ai = decorationSetFromRanges(highlights.ai, aiChangeDecoration);
+        editor.dispatch({
+          effects: [
+            setUserChangeHighlights.of(user),
+            setAiChangeHighlights.of(ai),
+          ],
+        });
+      },
       findAndHighlight: (excerpt: string): boolean => {
         const editor = editorRef.current;
         if (!editor) return false;
@@ -498,7 +735,7 @@ export const MarkdownEditor = forwardRef<
         return true;
       },
     }),
-    [],
+    [handleClear, handleMark, selectionState],
   );
 
   return (
