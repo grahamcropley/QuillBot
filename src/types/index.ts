@@ -122,6 +122,7 @@ export interface Project {
   createdByName?: string;
   lastModifiedBy?: string;
   lastModifiedByName?: string;
+  reviewFilename?: string;
 }
 
 export type Result<T, E = Error> =

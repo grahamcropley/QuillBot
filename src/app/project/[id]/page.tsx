@@ -19,7 +19,10 @@ import {
 } from "@/hooks";
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
-import { buildCommandArgs } from "@/utils/prompt-builder";
+import {
+  buildCommandArgs,
+  buildImportProcessingPrompt,
+} from "@/utils/prompt-builder";
 import { formatSelectionsContext } from "@/utils/format-selections";
 import type { TextSelection, Message, ContentType } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
@@ -41,6 +44,59 @@ interface ProjectInfoValues {
   wordCount: number;
   styleHints: string;
   brief: string;
+}
+
+interface ImportMetadata {
+  title: string;
+  contentType: ContentType;
+  targetWordCount: number;
+}
+
+function parseImportMetadata(content: string): ImportMetadata | null {
+  const match = content.match(
+    /<import-metadata>([\s\S]*?)<\/import-metadata>/i,
+  );
+  if (!match?.[1]) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(match[1]) as {
+      title?: unknown;
+      contentType?: unknown;
+      targetWordCount?: unknown;
+    };
+
+    const allowedContentTypes: ContentType[] = [
+      "blog",
+      "white-paper",
+      "social-post",
+      "email",
+      "case-study",
+      "landing-page",
+    ];
+
+    if (
+      typeof parsed.title !== "string" ||
+      !allowedContentTypes.includes(parsed.contentType as ContentType) ||
+      typeof parsed.targetWordCount !== "number"
+    ) {
+      return null;
+    }
+
+    const roundedWordCount = Math.max(
+      100,
+      Math.round(parsed.targetWordCount / 100) * 100,
+    );
+
+    return {
+      title: parsed.title.trim() || "Imported draft",
+      contentType: parsed.contentType as ContentType,
+      targetWordCount: roundedWordCount,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export default function ProjectPage() {
@@ -444,6 +500,39 @@ export default function ProjectPage() {
       if (markdownMatch) {
         updateDocument(markdownMatch[1]);
       }
+
+      const importMetadata = parseImportMetadata(content);
+      if (importMetadata) {
+        void (async () => {
+          let generatedBrief = "";
+
+          try {
+            const briefResponse = await fetch(
+              `/api/projects/${projectId}/files?path=brief.md`,
+            );
+            if (briefResponse.ok) {
+              const briefData = (await briefResponse.json()) as {
+                content?: string;
+              };
+              generatedBrief = briefData.content?.trim() ?? "";
+            }
+          } catch (error) {
+            console.error("Failed to load generated brief.md:", error);
+          }
+
+          try {
+            await updateProjectInfo({
+              name: importMetadata.title,
+              contentType: importMetadata.contentType,
+              wordCount: importMetadata.targetWordCount,
+              styleHints: "",
+              brief: generatedBrief,
+            });
+          } catch (error) {
+            console.error("Failed to persist import metadata:", error);
+          }
+        })();
+      }
     },
     onPart: (part: Part, delta) => {
       if (part.type === "tool" && part.tool === "question") return;
@@ -734,16 +823,20 @@ export default function ProjectPage() {
       completionProcessedRef.current = false;
 
       const result = isInitialMessage
-        ? await sendMessage({
-            message: content,
-            command: "write-content",
-            commandArgs: buildCommandArgs({
-              contentType: currentProject.contentType,
-              wordCount: currentProject.wordCount,
-              styleHints: currentProject.styleHints,
-              brief: content,
-            }),
-          })
+        ? currentProject.reviewFilename
+          ? await sendMessage({
+              message: content,
+            })
+          : await sendMessage({
+              message: content,
+              command: "write-content",
+              commandArgs: buildCommandArgs({
+                contentType: currentProject.contentType,
+                wordCount: currentProject.wordCount,
+                styleHints: currentProject.styleHints,
+                brief: content,
+              }),
+            })
         : await sendMessage({
             message: content,
           });
@@ -795,7 +888,9 @@ export default function ProjectPage() {
       !hasInitialized.current.has(currentProject.id)
     ) {
       hasInitialized.current.add(currentProject.id);
-      pendingInitialMessageRef.current = currentProject.brief;
+      pendingInitialMessageRef.current = currentProject.reviewFilename
+        ? buildImportProcessingPrompt(currentProject.reviewFilename)
+        : currentProject.brief;
     }
   }, [currentProject, isStreaming]);
 

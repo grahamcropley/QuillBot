@@ -33,7 +33,12 @@ interface ProjectState {
   fetchProjects: () => Promise<void>;
   getCurrentProject: () => Project | null;
   selectProject: (id: string) => void;
-  createProject: (name: string, formData: StarterFormData) => Promise<string>;
+  createProject: (
+    name: string,
+    formData: StarterFormData,
+    isReviewMode?: boolean,
+    reviewFilename?: string,
+  ) => Promise<string>;
   updateProjectInfo: (
     updates: Pick<
       Project,
@@ -162,13 +167,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     set({ currentProjectId: id, textSelection: null, analysisMetrics: null });
   },
 
-  createProject: async (name, formData) => {
+  createProject: async (name, formData, isReviewMode, reviewFilename) => {
     set({ isLoading: true });
     try {
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, formData }),
+        body: JSON.stringify({ name, formData, isReviewMode, reviewFilename }),
       });
 
       if (!response.ok) throw new Error("Failed to create project");

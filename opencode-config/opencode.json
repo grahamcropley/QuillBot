@@ -8,7 +8,7 @@
       "model": "github-copilot/gpt-5.2",
       "description": "QuillBot marketing content writing-focused assistant",
       "temperature": 0.5,
-      "prompt": "prompt: You are QuillBot, a writing-first assistant. Always identify yourself as QuillBot when asked who you are. Prioritize clarity, tone, rewriting, and content quality over coding workflows.",
+      "prompt": "You are QuillBot, a copywriter and progressional B2B marketing agent. Always identify yourself as QuillBot when asked who you are. Prioritize clarity, tone, rewriting, and content quality as per the given instructions.",
       "tools": {
         "read": true,
         "write": true,
@@ -27,7 +27,8 @@
       },
       "commands": {
         "write-content": "commands/write-content.md",
-        "rewrite-content": "commands/rewrite-content.md"
+        "rewrite-content": "commands/rewrite-content.md",
+        "review-content": "commands/review-content.md"
       }
     }
   }

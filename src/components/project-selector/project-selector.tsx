@@ -33,6 +33,7 @@ interface ProjectSelectorProps {
   selectedProjectId: string | null;
   onSelectProject: (id: string) => void;
   onCreateNew: () => void;
+  onReviewExisting: () => void;
   onDeleteProject: (id: string) => void;
   isLoading?: boolean;
 }
@@ -440,6 +441,7 @@ export function ProjectSelector({
   selectedProjectId,
   onSelectProject,
   onCreateNew,
+  onReviewExisting,
   onDeleteProject,
   isLoading,
 }: ProjectSelectorProps) {
@@ -560,10 +562,20 @@ export function ProjectSelector({
             Create your first content project to get started with AI-powered
             authoring.
           </p>
-          <Button onClick={onCreateNew} className="mt-6">
-            <Plus className="w-4 h-4 mr-1.5" />
-            New Project
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={onCreateNew} className="mt-6 flex-1">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create New
+            </Button>
+            <Button
+              onClick={onReviewExisting}
+              className="mt-6 flex-1"
+              variant="ghost"
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              Review Existing
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -575,10 +587,16 @@ export function ProjectSelector({
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
           Your Projects
         </h2>
-        <Button onClick={onCreateNew} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          New Project
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={onCreateNew} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Create New
+          </Button>
+          <Button onClick={onReviewExisting} size="sm" variant="ghost">
+            <FileText className="w-4 h-4 mr-1" />
+            Review Existing
+          </Button>
+        </div>
       </div>
 
       <CategoryTabs
