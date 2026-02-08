@@ -1,6 +1,7 @@
 FROM node:20-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY agent-chat-*.tgz ./
 RUN npm ci
 
 FROM node:20-slim AS build
