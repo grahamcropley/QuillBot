@@ -11,6 +11,7 @@
     "dev:attach": "./dev-server.sh attach",
     "build": "next build",
     "start": "next start",
+    "opencode": "./start-opencode.sh",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
