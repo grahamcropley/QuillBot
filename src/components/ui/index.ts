@@ -11,3 +11,4 @@ export {
 } from "./skeleton";
 export { ErrorBoundary, PanelErrorBoundary } from "./error-boundary";
 export { Modal } from "./modal";
+export { FileUpload } from "./file-upload";

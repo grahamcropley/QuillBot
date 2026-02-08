@@ -20,9 +20,11 @@ export async function POST(request: Request) {
   try {
     const user = await getEasyAuthUser();
     const body = await request.json();
-    const { name, formData } = body as {
+    const { name, formData, isReviewMode, reviewFilename } = body as {
       name: string;
       formData: StarterFormData;
+      isReviewMode?: boolean;
+      reviewFilename?: string;
     };
 
     if (!name || !formData) {
@@ -32,7 +34,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const project = await createProject(name, formData, user ?? undefined);
+    const project = await createProject(
+      name,
+      formData,
+      user ?? undefined,
+      isReviewMode,
+      reviewFilename,
+    );
     return NextResponse.json({ project }, { status: 201 });
   } catch (error) {
     console.error("Failed to create project:", error);

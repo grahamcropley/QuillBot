@@ -132,6 +132,8 @@ export function createProject(
   name: string,
   formData: StarterFormData,
   actor?: ProjectActor,
+  isReviewMode?: boolean,
+  reviewFilename?: string,
 ): Promise<Project> {
   return withWriteLock(async () => {
     const data = await readProjectsFile();
@@ -141,11 +143,17 @@ export function createProject(
 
     await fs.mkdir(directoryPath, { recursive: true });
 
+    // If review mode, seed draft.md with imported source content.
+    if (isReviewMode && formData.brief) {
+      const draftPath = path.join(directoryPath, "draft.md");
+      await fs.writeFile(draftPath, formData.brief, "utf-8");
+    }
+
     const newProject: Project = {
       id: projectId,
       name,
       contentType: formData.contentType,
-      brief: formData.brief,
+      brief: isReviewMode ? "" : formData.brief,
       wordCount: formData.wordCount,
       styleHints: formData.styleHints,
       documentContent: "",
@@ -157,6 +165,7 @@ export function createProject(
       createdByName: actor?.name,
       lastModifiedBy: actor?.id,
       lastModifiedByName: actor?.name,
+      reviewFilename: reviewFilename,
     };
 
     data.projects.push(serializeProject(newProject));
