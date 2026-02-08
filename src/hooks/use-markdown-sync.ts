@@ -46,6 +46,7 @@ export function useMarkdownSync({
       files
         .filter(
           (f) =>
+            !f.name.startsWith(".") &&
             !f.isDirectory &&
             (f.name.endsWith(".md") || f.name.endsWith(".markdown")),
         )
