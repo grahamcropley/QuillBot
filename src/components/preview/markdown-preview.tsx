@@ -21,6 +21,9 @@ import {
   Bookmark,
   X,
   Code,
+  History,
+  RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,6 +31,7 @@ import rehypeHighlight from "rehype-highlight";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/hooks/use-theme";
 import { markdownToHtml } from "@/lib/markdown-to-html";
+import { useProjectStore } from "@/stores/project-store";
 import type { TextSelection } from "@/types";
 import type { MarkdownEditorHandle } from "@/components/editor/markdown-editor";
 
@@ -52,18 +56,57 @@ const MarkdownEditor = lazy(() =>
 
 interface MarkdownPreviewProps {
   content: string;
+  /**
+   * Key for the currently displayed document (e.g. file name). Used to reset
+   * UI-only state when switching between files.
+   */
+  documentKey?: string;
+  /**
+   * Autosave hook. Called on a debounce while editing the latest view.
+   * This should write to disk so OpenCode and the UI stay in sync.
+   */
   onContentChange?: (content: string) => void;
+  /**
+   * Baseline snapshot content (latest saved version). Used to determine
+   * whether there are changes to save/discard.
+   */
+  baselineContent?: string;
+  /**
+   * Create a new version snapshot ("Save" in the versioning sense).
+   */
+  onCreateSnapshot?: (content: string) => boolean | Promise<boolean>;
+  /**
+   * Revert working file to baseline ("Discard" in the versioning sense).
+   */
+  onDiscardToBaseline?: (baseline: string) => void | Promise<void>;
   onTextSelect?: (selection: TextSelection) => void;
   isEditable?: boolean;
   isOpenCodeBusy?: boolean;
+  baselineReady?: boolean;
+  /**
+   * Source attribution for external disk updates while viewing the latest
+   * version. Typically "ai" only when the OpenCode server has written the file.
+   */
+  liveExternalUpdateSource?: "ai" | "system";
   lastUpdated?: Date | null;
+  lastModifiedByName?: string;
+  versions?: { id: string; timestamp: Date; author: string; label?: string }[];
+  latestVersionId?: string | null;
+  selectedVersionId?: string;
+  onSelectVersion?: (versionId: string) => void;
+  onReturnToLatest?: () => void;
+  hasNewerLiveUpdates?: boolean;
   onUnsavedChangesChange?: (hasChanges: boolean) => void;
   onDiscardChanges?: (discard: () => void) => void;
+  onSelectionExpand?: () => void;
+  onSelectionReduce?: () => void;
+  onSelectionImprovePoint?: () => void;
 }
 
 export interface MarkdownPreviewHandle {
   findAndHighlight: (excerpt: string) => boolean;
-  save: () => void;
+  flushPendingWrites: () => void;
+  saveSnapshot: () => Promise<boolean>;
 }
 
 function formatLastUpdated(date: Date): string {
@@ -88,6 +131,14 @@ function getLineCol(
 interface HeaderProps {
   hasUnsavedChanges: boolean;
   lastUpdated: Date | null | undefined;
+  lastModifiedByName?: string;
+  versions?: { id: string; timestamp: Date; author: string; label?: string }[];
+  latestVersionId?: string | null;
+  selectedVersionId?: string;
+  onSelectVersion?: (versionId: string) => void;
+  onReturnToLatest?: () => void;
+  hasNewerLiveUpdates: boolean;
+  isViewingLatest: boolean;
   copied: boolean;
   copiedHtml: boolean;
   isPreviewMode: boolean;
@@ -100,11 +151,24 @@ interface HeaderProps {
   inMarkedSection: boolean;
   onMark: () => void;
   onClear: () => void;
+  showSelectionActions: boolean;
+  selectionActionsDisabled: boolean;
+  onExpandSelection: () => void;
+  onReduceSelection: () => void;
+  onImprovePointSelection: () => void;
 }
 
 const EditorHeader = memo(function EditorHeader({
   hasUnsavedChanges,
   lastUpdated,
+  lastModifiedByName,
+  versions,
+  latestVersionId,
+  selectedVersionId,
+  onSelectVersion,
+  onReturnToLatest,
+  hasNewerLiveUpdates,
+  isViewingLatest,
   copied,
   copiedHtml,
   isPreviewMode,
@@ -117,11 +181,16 @@ const EditorHeader = memo(function EditorHeader({
   inMarkedSection,
   onMark,
   onClear,
+  showSelectionActions,
+  selectionActionsDisabled,
+  onExpandSelection,
+  onReduceSelection,
+  onImprovePointSelection,
 }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-10">
       <div className="flex items-center gap-2">
-        {hasUnsavedChanges && (
+        {isViewingLatest && hasUnsavedChanges && (
           <>
             <Button size="sm" onClick={onDiscard} variant="secondary">
               Discard
@@ -131,7 +200,23 @@ const EditorHeader = memo(function EditorHeader({
             </Button>
           </>
         )}
-        {hasUnsavedChanges && (
+        {!isViewingLatest && (
+          <>
+            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+              <AlertCircle className="w-3 h-3" />
+              Viewing older version
+            </span>
+            {hasNewerLiveUpdates && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Newer updates available
+              </span>
+            )}
+            <Button size="sm" onClick={onSave} variant="secondary">
+              Continue from here
+            </Button>
+          </>
+        )}
+        {isViewingLatest && hasUnsavedChanges && (
           <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
             <AlertCircle className="w-3 h-3" />
             Unsaved
@@ -165,13 +250,92 @@ const EditorHeader = memo(function EditorHeader({
             </>
           )}
         </Button>
+        {showSelectionActions && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onExpandSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Expand
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onReduceSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Reduce
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onImprovePointSelection}
+              disabled={selectionActionsDisabled}
+            >
+              Improve Point
+            </Button>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
-        {lastUpdated && (
-          <span className="text-xs text-gray-400 dark:text-gray-600">
-            Updated {formatLastUpdated(lastUpdated)}
-          </span>
+        {versions && versions.length > 0 && (
+          <>
+            <div className="relative flex items-center group">
+              <History className="w-3.5 h-3.5 text-gray-500 absolute left-2 pointer-events-none z-10" />
+              <select
+                className="pl-7 pr-7 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md appearance-none hover:border-gray-300 dark:hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer text-gray-700 dark:text-gray-200"
+                value={selectedVersionId}
+                onChange={(e) => onSelectVersion?.(e.target.value)}
+              >
+                {versions.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label ?? v.id} - {formatLastUpdated(v.timestamp)}
+                    {v.id === latestVersionId ? " (Latest)" : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2 pointer-events-none z-10" />
+            </div>
+
+            {latestVersionId && selectedVersionId !== latestVersionId && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onReturnToLatest}
+                title="Return to latest version"
+                className="text-xs px-2"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                Latest
+              </Button>
+            )}
+
+            <div className="h-4 w-px bg-gray-300 dark:bg-gray-700 mx-2" />
+          </>
         )}
+
+        {lastUpdated && (
+          <div className="flex flex-col items-end mr-2 text-right">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider leading-none mb-0.5">
+              Last update
+            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 leading-none">
+              {formatLastUpdated(lastUpdated)}
+              {lastModifiedByName && (
+                <span className="text-gray-400 ml-1">
+                  by {lastModifiedByName}
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+
+        {lastUpdated && (
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
+        )}
+
         <Button
           variant="ghost"
           size="sm"
@@ -219,13 +383,29 @@ export const MarkdownPreview = forwardRef<
 >(function MarkdownPreview(
   {
     content,
+    documentKey,
     onContentChange,
+    baselineContent,
+    onCreateSnapshot,
+    onDiscardToBaseline,
     onTextSelect,
     isEditable = true,
     isOpenCodeBusy = false,
+    baselineReady = true,
+    liveExternalUpdateSource = "system",
     lastUpdated,
+    lastModifiedByName,
+    versions,
+    latestVersionId,
+    selectedVersionId,
+    onSelectVersion,
+    onReturnToLatest,
+    hasNewerLiveUpdates = false,
     onUnsavedChangesChange,
     onDiscardChanges,
+    onSelectionExpand,
+    onSelectionReduce,
+    onSelectionImprovePoint,
   },
   ref,
 ) {
@@ -234,18 +414,91 @@ export const MarkdownPreview = forwardRef<
 
   const [editContent, setEditContent] = useState(content);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const baselineContentRef = useRef<string | null>(baselineContent ?? null);
   const [copied, setCopied] = useState(false);
   const [copiedHtml, setCopiedHtml] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const lastSyncedContentRef = useRef(content);
   const editorRef = useRef<MarkdownEditorHandle>(null);
+  const autosaveTimerRef = useRef<number | null>(null);
+  const pendingAutosaveContentRef = useRef<string | null>(null);
+  const lastEditSourceRef = useRef<"user" | "external">("external");
+  const lastDocumentKeyRef = useRef<string | undefined>(documentKey);
+  const pendingDocumentSwitchRef = useRef(false);
+  const pendingDocumentSwitchTimerRef = useRef<number | null>(null);
+  const latestCachedContentRef = useRef<string | null>(null);
+  const latestCachedHighlightsRef = useRef<{
+    user: Array<[number, number]>;
+    ai: Array<[number, number]>;
+  } | null>(null);
+  const wasViewingLatestRef = useRef<boolean>(true);
+  const [externalUpdateOverride, setExternalUpdateOverride] = useState<
+    "ai" | "system" | null
+  >(null);
   const theme = useTheme();
+  const markedSelections = useProjectStore((state) => state.markedSelections);
 
   useEffect(() => {
+    lastEditSourceRef.current = "external";
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    pendingAutosaveContentRef.current = null;
+
     setEditContent(content);
     lastSyncedContentRef.current = content;
-    setHasUnsavedChanges(false);
+
+    if (pendingDocumentSwitchRef.current) {
+      editorRef.current?.clearChangeHighlights?.();
+
+      if (pendingDocumentSwitchTimerRef.current) {
+        window.clearTimeout(pendingDocumentSwitchTimerRef.current);
+      }
+
+      // Keep suppressing external attribution until the content settles.
+      pendingDocumentSwitchTimerRef.current = window.setTimeout(() => {
+        pendingDocumentSwitchTimerRef.current = null;
+        pendingDocumentSwitchRef.current = false;
+        setExternalUpdateOverride(null);
+        editorRef.current?.clearChangeHighlights?.();
+      }, 400);
+
+      return () => {
+        if (pendingDocumentSwitchTimerRef.current) {
+          window.clearTimeout(pendingDocumentSwitchTimerRef.current);
+          pendingDocumentSwitchTimerRef.current = null;
+        }
+      };
+    }
   }, [content]);
+
+  useEffect(() => {
+    if (!documentKey) return;
+    const last = lastDocumentKeyRef.current;
+    if (last === documentKey) return;
+
+    lastDocumentKeyRef.current = documentKey;
+    pendingDocumentSwitchRef.current = true;
+
+    if (pendingDocumentSwitchTimerRef.current) {
+      window.clearTimeout(pendingDocumentSwitchTimerRef.current);
+      pendingDocumentSwitchTimerRef.current = null;
+    }
+
+    // Prevent a file load from being attributed as an AI edit.
+    setExternalUpdateOverride("system");
+    editorRef.current?.clearChangeHighlights?.();
+    latestCachedContentRef.current = null;
+    latestCachedHighlightsRef.current = null;
+    wasViewingLatestRef.current = true;
+    lastEditSourceRef.current = "external";
+    setHasUnsavedChanges(false);
+  }, [documentKey]);
+
+  useEffect(() => {
+    baselineContentRef.current = baselineContent ?? null;
+  }, [baselineContent]);
 
   useEffect(() => {
     onUnsavedChangesChange?.(hasUnsavedChanges);
@@ -282,22 +535,150 @@ export const MarkdownPreview = forwardRef<
   }, []);
 
   const handleEditorChange = useCallback((newContent: string) => {
+    lastEditSourceRef.current = "user";
     setEditContent(newContent);
-    const isDirty = newContent !== lastSyncedContentRef.current;
-    setHasUnsavedChanges(isDirty);
   }, []);
 
-  const handleSaveEdit = useCallback(() => {
-    onContentChange?.(editContent);
-    lastSyncedContentRef.current = editContent;
+  const flushPendingWrites = useCallback(() => {
+    if (!onContentChange) return;
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    const pending = pendingAutosaveContentRef.current;
+    if (pending !== null) {
+      pendingAutosaveContentRef.current = null;
+      onContentChange(pending);
+    }
+  }, [onContentChange]);
+
+  const isViewingLatest =
+    !latestVersionId || selectedVersionId === latestVersionId;
+
+  useEffect(() => {
+    if (!isViewingLatest) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    if (!baselineReady) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    const baseline = baselineContent ?? baselineContentRef.current;
+    if (baseline === null) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    setHasUnsavedChanges(editContent !== baseline);
+  }, [editContent, isViewingLatest, baselineContent, baselineReady]);
+
+  useEffect(() => {
+    const wasViewingLatest = wasViewingLatestRef.current;
+
+    wasViewingLatestRef.current = isViewingLatest;
+
+    if (wasViewingLatest && !isViewingLatest) {
+      latestCachedContentRef.current = editContent;
+      latestCachedHighlightsRef.current =
+        editorRef.current?.getChangeHighlights?.() ?? null;
+    }
+
+    if (!wasViewingLatest && isViewingLatest) {
+      // Prevent a full-doc swap from being classified as an AI edit.
+      setExternalUpdateOverride("system");
+      const handle = window.setTimeout(() => {
+        setExternalUpdateOverride(null);
+        const cached = latestCachedHighlightsRef.current;
+        if (!cached) return;
+        // Only restore if we returned to the same content.
+        if (latestCachedContentRef.current === editContent) {
+          editorRef.current?.setChangeHighlights?.(cached);
+        } else {
+          editorRef.current?.clearChangeHighlights?.();
+        }
+      }, 0);
+
+      return () => {
+        window.clearTimeout(handle);
+      };
+    }
+  }, [editContent, isViewingLatest]);
+
+  useEffect(() => {
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    // Never autosave if we're not in the live/latest view.
+    if (!onContentChange || !isViewingLatest) {
+      pendingAutosaveContentRef.current = null;
+      return;
+    }
+
+    // Don't autosave while OpenCode is busy / editor is disabled.
+    const canAutosave = isEditable && !isOpenCodeBusy;
+    if (!canAutosave) {
+      pendingAutosaveContentRef.current = null;
+      return;
+    }
+
+    if (lastEditSourceRef.current !== "user") {
+      pendingAutosaveContentRef.current = null;
+      return;
+    }
+
+    // Only write when the user has actually changed content relative to the
+    // last content we loaded from disk.
+    const isDirtyRelativeToDisk = editContent !== lastSyncedContentRef.current;
+    if (!isDirtyRelativeToDisk) {
+      pendingAutosaveContentRef.current = null;
+      return;
+    }
+
+    pendingAutosaveContentRef.current = editContent;
+
+    autosaveTimerRef.current = window.setTimeout(() => {
+      autosaveTimerRef.current = null;
+      const pending = pendingAutosaveContentRef.current;
+      if (pending === null) return;
+      pendingAutosaveContentRef.current = null;
+      onContentChange(pending);
+    }, 400);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [
+    editContent,
+    isEditable,
+    isOpenCodeBusy,
+    isViewingLatest,
+    onContentChange,
+  ]);
+
+  const handleSaveSnapshot = useCallback(async (): Promise<boolean> => {
+    if (!onCreateSnapshot) return false;
+    const ok = await onCreateSnapshot(editContent);
+    if (!ok) return false;
+
+    baselineContentRef.current = editContent;
     setHasUnsavedChanges(false);
-    onUnsavedChangesChange?.(false);
-  }, [editContent, onContentChange, onUnsavedChangesChange]);
+    editorRef.current?.clearChangeHighlights?.();
+    return true;
+  }, [editContent, onCreateSnapshot]);
 
   const handleDiscardChanges = useCallback(() => {
-    setEditContent(lastSyncedContentRef.current);
+    lastEditSourceRef.current = "external";
+    const baseline = baselineContentRef.current ?? "";
+    setEditContent(baseline);
     setHasUnsavedChanges(false);
-  }, []);
+    void onDiscardToBaseline?.(baseline);
+    editorRef.current?.clearChangeHighlights?.();
+  }, [onDiscardToBaseline]);
 
   useEffect(() => {
     onDiscardChanges?.(handleDiscardChanges);
@@ -325,15 +706,30 @@ export const MarkdownPreview = forwardRef<
     editorRef.current?.clear?.();
   }, []);
 
+  const canShowSelectionActions =
+    markedSelections.length > 0 &&
+    !!onSelectionExpand &&
+    !!onSelectionReduce &&
+    !!onSelectionImprovePoint;
+
   const headerProps = useMemo(
     () => ({
       hasUnsavedChanges,
+      baselineReady,
       lastUpdated,
+      lastModifiedByName,
+      versions,
+      latestVersionId,
+      selectedVersionId,
+      onSelectVersion,
+      onReturnToLatest,
+      hasNewerLiveUpdates,
+      isViewingLatest,
       copied,
       copiedHtml,
       isPreviewMode,
       onDiscard: handleDiscardChanges,
-      onSave: handleSaveEdit,
+      onSave: handleSaveSnapshot,
       onCopy: handleCopy,
       onCopyHtml: handleCopyHtml,
       onTogglePreview: handleTogglePreview,
@@ -341,21 +737,40 @@ export const MarkdownPreview = forwardRef<
       inMarkedSection: selectionState.inMarkedSection,
       onMark: handleMark,
       onClear: handleClear,
+      showSelectionActions: canShowSelectionActions,
+      selectionActionsDisabled: isOpenCodeBusy,
+      onExpandSelection: onSelectionExpand ?? (() => {}),
+      onReduceSelection: onSelectionReduce ?? (() => {}),
+      onImprovePointSelection: onSelectionImprovePoint ?? (() => {}),
     }),
     [
       hasUnsavedChanges,
+      baselineReady,
       lastUpdated,
+      lastModifiedByName,
+      versions,
+      latestVersionId,
+      selectedVersionId,
+      onSelectVersion,
+      onReturnToLatest,
+      hasNewerLiveUpdates,
+      isViewingLatest,
       copied,
       copiedHtml,
       isPreviewMode,
       handleDiscardChanges,
-      handleSaveEdit,
+      handleSaveSnapshot,
       handleCopy,
       handleCopyHtml,
       handleTogglePreview,
       selectionState,
       handleMark,
       handleClear,
+      canShowSelectionActions,
+      isOpenCodeBusy,
+      onSelectionExpand,
+      onSelectionReduce,
+      onSelectionImprovePoint,
     ],
   );
 
@@ -365,11 +780,14 @@ export const MarkdownPreview = forwardRef<
       findAndHighlight: (excerpt: string) => {
         return editorRef.current?.findAndHighlight(excerpt) ?? false;
       },
-      save: () => {
-        handleSaveEdit();
+      flushPendingWrites: () => {
+        flushPendingWrites();
+      },
+      saveSnapshot: async () => {
+        return await handleSaveSnapshot();
       },
     }),
-    [handleSaveEdit],
+    [flushPendingWrites, handleSaveSnapshot],
   );
 
   return (
@@ -462,10 +880,14 @@ export const MarkdownPreview = forwardRef<
               ref={editorRef}
               content={editContent}
               onChange={handleEditorChange}
-              onSave={handleSaveEdit}
+              onSave={handleSaveSnapshot}
               disabled={!canEdit}
               theme={theme}
               onSelectionChange={handleSelectionChange}
+              externalUpdateSource={
+                externalUpdateOverride ??
+                (isViewingLatest ? liveExternalUpdateSource : "system")
+              }
             />
           </Suspense>
         )}

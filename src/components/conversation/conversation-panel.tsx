@@ -1,35 +1,25 @@
 "use client";
 
 import {
-  useState,
-  useRef,
-  useEffect,
   useCallback,
+  useEffect,
   useMemo,
-  type FormEvent,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type SyntheticEvent,
 } from "react";
-import { Send, User, Bot, AlertCircle, RefreshCw, Loader } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Send } from "lucide-react";
 import { Button, Textarea } from "@/components/ui";
-import { clsx } from "clsx";
+import { ActivityToggle } from "./activity-toggle";
+import { MessageBubble } from "./message-bubble";
 import { QuestionPrompt } from "./question-prompt";
-import { StatusLine, parseStatusMessage } from "./status-line";
-import type { Message, TextSelection } from "@/types";
-import { useProjectStore } from "@/stores/project-store";
 import { SelectionsIndicator } from "./selections-indicator";
+import { StatusLine } from "./status-line";
+import type { Message, TextSelection } from "@/types";
+import type { StreamStatus } from "@/types/opencode-events";
+import { useProjectStore } from "@/stores/project-store";
 import { formatSelectionsContext } from "@/utils/format-selections";
-
-function getRelativePath(filePath: string): string {
-  if (!filePath) return filePath;
-  // Match patterns like /data/projects/proj_xxx/ and remove everything before it
-  const projectMatch = filePath.match(/\/data\/projects\/[^/]+\/(.+)$/);
-  if (projectMatch) {
-    return projectMatch[1];
-  }
-  // Fallback: just get the filename or last part
-  return filePath.split("/").pop() || filePath;
-}
 
 interface ConversationPanelProps {
   messages: Message[];
@@ -37,695 +27,10 @@ interface ConversationPanelProps {
   onAnswerQuestion?: (questionId: string, answers: string[][]) => void;
   onRetryMessage?: (message: Message) => void;
   isLoading?: boolean;
-  statusMessage?: string;
+  streamStatus?: StreamStatus;
   textSelection?: TextSelection | null;
   onClearSelection?: () => void;
   currentFileName?: string;
-}
-
-interface MessageBubbleProps {
-  message: Message;
-  onAnswerQuestion?: (questionId: string, answers: string[][]) => void;
-  onRetry?: (message: Message) => void;
-}
-
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function MessageBubble({
-  message,
-  onAnswerQuestion,
-  onRetry,
-}: MessageBubbleProps) {
-  const isUser = message.role === "user";
-  const hasError = message.error;
-  const isPending = message.status === "pending";
-  const isRetrying = message.status === "retrying";
-  const activityItems = getActivityItems(message);
-  const hasContent = message.content.trim().length > 0;
-  const showContentBubble =
-    isUser || hasError || isPending || isRetrying || hasContent;
-
-  if (message.role === "question" && message.questionData) {
-    return (
-      <div className="flex flex-col items-start w-full gap-2">
-        {activityItems.length > 0 && (
-          <div className="w-full space-y-2">
-            {activityItems.map((item) => (
-              <ActivitySection key={item.key} item={item} />
-            ))}
-          </div>
-        )}
-        <QuestionPrompt
-          questionData={message.questionData}
-          onSubmit={(answers) => onAnswerQuestion?.(message.id, answers)}
-        />
-        <span className="text-xs text-gray-400 dark:text-gray-600 mt-1 ml-4">
-          {formatTime(message.timestamp)}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={clsx("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
-    >
-      <div
-        className={clsx(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-          isUser
-            ? "bg-blue-600 dark:bg-blue-600"
-            : "bg-gray-600 dark:bg-gray-700",
-          hasError && "bg-red-600 dark:bg-red-600",
-          (isPending || isRetrying) && "bg-blue-400 dark:bg-blue-500",
-        )}
-      >
-        {isPending || isRetrying ? (
-          <Loader className="w-4 h-4 text-white animate-spin" />
-        ) : hasError ? (
-          <AlertCircle className="w-4 h-4 text-white" />
-        ) : isUser ? (
-          <User className="w-4 h-4 text-white" />
-        ) : (
-          <Bot className="w-4 h-4 text-white" />
-        )}
-      </div>
-      <div
-        className={clsx(
-          "flex flex-col w-full",
-          isUser ? "items-end" : "items-start",
-        )}
-      >
-        {!isUser && activityItems.length > 0 && (
-          <div className="w-full space-y-2 mb-2">
-            {activityItems.map((item) => (
-              <ActivitySection key={item.key} item={item} />
-            ))}
-          </div>
-        )}
-        {showContentBubble && (
-          <div
-            className={clsx(
-              "px-4 py-2 rounded-2xl",
-              hasError
-                ? "bg-red-50 dark:bg-red-950 border-2 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 rounded-br-md prose prose-compact max-w-none prose-invert"
-                : isPending || isRetrying
-                  ? "bg-blue-50 dark:bg-blue-950 border-2 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100 rounded-br-md prose prose-sm max-w-none prose-invert"
-                  : isUser
-                    ? "bg-blue-500 dark:bg-blue-700 text-white dark:text-white rounded-br-md text-[0.8rem] leading-relaxed"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md prose prose-compact max-w-none dark:prose-invert",
-            )}
-          >
-            {hasError ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            ) : isPending || isRetrying ? (
-              <div className="flex items-center gap-2">
-                <Loader className="w-4 h-4 animate-spin" />
-                <p className="text-xs">
-                  {isRetrying
-                    ? `Retrying... (attempt ${message.retryAttempts || 1})`
-                    : "Sending..."}
-                </p>
-              </div>
-            ) : (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.content}
-              </ReactMarkdown>
-            )}
-            {hasError && message.errorMessage && (
-              <div className="mt-2 pt-2 border-t border-red-300 dark:border-red-800 flex items-start gap-2">
-                <p className="text-xs text-red-700 dark:text-red-200 flex-1">
-                  Error: {message.errorMessage}
-                </p>
-                {onRetry && (
-                  <button
-                    onClick={() => onRetry(message)}
-                    className="flex-shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
-                    title="Retry sending this message"
-                  >
-                    <RefreshCw className="w-4 h-4 text-red-700 dark:text-red-200" />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-        {(showContentBubble || activityItems.length > 0) && (
-          <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">
-            {formatTime(message.timestamp)}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-type ActivityItem = {
-  key: string;
-  title: string | React.ReactNode;
-  content?: string;
-  status?: "pending" | "running" | "completed" | "error";
-  kind:
-    | "thinking"
-    | "tool"
-    | "tool-web"
-    | "tool-file"
-    | "delegating"
-    | "system"
-    | "mcp"
-    | "command"
-    | "retry"
-    | "compaction"
-    | "step"
-    | "file"
-    | "permission"
-    | "todo"
-    | "other";
-};
-
-function formatToolInputSummary(
-  tool: string,
-  input: Record<string, unknown> | null | undefined,
-): string | null {
-  if (!input) return null;
-
-  const lines: string[] = [];
-
-  if (typeof input.url === "string") {
-    lines.push(`url: ${input.url}`);
-  }
-
-  if (typeof input.filePath === "string") {
-    lines.push(`file: ${getRelativePath(input.filePath)}`);
-  }
-
-  if (Array.isArray(input.paths) && input.paths.length > 0) {
-    lines.push(`paths: ${input.paths.map(getRelativePath).join(", ")}`);
-  }
-
-  if (typeof input.command === "string") {
-    lines.push(`command: ${input.command}`);
-  }
-
-  if (typeof input.query === "string") {
-    lines.push(`query: ${input.query}`);
-  }
-
-  if (typeof input.text === "string" && input.text.trim()) {
-    const trimmed = input.text.trim();
-    const preview =
-      trimmed.length > 140 ? `${trimmed.slice(0, 140)}...` : trimmed;
-    lines.push(`text: ${preview}`);
-  }
-
-  if (typeof input.element === "string") {
-    lines.push(`element: ${input.element}`);
-  }
-
-  if (!lines.length) {
-    if (tool === "webfetch" && typeof input.url !== "string") {
-      return "url: (missing)";
-    }
-    return null;
-  }
-
-  return lines.join("\n");
-}
-
-const ACTIVITY_KIND_STYLES: Record<
-  ActivityItem["kind"],
-  {
-    label: string;
-    badge: string;
-    border: string;
-    text: string;
-    content: string;
-  }
-> = {
-  thinking: {
-    label: "Thinking",
-    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
-    border:
-      "border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/40",
-    text: "text-blue-800 dark:text-blue-100",
-    content: "text-blue-700 dark:text-blue-200",
-  },
-  tool: {
-    label: "Tool",
-    badge:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
-    border:
-      "border-purple-200 dark:border-purple-900/60 bg-purple-50/70 dark:bg-purple-950/40",
-    text: "text-purple-800 dark:text-purple-100",
-    content: "text-purple-700 dark:text-purple-200",
-  },
-  "tool-web": {
-    label: "Web",
-    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
-    border:
-      "border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/70 dark:bg-cyan-950/40",
-    text: "text-cyan-800 dark:text-cyan-100",
-    content: "text-cyan-700 dark:text-cyan-200",
-  },
-  "tool-file": {
-    label: "File",
-    badge:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
-    border:
-      "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40",
-    text: "text-emerald-800 dark:text-emerald-100",
-    content: "text-emerald-700 dark:text-emerald-200",
-  },
-  delegating: {
-    label: "Delegate",
-    badge:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200",
-    border:
-      "border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/40",
-    text: "text-indigo-800 dark:text-indigo-100",
-    content: "text-indigo-700 dark:text-indigo-200",
-  },
-  system: {
-    label: "System",
-    badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
-    border:
-      "border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40",
-    text: "text-gray-700 dark:text-gray-200",
-    content: "text-gray-600 dark:text-gray-400",
-  },
-  mcp: {
-    label: "MCP",
-    badge: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-200",
-    border:
-      "border-teal-200 dark:border-teal-900/60 bg-teal-50/70 dark:bg-teal-950/40",
-    text: "text-teal-800 dark:text-teal-100",
-    content: "text-teal-700 dark:text-teal-200",
-  },
-  command: {
-    label: "Command",
-    badge:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
-    border:
-      "border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/40",
-    text: "text-amber-800 dark:text-amber-100",
-    content: "text-amber-700 dark:text-amber-200",
-  },
-  retry: {
-    label: "Retry",
-    badge:
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200",
-    border:
-      "border-orange-200 dark:border-orange-900/60 bg-orange-50/70 dark:bg-orange-950/40",
-    text: "text-orange-800 dark:text-orange-100",
-    content: "text-orange-700 dark:text-orange-200",
-  },
-  compaction: {
-    label: "Compaction",
-    badge:
-      "bg-slate-100 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300",
-    border:
-      "border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40",
-    text: "text-slate-700 dark:text-slate-200",
-    content: "text-slate-600 dark:text-slate-400",
-  },
-  step: {
-    label: "Step",
-    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
-    border:
-      "border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/70 dark:bg-cyan-950/40",
-    text: "text-cyan-800 dark:text-cyan-100",
-    content: "text-cyan-700 dark:text-cyan-200",
-  },
-  file: {
-    label: "File",
-    badge:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
-    border:
-      "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40",
-    text: "text-emerald-800 dark:text-emerald-100",
-    content: "text-emerald-700 dark:text-emerald-200",
-  },
-  permission: {
-    label: "Permission",
-    badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
-    border:
-      "border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/40",
-    text: "text-rose-800 dark:text-rose-100",
-    content: "text-rose-700 dark:text-rose-200",
-  },
-  todo: {
-    label: "Todo",
-    badge: "bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-200",
-    border:
-      "border-lime-200 dark:border-lime-900/60 bg-lime-50/70 dark:bg-lime-950/40",
-    text: "text-lime-800 dark:text-lime-100",
-    content: "text-lime-700 dark:text-lime-200",
-  },
-  other: {
-    label: "Activity",
-    badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
-    border:
-      "border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40",
-    text: "text-gray-700 dark:text-gray-200",
-    content: "text-gray-600 dark:text-gray-400",
-  },
-};
-
-const STATUS_BADGES: Record<NonNullable<ActivityItem["status"]>, string> = {
-  pending: "bg-gray-100 text-gray-700 dark:bg-gray-900/60 dark:text-gray-300",
-  running: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200",
-  completed:
-    "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200",
-  error: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200",
-};
-
-function getActivityItems(message: Message): ActivityItem[] {
-  const items: ActivityItem[] = [];
-  let lastToolIndex: number | null = null;
-
-  for (const part of message.parts ?? []) {
-    if (part.type === "reasoning") {
-      if (part.text && part.text.trim()) {
-        items.push({
-          key: part.id,
-          title: "Thinking",
-          content: part.text,
-          kind: "thinking",
-        });
-      }
-      continue;
-    }
-
-    if (part.type === "text" && part.synthetic) {
-      items.push({
-        key: part.id,
-        title: "System instructions",
-        content: part.text,
-        kind: "system",
-      });
-      continue;
-    }
-
-    if (part.type === "tool") {
-      // Skip redundant edit tools - the write tool already shows file completion
-      if (part.tool === "apply_patch" || part.tool === "edit") {
-        continue;
-      }
-
-      // Skip question tool in assistant messages - already shown in question message bubble
-      if (part.tool === "question" && message.role === "assistant") {
-        continue;
-      }
-
-      const status = part.state.status;
-      const input = part.state.input as Record<string, unknown> | undefined;
-      const inputSummary = formatToolInputSummary(part.tool, input);
-      const inputDetails = input
-        ? JSON.stringify(input, null, 2)
-        : "(no input)";
-      const output =
-        part.state.status === "completed" ? part.state.output : undefined;
-      const error =
-        part.state.status === "error" ? part.state.error : undefined;
-      const detail = output || error || inputDetails;
-      const body = inputSummary ? `${inputSummary}\n\n${detail}` : detail;
-
-      // Determine kind and title based on tool type
-      let kind: ActivityItem["kind"] = "tool";
-      let title: string | React.ReactNode = `Running tool: ${part.tool}`;
-
-      if (part.tool === "webfetch" && typeof input?.url === "string") {
-        kind = "tool-web";
-        title = input.url;
-      } else if (
-        part.tool === "websearch_web_search_exa" &&
-        typeof input?.query === "string"
-      ) {
-        kind = "tool-web";
-        title = input.query;
-      } else if (
-        (part.tool === "read" || part.tool === "write") &&
-        typeof input?.filePath === "string"
-      ) {
-        kind = "tool-file";
-        // Extract filename and line count from output
-        const filename = getRelativePath(input.filePath);
-        const lineMatch =
-          typeof output === "string"
-            ? output.match(/\(total (\d+) lines?\)/)
-            : null;
-        const lineCount = lineMatch ? lineMatch[1] : null;
-        const verb = part.tool === "read" ? "Reading" : "Writing to";
-        const lineCountSuffix = lineCount ? ` (${lineCount} lines)` : "";
-        title = (
-          <>
-            {verb} <strong>{filename}</strong>
-            {lineCountSuffix}
-          </>
-        );
-      }
-
-      items.push({
-        key: part.id,
-        title,
-        content: body,
-        status,
-        kind,
-      });
-      lastToolIndex = items.length - 1;
-      continue;
-    }
-
-    if (part.type === "subtask") {
-      items.push({
-        key: part.id,
-        title: `Delegating: ${part.description}`,
-        content: part.prompt,
-        kind: "delegating",
-      });
-      continue;
-    }
-
-    if (part.type === "agent") {
-      items.push({
-        key: part.id,
-        title: `Using agent: ${part.name}`,
-        content: part.source?.value,
-        kind: "delegating",
-      });
-      continue;
-    }
-
-    if (part.type === "retry") {
-      items.push({
-        key: part.id,
-        title: `Retrying (attempt ${part.attempt})`,
-        content: part.error?.data?.message,
-        kind: "retry",
-      });
-      continue;
-    }
-
-    if (part.type === "compaction") {
-      items.push({
-        key: part.id,
-        title: "Compaction",
-        content: part.auto ? "Auto compaction enabled" : "Manual compaction",
-        kind: "compaction",
-      });
-      continue;
-    }
-
-    if (part.type === "step-finish") {
-      const tokens = `Tokens: input ${part.tokens.input}, output ${part.tokens.output}`;
-      if (lastToolIndex !== null) {
-        const existing = items[lastToolIndex];
-        const suffix = `Step finished (${part.reason})\n${tokens}`;
-        const content = existing.content
-          ? `${existing.content}\n\n${suffix}`
-          : suffix;
-        items[lastToolIndex] = { ...existing, content };
-      } else {
-        items.push({
-          key: part.id,
-          title: `Step finished (${part.reason})`,
-          content: tokens,
-          kind: "step",
-        });
-      }
-      continue;
-    }
-
-    if (part.type === "file") {
-      const fileLabel = getRelativePath(part.filename ?? part.url ?? "");
-      items.push({
-        key: part.id,
-        title: "File",
-        content: fileLabel,
-        kind: "file",
-      });
-      continue;
-    }
-
-    // Patch applied notifications are dropped from visual output
-    if (part.type === "patch") {
-      continue;
-    }
-  }
-
-  for (const activity of message.activities ?? []) {
-    switch (activity.activityType) {
-      case "tui.prompt.append":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Prompt augmented",
-          content: String(activity.data.text ?? ""),
-          kind: "system",
-        });
-        break;
-      case "tui.command.execute":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Command executed",
-          content: String(activity.data.command ?? ""),
-          kind: "command",
-        });
-        break;
-      case "command.executed":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: `Command executed: ${String(activity.data.name ?? "")}`,
-          content: String(activity.data.arguments ?? ""),
-          kind: "command",
-        });
-        break;
-      case "mcp.tools.changed":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "MCP tools updated",
-          content: String(activity.data.server ?? ""),
-          kind: "mcp",
-        });
-        break;
-      case "mcp.browser.open.failed":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "MCP browser open failed",
-          content: String(activity.data.url ?? ""),
-          kind: "mcp",
-        });
-        break;
-      case "permission.asked":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Permission requested",
-          content: String(activity.data.permission ?? ""),
-          kind: "permission",
-        });
-        break;
-      case "permission.replied":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Permission response",
-          content: String(activity.data.response ?? ""),
-          kind: "permission",
-        });
-        break;
-      case "todo.updated":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Todo list updated",
-          content: JSON.stringify(activity.data.todos ?? [], null, 2),
-          kind: "todo",
-        });
-        break;
-      case "tui.toast.show":
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Server notice",
-          content: String(activity.data.message ?? ""),
-          kind: "other",
-        });
-        break;
-      case "file.edited":
-        // File edited notifications are dropped from visual output
-        break;
-      default:
-        items.push({
-          key: `${activity.activityType}-${items.length}`,
-          title: "Activity",
-          content: JSON.stringify(activity.data ?? {}, null, 2),
-          kind: "other",
-        });
-    }
-  }
-
-  return items;
-}
-
-function ActivitySection({ item }: { item: ActivityItem }) {
-  const style = ACTIVITY_KIND_STYLES[item.kind] ?? ACTIVITY_KIND_STYLES.other;
-  const isTruncatable = item.kind === "tool-web";
-  const titleString = typeof item.title === "string" ? item.title : undefined;
-  const hasContent = item.content && item.content.trim().length > 0;
-
-  return (
-    <details
-      className={clsx("w-full rounded-lg border px-3 py-2", style.border)}
-    >
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={clsx(
-              "text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full",
-              style.badge,
-            )}
-          >
-            {style.label}
-          </span>
-          <span
-            className={clsx(
-              "text-xs font-medium",
-              style.text,
-              isTruncatable && "max-w-sm break-words",
-            )}
-            title={isTruncatable ? titleString : undefined}
-          >
-            {item.title}
-          </span>
-          {item.status && (
-            <span
-              className={clsx(
-                "text-[10px] font-semibold px-2 py-0.5 rounded-full",
-                STATUS_BADGES[item.status],
-              )}
-            >
-              {item.status}
-            </span>
-          )}
-        </div>
-      </summary>
-      {hasContent ? (
-        <pre
-          className={clsx(
-            "mt-2 whitespace-pre-wrap text-xs italic",
-            style.content,
-          )}
-        >
-          {item.content}
-        </pre>
-      ) : (
-        <div className={clsx("mt-2 text-xs italic opacity-50", style.content)}>
-          (No details available)
-        </div>
-      )}
-    </details>
-  );
 }
 
 export function ConversationPanel({
@@ -734,7 +39,7 @@ export function ConversationPanel({
   onAnswerQuestion,
   onRetryMessage,
   isLoading,
-  statusMessage,
+  streamStatus: streamStatusProp,
   textSelection,
   onClearSelection,
   currentFileName,
@@ -743,6 +48,12 @@ export function ConversationPanel({
   const clearMarkedSelections = useProjectStore(
     (state) => state.clearMarkedSelections,
   );
+  const activityToggleLevel = useProjectStore(
+    (state) => state.activityToggleLevel,
+  );
+  const setActivityToggleLevel = useProjectStore(
+    (state) => state.setActivityToggleLevel,
+  );
 
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -750,27 +61,31 @@ export function ConversationPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  const hasUnansweredQuestion = useMemo(() => {
-    return messages.some(
-      (m) =>
-        m.role === "question" && m.questionData && !m.questionData.answered,
+  const pendingQuestion = useMemo(() => {
+    return (
+      messages.find(
+        (message) =>
+          message.role === "question" &&
+          message.questionData &&
+          !message.questionData.answered,
+      ) ?? null
     );
   }, [messages]);
 
-  const parsedStatus = useMemo(() => {
-    if (hasUnansweredQuestion && !isLoading) {
+  const visibleMessages = useMemo(() => {
+    return messages.filter((message) => message.role !== "question");
+  }, [messages]);
+
+  const resolvedStatus = useMemo((): StreamStatus => {
+    if (pendingQuestion && !isLoading) {
       return {
-        status: "waiting-for-answer" as const,
-        message: "Waiting for your response...",
+        kind: "waiting-for-answer",
+        label: "Waiting for your response...",
       };
     }
-    if (!statusMessage) {
-      return { status: "idle" as const, message: "" };
-    }
-    return parseStatusMessage(statusMessage);
-  }, [statusMessage, hasUnansweredQuestion, isLoading]);
+    return streamStatusProp ?? { kind: "idle", label: "" };
+  }, [streamStatusProp, pendingQuestion, isLoading]);
 
-  // Detect scroll position and halt/resume auto-scroll
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -778,7 +93,7 @@ export function ConversationPanel({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      const threshold = 100; // pixels
+      const threshold = 100;
 
       setShouldAutoScroll(distanceFromBottom < threshold);
     };
@@ -787,16 +102,15 @@ export function ConversationPanel({
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll only when shouldAutoScroll is true
   useEffect(() => {
     if (shouldAutoScroll) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, statusMessage, shouldAutoScroll]);
+  }, [messages, resolvedStatus, shouldAutoScroll]);
 
   const handleSubmit = useCallback(
-    (e: FormEvent) => {
-      e.preventDefault();
+    (event: SyntheticEvent<HTMLFormElement>) => {
+      event.preventDefault();
       if (!inputValue.trim() || isLoading) return;
 
       let messageContent = inputValue.trim();
@@ -807,7 +121,6 @@ export function ConversationPanel({
           currentFileName,
         );
         messageContent = selectionContext + "\n" + messageContent;
-        // Don't clear here - cleared after response completes (single-use)
       }
 
       if (textSelection) {
@@ -822,19 +135,19 @@ export function ConversationPanel({
     [
       inputValue,
       isLoading,
-      textSelection,
-      onSendMessage,
-      onClearSelection,
       markedSelections,
       currentFileName,
+      textSelection,
+      onClearSelection,
+      onSendMessage,
     ],
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit(e as unknown as FormEvent);
+    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        handleSubmit(event as unknown as SyntheticEvent<HTMLFormElement>);
       }
     },
     [handleSubmit],
@@ -844,21 +157,27 @@ export function ConversationPanel({
 
   return (
     <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800">
+        <ActivityToggle
+          level={activityToggleLevel}
+          onChange={setActivityToggleLevel}
+        />
+      </div>
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto p-3 space-y-3"
       >
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
             <p>Start the conversation...</p>
           </div>
         ) : (
-          messages.map((message) => (
+          visibleMessages.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
-              onAnswerQuestion={onAnswerQuestion}
               onRetry={onRetryMessage}
+              activityToggleLevel={activityToggleLevel}
             />
           ))
         )}
@@ -867,11 +186,7 @@ export function ConversationPanel({
 
       {showStatusLine && (
         <div className="mx-4 mb-2">
-          <StatusLine
-            status={parsedStatus.status}
-            message={parsedStatus.message}
-            toolName={parsedStatus.toolName}
-          />
+          <StatusLine streamStatus={resolvedStatus} />
         </div>
       )}
 
@@ -897,34 +212,41 @@ export function ConversationPanel({
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-3 border-t border-gray-200 dark:border-gray-800"
-      >
-        <div className="flex w-full gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              hasUnansweredQuestion
-                ? "Please answer the question above first..."
-                : "Type your message... (Shift+Enter for new line)"
+      {pendingQuestion ? (
+        <div className="border-t border-gray-200 dark:border-gray-800 p-3 bg-blue-50/50 dark:bg-blue-950/30">
+          <QuestionPrompt
+            questionData={pendingQuestion.questionData!}
+            onSubmit={(answers) =>
+              onAnswerQuestion?.(pendingQuestion.id, answers)
             }
-            className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
-            disabled={hasUnansweredQuestion}
+            variant="input-area"
           />
-          <Button
-            type="submit"
-            disabled={!inputValue.trim() || isLoading || hasUnansweredQuestion}
-            isLoading={isLoading}
-            className="flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
         </div>
-      </form>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="p-3 border-t border-gray-200 dark:border-gray-800"
+        >
+          <div className="flex w-full gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message... (Shift+Enter for new line)"
+              className="min-h-[44px] max-h-[120px] w-full flex-1 resize-none text-[0.8rem]"
+            />
+            <Button
+              type="submit"
+              disabled={!inputValue.trim() || isLoading}
+              isLoading={isLoading}
+              className="flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

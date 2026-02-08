@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllProjects, createProject } from "@/lib/storage";
+import { getEasyAuthUser } from "@/lib/auth";
 import type { StarterFormData } from "@/types";
 
 export async function GET() {
@@ -17,6 +18,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await getEasyAuthUser();
     const body = await request.json();
     const { name, formData } = body as {
       name: string;
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const project = await createProject(name, formData);
+    const project = await createProject(name, formData, user ?? undefined);
     return NextResponse.json({ project }, { status: 201 });
   } catch (error) {
     console.error("Failed to create project:", error);

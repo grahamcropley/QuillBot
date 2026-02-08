@@ -10,7 +10,6 @@ export interface FileInfo {
 
 interface UseFileWatcherOptions {
   projectId: string;
-  pollInterval?: number;
   enabled?: boolean;
 }
 
@@ -24,13 +23,13 @@ interface UseFileWatcherResult {
 
 export function useFileWatcher({
   projectId,
-  pollInterval = 2000,
   enabled = true,
 }: UseFileWatcherOptions): UseFileWatcherResult {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const fallbackIntervalRef = useRef<number | null>(null);
 
   const fetchFiles = useCallback(async () => {
     if (!projectId || !enabled) return;
@@ -74,10 +73,12 @@ export function useFileWatcher({
   );
 
   useEffect(() => {
-    if (!enabled) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    if (!enabled || !projectId) {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      if (fallbackIntervalRef.current) {
+        window.clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
       }
       return;
     }
@@ -85,14 +86,74 @@ export function useFileWatcher({
     setIsLoading(true);
     fetchFiles().finally(() => setIsLoading(false));
 
-    intervalRef.current = setInterval(fetchFiles, pollInterval);
+    const es = new EventSource(`/api/projects/${projectId}/events`);
+    eventSourceRef.current = es;
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    es.onopen = () => {
+      setError(null);
+      if (fallbackIntervalRef.current) {
+        window.clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
       }
     };
-  }, [fetchFiles, pollInterval, enabled]);
+
+    es.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data) as
+          | { type: "ready"; now: string }
+          | { type: "file.added"; file: FileInfo }
+          | { type: "file.changed"; file: FileInfo }
+          | { type: "file.deleted"; path: string }
+          | { type: "error"; message: string };
+
+        if (data.type === "file.added" || data.type === "file.changed") {
+          setFiles((prev) => {
+            const next = prev.slice();
+            const idx = next.findIndex((f) => f.path === data.file.path);
+            if (idx >= 0) {
+              next[idx] = data.file;
+              return next;
+            }
+            next.push(data.file);
+            return next;
+          });
+        }
+
+        if (data.type === "file.deleted") {
+          setFiles((prev) => prev.filter((f) => f.path !== data.path));
+        }
+
+        if (data.type === "error") {
+          setError(data.message);
+        }
+      } catch {
+        // ignore malformed events
+      }
+    };
+
+    es.onerror = () => {
+      // EventSource will retry automatically; surface a soft error.
+      setError("Disconnected from file updates");
+
+      // Fallback: poll occasionally in case SSE isn't supported.
+      if (!fallbackIntervalRef.current) {
+        fallbackIntervalRef.current = window.setInterval(() => {
+          void fetchFiles();
+        }, 5000);
+      }
+    };
+
+    return () => {
+      es.close();
+      if (eventSourceRef.current === es) {
+        eventSourceRef.current = null;
+      }
+      if (fallbackIntervalRef.current) {
+        window.clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
+    };
+  }, [fetchFiles, enabled, projectId]);
 
   return {
     files,

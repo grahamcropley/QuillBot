@@ -2,8 +2,8 @@
 
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Download, Trash2 } from "lucide-react";
-import { ConversationPanel } from "@/components/conversation";
+import { ArrowLeft, Download, PenLine, Trash2 } from "lucide-react";
+import { AgentChat } from "@agent-chat/react";
 import { MarkdownPreview } from "@/components/preview";
 import { AnalysisPanel } from "@/components/analysis";
 import { ExportModal } from "@/components/export";
@@ -15,14 +15,33 @@ import {
   useTextSelection,
   useMarkdownSync,
   useFileWatcher,
+  useFileVersionHistory,
 } from "@/hooks";
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
-import { buildPrompt } from "@/utils/prompt-builder";
-import type { TextSelection, Message } from "@/types";
+import { buildCommandArgs } from "@/utils/prompt-builder";
+import { formatSelectionsContext } from "@/utils/format-selections";
+import type { TextSelection, Message, ContentType } from "@/types";
 import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
 import { FileExplorer } from "@/components/preview/file-explorer";
+import { ProjectInfoModal } from "@/components/project-info-modal";
+
+// AgentChat ContextItem type (from @agent-chat/react documentation)
+interface ContextItem {
+  id: string;
+  type: "text-selection" | "image" | "file" | string;
+  label: string;
+  content: string;
+}
+
+interface ProjectInfoValues {
+  name: string;
+  contentType: ContentType;
+  wordCount: number;
+  styleHints: string;
+  brief: string;
+}
 
 export default function ProjectPage() {
   const params = useParams();
@@ -35,9 +54,15 @@ export default function ProjectPage() {
   const [isServerErrorModalOpen, setIsServerErrorModalOpen] = useState(false);
   const [serverErrorMessage, setServerErrorMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isProjectInfoModalOpen, setIsProjectInfoModalOpen] = useState(false);
+  const [isSavingProjectInfo, setIsSavingProjectInfo] = useState(false);
+  const [projectInfoSaveError, setProjectInfoSaveError] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] =
     useState(false);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingBranchSaveContent, setPendingBranchSaveContent] = useState<
+    string | null
+  >(null);
   const [hasUnsavedEditorChanges, setHasUnsavedEditorChanges] = useState(false);
   const [editorDiscardFn, setEditorDiscardFn] = useState<(() => void) | null>(
     null,
@@ -62,7 +87,6 @@ export default function ProjectPage() {
   const projectReady = isHydrated && !!currentProject;
   const fetchProjects = useProjectStore((state) => state.fetchProjects);
   const selectProject = useProjectStore((state) => state.selectProject);
-  const addMessage = useProjectStore((state) => state.addMessage);
   const addMessageWithDetails = useProjectStore(
     (state) => state.addMessageWithDetails,
   );
@@ -72,6 +96,7 @@ export default function ProjectPage() {
   const addQuestion = useProjectStore((state) => state.addQuestion);
   const answerQuestion = useProjectStore((state) => state.answerQuestion);
   const updateDocument = useProjectStore((state) => state.updateDocument);
+  const updateProjectInfo = useProjectStore((state) => state.updateProjectInfo);
   const deleteProject = useProjectStore((state) => state.deleteProject);
   const analysisMetrics = useProjectStore((state) => state.analysisMetrics);
   const setAnalysisMetrics = useProjectStore(
@@ -80,6 +105,7 @@ export default function ProjectPage() {
   const clearMarkedSelections = useProjectStore(
     (state) => state.clearMarkedSelections,
   );
+  const markedSelections = useProjectStore((state) => state.markedSelections);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -109,10 +135,139 @@ export default function ProjectPage() {
     enabled: projectReady,
   });
 
+  const activeFilePath = projectReady ? (syncedFileName ?? "draft.md") : null;
+
+  const {
+    record: versionRecord,
+    baselineContent: baselineVersionContent,
+    refresh: refreshVersionHistory,
+    selectedVersionId,
+    setSelectedVersionId,
+    selectedVersionContent,
+    loadVersionContent,
+    createSnapshot,
+    branchToVersion,
+    setLastModified: setFileLastModified,
+  } = useFileVersionHistory({
+    projectId,
+    filePath: activeFilePath,
+    enabled: projectReady,
+  });
+
+  useEffect(() => {
+    if (!projectReady || !activeFilePath) return;
+
+    // If the file just became populated, ensure Version 1 exists and the
+    // baseline content is correct.
+    const fileHasContent = syncedContent.trim().length > 0;
+    const needsInitialVersion =
+      fileHasContent && (versionRecord?.versions.length ?? 0) === 0;
+    const needsBaselineHeal = fileHasContent && baselineVersionContent === null;
+
+    if (needsInitialVersion || needsBaselineHeal) {
+      void refreshVersionHistory();
+    }
+  }, [
+    activeFilePath,
+    baselineVersionContent,
+    projectReady,
+    refreshVersionHistory,
+    syncedContent,
+    versionRecord?.versions.length,
+  ]);
+
+  useEffect(() => {
+    if (!projectReady) return;
+    if (!activeFilePath) return;
+    if (!versionRecord?.latestVersionId) return;
+    if (!selectedVersionId) return;
+    if (selectedVersionId === versionRecord.latestVersionId) return;
+    void loadVersionContent(selectedVersionId);
+  }, [
+    activeFilePath,
+    loadVersionContent,
+    projectReady,
+    selectedVersionId,
+    versionRecord?.latestVersionId,
+  ]);
+
+  const versions = useMemo(() => {
+    const list = versionRecord?.versions ?? [];
+    return [...list]
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((v) => ({
+        id: v.id,
+        timestamp: new Date(v.createdAt),
+        author: v.createdBy.name,
+        label: v.label,
+      }));
+  }, [versionRecord?.versions]);
+
+  const latestVersionId = versionRecord?.latestVersionId ?? null;
+  const isViewingLatestVersion =
+    !latestVersionId || selectedVersionId === latestVersionId;
+
+  const baselineReady =
+    baselineVersionContent !== null &&
+    (versionRecord?.versions.length ?? 0) > 0;
+
+  const [liveExternalUpdateSource, setLiveExternalUpdateSource] = useState<
+    "ai" | "system"
+  >("system");
+
+  const prevActiveFilePathRef = useRef<string | null>(activeFilePath);
+  const prevSyncedContentRef = useRef<string>(syncedContent);
+
+  useEffect(() => {
+    // File switches should never be attributed as AI edits.
+    if (prevActiveFilePathRef.current !== activeFilePath) {
+      setLiveExternalUpdateSource("system");
+    }
+    prevActiveFilePathRef.current = activeFilePath;
+  }, [activeFilePath]);
+
+  useEffect(() => {
+    // One-shot: after we observe the disk content update, reset attribution.
+    if (liveExternalUpdateSource !== "ai") {
+      prevSyncedContentRef.current = syncedContent;
+      return;
+    }
+
+    if (syncedContent !== prevSyncedContentRef.current) {
+      setLiveExternalUpdateSource("system");
+    }
+
+    prevSyncedContentRef.current = syncedContent;
+  }, [liveExternalUpdateSource, syncedContent]);
+
+  const [hasNewerLiveUpdates, setHasNewerLiveUpdates] = useState(false);
+  const lastLiveContentRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!projectReady) return;
+
+    if (isViewingLatestVersion) {
+      setHasNewerLiveUpdates(false);
+      lastLiveContentRef.current = syncedContent;
+      return;
+    }
+
+    if (syncedContent !== lastLiveContentRef.current) {
+      if (lastLiveContentRef.current) {
+        setHasNewerLiveUpdates(true);
+      }
+      lastLiveContentRef.current = syncedContent;
+    }
+  }, [isViewingLatestVersion, projectReady, syncedContent]);
+
   const { files: projectFiles, refetch: refreshFiles } = useFileWatcher({
     projectId,
     enabled: projectReady,
   });
+
+  // Track draft.md content separately for analysis (regardless of selected file)
+  const [draftContent, setDraftContent] = useState<string>("");
 
   const [streamingParts, setStreamingParts] = useState<Part[]>([]);
   const [streamingActivities, setStreamingActivities] = useState<
@@ -124,6 +279,8 @@ export default function ProjectPage() {
   const streamingSegmentsRef = useRef<Message[]>([]);
   const streamSplitCounterRef = useRef(0);
   const completionProcessedRef = useRef(false);
+  const partIdToSegmentIndexRef = useRef<Map<string, number>>(new Map());
+  const pendingMessageIdRef = useRef<string | null>(null);
 
   const nextStreamSplitId = useCallback(() => {
     streamSplitCounterRef.current += 1;
@@ -132,6 +289,12 @@ export default function ProjectPage() {
 
   const commitStreamingSegment = useCallback((segment: Message) => {
     setStreamingSegments((prev) => {
+      const segmentIndex = prev.length;
+      if (segment.parts) {
+        for (const part of segment.parts) {
+          partIdToSegmentIndexRef.current.set(part.id, segmentIndex);
+        }
+      }
       const next = [...prev, segment];
       streamingSegmentsRef.current = next;
       return next;
@@ -145,17 +308,26 @@ export default function ProjectPage() {
     streamingActivitiesRef.current = [];
   }, []);
 
+  const markPendingMessageSent = useCallback(() => {
+    const pendingId = pendingMessageIdRef.current;
+    if (!pendingId) return;
+    updateMessageStatus(pendingId, "sent");
+    pendingMessageIdRef.current = null;
+  }, [updateMessageStatus]);
+
   const {
     sendMessage,
     isStreaming,
     streamingContent,
     statusMessage,
+    streamStatus,
     sessionId: streamSessionId,
     resumeBufferedStream,
     reset,
   } = useOpenCodeStream({
     projectId,
     initialSessionId: currentProject?.opencodeSessionId ?? null,
+    onRequestAccepted: markPendingMessageSent,
     onQuestion: (questionData) => {
       console.log("[ProjectPage] onQuestion called with:", questionData);
 
@@ -174,8 +346,8 @@ export default function ProjectPage() {
       addMessageWithDetails(questionMessage);
     },
     onStreamSplit: ({ tool, content }) => {
-      const parts = streamingPartsRef.current;
-      const activities = streamingActivitiesRef.current;
+      const parts = [...streamingPartsRef.current];
+      const activities = [...streamingActivitiesRef.current];
 
       console.log("[ProjectPage] onStreamSplit called:", {
         tool,
@@ -259,6 +431,7 @@ export default function ProjectPage() {
       // Clear streaming segments BEFORE persisting to avoid duplicates in displayedMessages
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
+      partIdToSegmentIndexRef.current.clear();
 
       void (async () => {
         for (const segment of segmentsToStore) {
@@ -272,27 +445,78 @@ export default function ProjectPage() {
         updateDocument(markdownMatch[1]);
       }
     },
-    onPart: (part, delta) => {
+    onPart: (part: Part, delta) => {
+      if (part.type === "tool" && part.tool === "question") return;
+
+      if (part.type === "step-finish") {
+        const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
+        if (segmentIndex !== undefined) {
+          setStreamingSegments((prev) => {
+            const updated = [...prev];
+            const segment = updated[segmentIndex];
+            if (!segment?.parts) return prev;
+            updated[segmentIndex] = {
+              ...segment,
+              parts: [...segment.parts, part],
+            };
+            streamingSegmentsRef.current = updated;
+            return updated;
+          });
+        } else if (streamingPartsRef.current.length > 0) {
+          const next = [...streamingPartsRef.current, part];
+          streamingPartsRef.current = next;
+          setStreamingParts(next);
+        }
+        return;
+      }
+
+      const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
+
+      if (segmentIndex !== undefined) {
+        let updatedPart = part as Part;
+        if (part.type === "reasoning") {
+          const existingSegment = streamingSegmentsRef.current[segmentIndex];
+          const existingPart = existingSegment?.parts?.find(
+            (p) => p.id === part.id,
+          );
+          const existingText =
+            existingPart && existingPart.type === "reasoning"
+              ? (existingPart as Record<string, unknown>).text || ""
+              : "";
+          const partText = (part as Record<string, unknown>).text || "";
+          const newText =
+            partText || (delta ? String(existingText) + delta : existingText);
+          updatedPart = { ...part, text: newText } as Part;
+        }
+
+        setStreamingSegments((prev) => {
+          const updated = [...prev];
+          const segment = updated[segmentIndex];
+          if (!segment?.parts) return prev;
+          const updatedParts = segment.parts.map((p) =>
+            p.id === part.id ? updatedPart : p,
+          );
+          updated[segmentIndex] = { ...segment, parts: updatedParts };
+          streamingSegmentsRef.current = updated;
+          return updated;
+        });
+        return;
+      }
+
       const current = streamingPartsRef.current;
       const index = current.findIndex((p) => p.id === part.id);
 
-      let updatedPart = part;
+      let updatedPart = part as Part;
       if (part.type === "reasoning") {
         const existingPart = index !== -1 ? current[index] : null;
         const existingText =
           existingPart && existingPart.type === "reasoning"
-            ? (existingPart as any).text || ""
+            ? (existingPart as Record<string, unknown>).text || ""
             : "";
-
-        // Use part.text if available, otherwise accumulate from delta
-        const partText = (part as any).text || "";
+        const partText = (part as Record<string, unknown>).text || "";
         const newText =
-          partText || (delta ? existingText + delta : existingText);
-
-        updatedPart = {
-          ...part,
-          text: newText,
-        } as any;
+          partText || (delta ? String(existingText) + delta : existingText);
+        updatedPart = { ...part, text: newText } as Part;
       }
 
       const next =
@@ -325,6 +549,17 @@ export default function ProjectPage() {
         setIsServerErrorModalOpen(true);
       }
     },
+    onFileEdited: (file) => {
+      const name = file.split("/").pop() ?? file;
+      if (activeFilePath && name === activeFilePath) {
+        setLiveExternalUpdateSource("ai");
+        void setFileLastModified({
+          id: "opencode",
+          name: "OpenCode",
+          kind: "ai",
+        });
+      }
+    },
   });
 
   useResumeBufferedStream(
@@ -333,6 +568,7 @@ export default function ProjectPage() {
       isStreaming,
       streamingContent,
       statusMessage,
+      streamStatus,
       sessionId: streamSessionId || currentProject?.opencodeSessionId || null,
       error: null,
       lastFailedMessageId: null,
@@ -406,19 +642,40 @@ export default function ProjectPage() {
     }
   }, [syncedContent, currentProject?.documentContent, updateDocument]);
 
+  // Load draft.md content for analysis (independent of selected file)
   useEffect(() => {
-    if (currentProject?.documentContent) {
-      const metrics = analyzeContent(
-        currentProject.documentContent,
-        currentProject.brief,
-      );
+    if (!projectReady) return;
+
+    const fetchDraftContent = async () => {
+      try {
+        const response = await fetch(
+          `/api/projects/${projectId}/files?path=draft.md`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.content) {
+            setDraftContent(data.content);
+          }
+        } else {
+          setDraftContent("");
+        }
+      } catch (error) {
+        console.error("Failed to fetch draft.md for analysis:", error);
+        setDraftContent("");
+      }
+    };
+
+    fetchDraftContent();
+  }, [projectId, projectReady]);
+
+  useEffect(() => {
+    if (draftContent && currentProject?.brief) {
+      const metrics = analyzeContent(draftContent, currentProject.brief);
       setAnalysisMetrics(metrics);
+    } else {
+      setAnalysisMetrics(null);
     }
-  }, [
-    currentProject?.documentContent,
-    currentProject?.brief,
-    setAnalysisMetrics,
-  ]);
+  }, [draftContent, currentProject?.brief, setAnalysisMetrics]);
 
   const sendMessageInternal = useCallback(
     async (content: string, isInitialMessage = false, messageId?: string) => {
@@ -457,33 +714,44 @@ export default function ProjectPage() {
       } else {
         const tempId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         userMessageId = tempId;
-        await addMessage("user", content);
-        // Mark new message as pending
-        updateMessageStatus(userMessageId, "pending");
+        await addMessageWithDetails({
+          id: tempId,
+          role: "user",
+          content,
+          timestamp: new Date(),
+          status: "pending",
+        });
       }
 
-      const messageContent = isInitialMessage
-        ? buildPrompt({
-            contentType: currentProject.contentType,
-            wordCount: currentProject.wordCount,
-            styleHints: currentProject.styleHints,
-            brief: content,
-          })
-        : content;
+      if (userMessageId) {
+        pendingMessageIdRef.current = userMessageId;
+      }
 
       resetStreamingCollections();
       setStreamingSegments([]);
       streamingSegmentsRef.current = [];
+      partIdToSegmentIndexRef.current.clear();
       completionProcessedRef.current = false;
 
-      const result = await sendMessage({
-        message: messageContent,
-        command: isInitialMessage ? "write-content" : undefined,
-      });
+      const result = isInitialMessage
+        ? await sendMessage({
+            message: content,
+            command: "write-content",
+            commandArgs: buildCommandArgs({
+              contentType: currentProject.contentType,
+              wordCount: currentProject.wordCount,
+              styleHints: currentProject.styleHints,
+              brief: content,
+            }),
+          })
+        : await sendMessage({
+            message: content,
+          });
 
       if (result.success) {
         // Mark as sent
         updateMessageStatus(userMessageId, "sent");
+        pendingMessageIdRef.current = null;
       } else if (userMessageId) {
         updateMessageStatus(
           userMessageId,
@@ -491,11 +759,12 @@ export default function ProjectPage() {
           result.error.message || "Failed to send message",
           retryAttempt,
         );
+        pendingMessageIdRef.current = null;
       }
     },
     [
       currentProject,
-      addMessage,
+      addMessageWithDetails,
       sendMessage,
       updateMessageStatus,
       resetStreamingCollections,
@@ -506,16 +775,12 @@ export default function ProjectPage() {
     async (content: string, isInitialMessage = false, messageId?: string) => {
       if (!currentProject) return;
 
-      // Check for unsaved editor changes
-      if (hasUnsavedEditorChanges) {
-        setPendingMessage(content);
-        setIsUnsavedChangesModalOpen(true);
-        return;
-      }
+      // Ensure any debounced file writes are flushed before sending.
+      editorRef.current?.flushPendingWrites?.();
 
       await sendMessageInternal(content, isInitialMessage, messageId);
     },
-    [currentProject, hasUnsavedEditorChanges, sendMessageInternal],
+    [currentProject, sendMessageInternal],
   );
 
   // Track initialization and trigger initial message send
@@ -552,11 +817,50 @@ export default function ProjectPage() {
     [handleSendMessage],
   );
 
-  const handleContentChange = useCallback(
-    (content: string) => {
-      updateDocument(content);
+  const writeActiveFile = useCallback(
+    async (nextContent: string) => {
+      if (!activeFilePath) return;
+      await fetch(`/api/projects/${projectId}/files`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: activeFilePath, content: nextContent }),
+      }).catch((err) => {
+        console.error("Failed to write file:", err);
+      });
+
+      // Keep project metadata up to date for draft analysis.
+      if (activeFilePath === "draft.md") {
+        void updateDocument(nextContent);
+      }
     },
-    [updateDocument],
+    [activeFilePath, projectId, updateDocument],
+  );
+
+  const handleCreateSnapshot = useCallback(
+    async (nextContent: string): Promise<boolean> => {
+      if (!activeFilePath) return false;
+
+      if (!latestVersionId || !selectedVersionId || isViewingLatestVersion) {
+        const result = await createSnapshot(nextContent);
+        if (!result.success) {
+          console.error("Failed to create snapshot:", result.error);
+          return false;
+        }
+        return true;
+      }
+
+      // Historical save: prune future versions, then continue from here.
+      setIsUnsavedChangesModalOpen(true);
+      setPendingBranchSaveContent(nextContent);
+      return false;
+    },
+    [
+      activeFilePath,
+      createSnapshot,
+      isViewingLatestVersion,
+      latestVersionId,
+      selectedVersionId,
+    ],
   );
 
   const startResizing = useCallback(() => {
@@ -600,6 +904,63 @@ export default function ProjectPage() {
     useProjectStore.getState().setTextSelection(selection);
   }, []);
 
+  const contextItems = useMemo((): ContextItem[] => {
+    return markedSelections.map((selection, index) => ({
+      id: selection.id,
+      type: "text-selection",
+      label: `Selection ${index + 1} (Line ${selection.line}, Col ${selection.column + 1})`,
+      content: `Line ${selection.line}, Col ${selection.column + 1} (${selection.length} chars): "${selection.text}"`,
+    }));
+  }, [markedSelections]);
+
+  const handleClearContext = useCallback(() => {
+    clearMarkedSelections();
+  }, [clearMarkedSelections]);
+
+  const buildSelectionActionMessage = useCallback(
+    (instruction: string) => {
+      let messageContent = instruction;
+
+      if (markedSelections.length > 0) {
+        const selectionContext = formatSelectionsContext(
+          markedSelections,
+          syncedFileName || "draft.md",
+        );
+        messageContent = selectionContext + "\n" + messageContent;
+      }
+
+      if (textSelection) {
+        const selectionContext = `[Lines ${textSelection.startLine}-${textSelection.endLine}] Selected: "${textSelection.text}"\n\n`;
+        messageContent = selectionContext + messageContent;
+        clearTextSelection();
+      }
+
+      return messageContent;
+    },
+    [markedSelections, syncedFileName, textSelection, clearTextSelection],
+  );
+
+  const handleExpandSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Expand the highlighted sections with more detail, depth, and specific context. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
+  const handleReduceSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Reduce the impact and wordiness of the highlighted sections. Make them concise and straightforward. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
+  const handleImprovePointSelection = useCallback(() => {
+    const message = buildSelectionActionMessage(
+      "Strengthen the highlighted sections to make a clearer point and tie them into the narrative so they feel more relevant. You can also adjust closely related or relevant sections as needed.",
+    );
+    void handleSendMessage(message);
+  }, [buildSelectionActionMessage, handleSendMessage]);
+
   const handleHighlightText = useCallback((excerpt: string) => {
     if (editorRef.current) {
       const found = editorRef.current.findAndHighlight(excerpt);
@@ -612,6 +973,53 @@ export default function ProjectPage() {
   const handleDeleteProject = useCallback(async () => {
     setIsDeleteModalOpen(true);
   }, []);
+
+  const handleSaveProjectInfo = useCallback(
+    async (values: ProjectInfoValues) => {
+      setProjectInfoSaveError("");
+      setIsSavingProjectInfo(true);
+      try {
+        await updateProjectInfo(values);
+        setIsProjectInfoModalOpen(false);
+      } catch (error) {
+        setProjectInfoSaveError(
+          error instanceof Error
+            ? error.message
+            : "Failed to save project details",
+        );
+      } finally {
+        setIsSavingProjectInfo(false);
+      }
+    },
+    [updateProjectInfo],
+  );
+
+  const handleGenerateAiSummary = useCallback(async () => {
+    setProjectInfoSaveError("");
+    setIsGeneratingSummary(true);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/ai-summary`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate AI summary");
+      }
+
+      return data.summary as string;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate AI summary";
+      setProjectInfoSaveError(errorMessage);
+      throw error;
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  }, [projectId]);
 
   const handleConfirmDelete = useCallback(async () => {
     setIsDeleteModalOpen(false);
@@ -641,27 +1049,26 @@ export default function ProjectPage() {
   );
 
   const handleNavigationConfirm = useCallback(() => {
-    editorRef.current?.save?.();
-    setHasUnsavedEditorChanges(false);
-    setIsNavigationModalOpen(false);
-    if (pendingMessage) {
-      sendMessageInternal(pendingMessage);
-      setPendingMessage(null);
-    } else if (pendingFileSwitch) {
-      selectFile(pendingFileSwitch);
-      setPendingFileSwitch(null);
-    } else if (pendingNavigation) {
-      router.push(pendingNavigation);
-      setPendingNavigation(null);
-    }
-  }, [
-    pendingMessage,
-    pendingFileSwitch,
-    pendingNavigation,
-    selectFile,
-    sendMessageInternal,
-    router,
-  ]);
+    void (async () => {
+      editorRef.current?.flushPendingWrites?.();
+
+      // IMPORTANT: "Save" here means "create a new version snapshot",
+      // not merely flushing disk writes.
+      const ok = await editorRef.current?.saveSnapshot?.();
+      if (!ok) return;
+
+      setHasUnsavedEditorChanges(false);
+      setIsNavigationModalOpen(false);
+
+      if (pendingFileSwitch) {
+        selectFile(pendingFileSwitch);
+        setPendingFileSwitch(null);
+      } else if (pendingNavigation) {
+        router.push(pendingNavigation);
+        setPendingNavigation(null);
+      }
+    })();
+  }, [pendingFileSwitch, pendingNavigation, selectFile, router]);
 
   const handleNavigationCancel = useCallback(() => {
     setIsNavigationModalOpen(false);
@@ -728,9 +1135,23 @@ export default function ProjectPage() {
               {currentProject.contentType.replace("-", " ")} •{" "}
               {currentProject.wordCount} words target
             </p>
+            <p className="text-xs text-gray-500">
+              Created by {currentProject.createdByName ?? "Unknown"} • Last
+              modified by {currentProject.lastModifiedByName ?? "Unknown"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setProjectInfoSaveError("");
+              setIsProjectInfoModalOpen(true);
+            }}
+          >
+            <PenLine className="w-4 h-4 mr-2" />
+            Edit Details
+          </Button>
           <Button
             variant="secondary"
             onClick={() => setIsExportModalOpen(true)}
@@ -768,28 +1189,29 @@ export default function ProjectPage() {
             </CardHeader>
             <div className="flex-1 overflow-hidden" data-preserve-selection>
               <PanelErrorBoundary panelName="conversation">
-                <ConversationPanel
-                  messages={displayedMessages}
-                  onSendMessage={handleSendMessage}
-                  onAnswerQuestion={answerQuestion}
-                  onRetryMessage={handleRetryMessage}
-                  isLoading={isStreaming}
-                  statusMessage={statusMessage}
-                  textSelection={textSelection}
-                  onClearSelection={clearTextSelection}
-                  currentFileName={syncedFileName || "draft.md"}
+                <AgentChat
+                  sessionId={
+                    streamSessionId || currentProject.opencodeSessionId || ""
+                  }
+                  directory={currentProject.directoryPath}
+                  placeholder="Ask the agent anything..."
+                  className="quill-agent-chat h-full"
+                  contextItems={contextItems}
+                  onClearContext={handleClearContext}
                 />
               </PanelErrorBoundary>
             </div>
           </Card>
         </div>
 
-        <div
+        <button
+          type="button"
           className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize flex-shrink-0 transition-colors z-10 flex items-center justify-center group mx-2.5"
           onMouseDown={startResizing}
+          aria-label="Resize conversation panel"
         >
           <div className="h-8 w-1 bg-gray-300 rounded-full group-hover:bg-blue-500" />
-        </div>
+        </button>
 
         <div className="flex-1 min-h-0 flex flex-col gap-3 pr-4 overflow-hidden">
           <div className="flex flex-wrap gap-3 pr-2">
@@ -827,19 +1249,45 @@ export default function ProjectPage() {
           >
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview
+                key={activeFilePath ?? "no-file"}
                 ref={editorRef}
                 content={
-                  syncedFileName
-                    ? syncedContent
-                    : currentProject.documentContent
+                  isViewingLatestVersion
+                    ? syncedFileName
+                      ? syncedContent
+                      : currentProject.documentContent
+                    : (selectedVersionContent ?? "")
                 }
-                onContentChange={handleContentChange}
+                documentKey={activeFilePath ?? undefined}
+                onContentChange={writeActiveFile}
+                baselineContent={baselineVersionContent ?? undefined}
+                onCreateSnapshot={handleCreateSnapshot}
+                onDiscardToBaseline={writeActiveFile}
                 onTextSelect={handleTextSelect}
-                isEditable={!isStreaming}
+                isEditable={!isStreaming && baselineReady}
                 isOpenCodeBusy={isStreaming}
+                baselineReady={baselineReady}
+                liveExternalUpdateSource={liveExternalUpdateSource}
                 lastUpdated={syncedLastUpdated}
+                lastModifiedByName={
+                  versionRecord?.lastModifiedBy?.name ??
+                  currentProject.lastModifiedByName
+                }
+                versions={versions}
+                selectedVersionId={selectedVersionId ?? undefined}
+                onSelectVersion={setSelectedVersionId}
+                latestVersionId={latestVersionId}
+                onReturnToLatest={() => {
+                  if (latestVersionId) setSelectedVersionId(latestVersionId);
+                }}
+                hasNewerLiveUpdates={hasNewerLiveUpdates}
                 onUnsavedChangesChange={setHasUnsavedEditorChanges}
-                onDiscardChanges={setEditorDiscardFn}
+                onDiscardChanges={(discard) => {
+                  setEditorDiscardFn(() => discard);
+                }}
+                onSelectionExpand={handleExpandSelection}
+                onSelectionReduce={handleReduceSelection}
+                onSelectionImprovePoint={handleImprovePointSelection}
               />
             </PanelErrorBoundary>
           </div>
@@ -882,34 +1330,43 @@ export default function ProjectPage() {
 
       <Modal
         isOpen={isUnsavedChangesModalOpen}
-        title="Unsaved Changes"
-        description="You have unsaved changes in the editor. Save them before sending a message, or discard them and continue."
+        title="Save From Older Version"
+        description="You're editing an older version. Saving now will delete all newer versions and continue versioning from here."
         onClose={() => {
           setIsUnsavedChangesModalOpen(false);
-          setPendingMessage(null);
+          setPendingBranchSaveContent(null);
         }}
         onConfirm={() => {
-          editorRef.current?.save?.();
-          setHasUnsavedEditorChanges(false);
-          setIsUnsavedChangesModalOpen(false);
-          setTimeout(() => {
-            if (pendingMessage) {
-              sendMessageInternal(pendingMessage);
-              setPendingMessage(null);
+          void (async () => {
+            if (
+              !activeFilePath ||
+              !pendingBranchSaveContent ||
+              !selectedVersionId
+            )
+              return;
+
+            const branched = await branchToVersion(selectedVersionId, false);
+            if (!branched.success) {
+              console.error("Failed to branch:", branched.error);
+              return;
             }
-          }, 100);
+
+            await writeActiveFile(pendingBranchSaveContent);
+            const snap = await createSnapshot(pendingBranchSaveContent);
+            if (!snap.success) {
+              console.error("Failed to snapshot:", snap.error);
+            }
+
+            setIsUnsavedChangesModalOpen(false);
+            setPendingBranchSaveContent(null);
+          })();
         }}
         onSecondary={() => {
-          editorDiscardFn?.();
-          setHasUnsavedEditorChanges(false);
           setIsUnsavedChangesModalOpen(false);
-          if (pendingMessage) {
-            sendMessageInternal(pendingMessage);
-            setPendingMessage(null);
-          }
+          setPendingBranchSaveContent(null);
         }}
-        confirmText="Save & Send"
-        secondaryText="Discard & Send"
+        confirmText="Continue From Here"
+        secondaryText="Cancel"
         cancelText="Cancel"
       />
 
@@ -929,6 +1386,28 @@ export default function ProjectPage() {
           pendingFileSwitch ? "Discard & Switch" : "Discard & Leave"
         }
         cancelText="Cancel"
+      />
+
+      <ProjectInfoModal
+        isOpen={isProjectInfoModalOpen}
+        initialValues={{
+          name: currentProject.name,
+          contentType: currentProject.contentType,
+          wordCount: currentProject.wordCount,
+          styleHints: currentProject.styleHints,
+          brief: currentProject.brief,
+        }}
+        isSaving={isSavingProjectInfo}
+        errorMessage={projectInfoSaveError}
+        onClose={() => {
+          if (!isSavingProjectInfo) {
+            setIsProjectInfoModalOpen(false);
+            setProjectInfoSaveError("");
+          }
+        }}
+        onSave={handleSaveProjectInfo}
+        onGenerateSummary={handleGenerateAiSummary}
+        isGeneratingSummary={isGeneratingSummary}
       />
     </div>
   );

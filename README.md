@@ -28,13 +28,41 @@ A content authoring platform that connects to a headless OpenCode server, guidin
 ```bash
 # Install dependencies
 npm install
-
-# Start OpenCode server (in separate terminal)
-opencode serve --port 9090
-
-# Start development server
-npm run dev
 ```
+
+### Running the Development Environment
+
+**Unified Development Server Manager (Recommended)**
+
+Use the `dev-server.sh` script to manage both OpenCode and Next.js servers:
+
+```bash
+# Start both services in a detached tmux session
+./dev-server.sh start
+
+# Check status of both services
+./dev-server.sh status
+
+# Attach to the tmux session
+./dev-server.sh attach
+
+# Stop all services
+./dev-server.sh stop
+```
+
+This creates a tmux session with two windows (each fullscreen):
+
+- **Window 0**: OpenCode server (port 9090)
+- **Window 1**: Next.js dev server (port 3000)
+
+**tmux keyboard shortcuts:**
+
+- `Ctrl+b` then `n` - Next window
+- `Ctrl+b` then `p` - Previous window
+- `Ctrl+b` then `0` - Window 0 (OpenCode)
+- `Ctrl+b` then `1` - Window 1 (Next.js)
+- `Ctrl+b` then `[` - Scroll mode (press `q` to exit)
+- `Ctrl+b` then `d` - Detach from session (keeps running in background)
 
 Open [http://localhost:3000](http://localhost:3000) to access the application.
 

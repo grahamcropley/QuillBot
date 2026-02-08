@@ -72,14 +72,15 @@ export interface StreamActivity {
   messageId?: string;
 }
 
-export type StreamEvent =
+export type StreamEvent = (
   | StreamMessagePartUpdated
   | StreamQuestionAsked
   | StreamSessionStatus
   | StreamError
   | StreamDone
   | StreamFileEdited
-  | StreamActivity;
+  | StreamActivity
+) & { seq?: number };
 
 // Question types
 
@@ -145,3 +146,109 @@ export function isStreamFileEdited(
 export function isStreamActivity(event: StreamEvent): event is StreamActivity {
   return event.type === "activity";
 }
+
+// === Structured Status Types ===
+
+/** Tool taxonomy for categorizing tools into FILE/WEB/TOOL */
+export type ToolCategory = "file" | "web" | "tool" | "question" | "delegation";
+
+/** Structured status emitted by useOpenCodeStream instead of raw strings */
+export interface StreamStatus {
+  kind:
+    | "idle"
+    | "connecting"
+    | "thinking"
+    | "replying"
+    | "tool"
+    | "waiting-for-answer"
+    | "processing-answer"
+    | "complete"
+    | "error";
+  label: string;
+  detail?: string;
+  toolName?: string;
+  toolCategory?: ToolCategory;
+  partId?: string;
+}
+
+/** Three-way activity toggle levels */
+export type ActivityToggleLevel =
+  | "messages-only"
+  | "main-activities"
+  | "all-activities";
+
+// === Render Model Types ===
+
+/** A single item in the conversation render model */
+export type RenderItem =
+  | RenderItemMessage
+  | RenderItemActivity
+  | RenderItemThinking
+  | RenderItemQuestion;
+
+export interface RenderItemMessage {
+  type: "message";
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  error?: boolean;
+  errorMessage?: string;
+  status?: "pending" | "sent" | "failed" | "retrying";
+  retryAttempts?: number;
+}
+
+export interface RenderItemActivity {
+  type: "activity";
+  id: string;
+  timestamp: Date;
+  toolCategory: ToolCategory;
+  toolName: string;
+  title: string;
+  detail?: string;
+  status: "pending" | "running" | "completed" | "error";
+  /** Minimum toggle level required to display this item */
+  minToggleLevel: ActivityToggleLevel;
+  /** Kind used for styling (maps to ACTIVITY_KIND_STYLES keys) */
+  kind: ActivityKind;
+  /** Input summary for collapsed view */
+  inputSummary?: string;
+  /** Full content for expanded view */
+  expandedContent?: string;
+}
+
+export interface RenderItemThinking {
+  type: "thinking";
+  id: string;
+  timestamp: Date;
+  text: string;
+  /** Minimum toggle level required to display this item */
+  minToggleLevel: ActivityToggleLevel;
+}
+
+export interface RenderItemQuestion {
+  type: "question";
+  id: string;
+  timestamp: Date;
+  questionData: import("@/types").QuestionData;
+  /** Activities that appeared before this question */
+  precedingActivities: RenderItemActivity[];
+}
+
+/** Activity kind for styling purposes - matches existing ACTIVITY_KIND_STYLES keys */
+export type ActivityKind =
+  | "thinking"
+  | "tool"
+  | "tool-web"
+  | "tool-file"
+  | "delegating"
+  | "system"
+  | "mcp"
+  | "command"
+  | "retry"
+  | "compaction"
+  | "step"
+  | "file"
+  | "permission"
+  | "todo"
+  | "other";

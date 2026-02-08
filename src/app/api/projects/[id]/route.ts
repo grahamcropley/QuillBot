@@ -9,6 +9,7 @@ import {
 } from "@/lib/storage";
 import type { Message } from "@/types";
 import { getOpencodeClient } from "@/lib/opencode-client";
+import { getEasyAuthUser } from "@/lib/auth";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -35,12 +36,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const user = await getEasyAuthUser();
     const { id } = await params;
     const body = await request.json();
 
     if (body.message) {
       const hasFullMessage =
         body.message.role === "question" ||
+        body.message.role === "question-answered" ||
         body.message.parts ||
         body.message.activities ||
         body.message.questionData ||
@@ -48,7 +51,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         body.message.timestamp;
 
       if (hasFullMessage) {
-        const project = await addMessageObjectToProject(id, body.message);
+        const project = await addMessageObjectToProject(
+          id,
+          body.message,
+          user ?? undefined,
+        );
         if (!project)
           return NextResponse.json(
             { error: "Project not found" },
@@ -59,7 +66,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       }
 
       const { role, content } = body.message;
-      const project = await addMessageToProject(id, role, content);
+      const project = await addMessageToProject(
+        id,
+        role,
+        content,
+        user ?? undefined,
+      );
 
       if (!project) {
         return NextResponse.json(
@@ -76,7 +88,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         updates: Partial<Message>;
       };
 
-      const project = await updateMessageInProject(id, messageId, updates);
+      const project = await updateMessageInProject(
+        id,
+        messageId,
+        updates,
+        user ?? undefined,
+      );
 
       if (!project) {
         return NextResponse.json(
@@ -88,7 +105,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ project });
     }
 
-    const project = await updateProject(id, body);
+    const project = await updateProject(id, body, user ?? undefined);
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });

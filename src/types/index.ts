@@ -1,8 +1,19 @@
 import type { Part, StreamActivity } from "@/types/opencode-events";
 
-export type ContentType = "blog" | "white-paper" | "social-post" | "email";
+export type ContentType =
+  | "blog"
+  | "white-paper"
+  | "social-post"
+  | "email"
+  | "case-study"
+  | "landing-page";
 
-export type MessageRole = "user" | "assistant" | "system" | "question";
+export type MessageRole =
+  | "user"
+  | "assistant"
+  | "system"
+  | "question"
+  | "question-answered";
 export type MessageStatus = "pending" | "sent" | "failed" | "retrying";
 
 export interface QuestionOption {
@@ -38,21 +49,6 @@ export interface Message {
   readonly errorMessage?: string;
   readonly status?: MessageStatus;
   readonly retryAttempts?: number;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  contentType: ContentType;
-  brief: string;
-  wordCount: number;
-  styleHints: string;
-  documentContent: string;
-  messages: Message[];
-  opencodeSessionId?: string;
-  directoryPath: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface StarterFormData {
@@ -122,6 +118,10 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   briefAdherenceCache?: BriefAdherenceCache;
+  createdBy?: string;
+  createdByName?: string;
+  lastModifiedBy?: string;
+  lastModifiedByName?: string;
 }
 
 export type Result<T, E = Error> =

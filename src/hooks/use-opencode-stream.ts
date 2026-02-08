@@ -6,6 +6,7 @@ import type {
   StreamEvent,
   StreamActivity,
   Part,
+  StreamStatus,
 } from "@/types/opencode-events";
 import {
   isStreamMessagePartUpdated,
@@ -18,15 +19,19 @@ import {
 } from "@/types/opencode-events";
 import {
   classifyStreamEvent,
+  classifyTool,
   createFileEditedActivity,
+  getToolStatusLabel,
   isDisplayableTextPart,
 } from "@/utils/stream-classifier";
 
 interface UseOpenCodeStreamOptions {
   projectId: string;
   initialSessionId?: string | null;
+  onRequestAccepted?: () => void;
   onChunk?: (content: string) => void;
   onStatus?: (status: string) => void;
+  onStreamStatus?: (status: StreamStatus) => void;
   onQuestion?: (question: QuestionData) => void;
   onComplete?: (fullContent: string, sessionId: string) => void;
   onError?: (error: Error) => void;
@@ -43,6 +48,7 @@ interface UseOpenCodeStreamOptions {
 interface SendMessageOptions {
   message: string;
   command?: string;
+  commandArgs?: string;
   agent?: string;
 }
 
@@ -53,6 +59,7 @@ export interface UseOpenCodeStreamReturn {
   isStreaming: boolean;
   streamingContent: string;
   statusMessage: string;
+  streamStatus: StreamStatus;
   sessionId: string | null;
   error: Error | null;
   lastFailedMessageId: string | null;
@@ -78,6 +85,11 @@ function parseSSELine(line: string): StreamEvent | null {
     console.warn("[useOpenCodeStream] Failed to parse SSE data:", data);
     return null;
   }
+}
+
+function streamStatusToString(status: StreamStatus): string {
+  if (status.kind === "idle") return "";
+  return status.label;
 }
 
 function mapQuestionDataFromEvent(
@@ -113,8 +125,10 @@ export function useOpenCodeStream(
   const {
     projectId,
     initialSessionId,
+    onRequestAccepted,
     onChunk,
     onStatus,
+    onStreamStatus,
     onQuestion,
     onComplete,
     onError,
@@ -127,6 +141,10 @@ export function useOpenCodeStream(
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    kind: "idle",
+    label: "",
+  });
   const [sessionId, setSessionId] = useState<string | null>(
     () => initialSessionId ?? null,
   );
@@ -154,6 +172,7 @@ export function useOpenCodeStream(
   const reset = useCallback(() => {
     setStreamingContent("");
     setStatusMessage("");
+    setStreamStatus({ kind: "idle", label: "" });
     setError(null);
     setIsStreaming(false);
     setLastFailedMessageId(null);
@@ -177,6 +196,7 @@ export function useOpenCodeStream(
     if (isMountedRef.current) {
       setIsStreaming(false);
       setStatusMessage("");
+      setStreamStatus({ kind: "idle", label: "" });
     }
   }, [sessionId, projectId]);
 
@@ -184,7 +204,7 @@ export function useOpenCodeStream(
     async (
       messageOptions: SendMessageOptions,
     ): Promise<Result<{ sessionId: string; content: string }>> => {
-      const { message, command } = messageOptions;
+      const { message, command, commandArgs } = messageOptions;
 
       if (!isMountedRef.current) {
         return { success: false, error: new Error("Component unmounted") };
@@ -196,6 +216,7 @@ export function useOpenCodeStream(
       setIsStreaming(true);
       setStreamingContent("");
       setStatusMessage("");
+      setStreamStatus({ kind: "idle", label: "" });
       setError(null);
 
       let accumulatedContent = "";
@@ -213,6 +234,7 @@ export function useOpenCodeStream(
             projectId,
             message,
             command,
+            commandArgs,
             agent: messageOptions.agent || "quillbot",
           }),
           signal: abortController.signal,
@@ -239,6 +261,8 @@ export function useOpenCodeStream(
           }
           return { success: false, error: err };
         }
+
+        onRequestAccepted?.();
 
         const decoder = new TextDecoder();
 
@@ -312,20 +336,50 @@ export function useOpenCodeStream(
 
               if (event.part.type === "reasoning") {
                 if (isMountedRef.current) {
-                  setStatusMessage("Thinking...");
-                  onStatus?.("Thinking...");
+                  const status: StreamStatus = {
+                    kind: "thinking",
+                    label: "Thinking...",
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(status.label);
                 }
               } else if (event.part.type === "tool") {
                 const toolName = event.part.tool || "unknown";
                 const toolStatus = event.part.state.status;
                 if (toolStatus === "running" && isMountedRef.current) {
-                  setStatusMessage(`Using tool: ${toolName}`);
-                  onStatus?.(`Using tool: ${toolName}`);
+                  const toolCategory = classifyTool(toolName);
+                  const toolInput = event.part.state.input as
+                    | Record<string, unknown>
+                    | undefined;
+                  const label = getToolStatusLabel(
+                    toolName,
+                    toolCategory,
+                    toolInput,
+                  );
+                  const status: StreamStatus = {
+                    kind: "tool",
+                    label,
+                    toolName,
+                    toolCategory,
+                    partId: event.part.id,
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(label);
                 }
               } else if (isDisplayableTextPart(event.part)) {
                 if (isMountedRef.current) {
-                  setStatusMessage("Replying...");
-                  onStatus?.("Replying...");
+                  const status: StreamStatus = {
+                    kind: "replying",
+                    label: "Replying...",
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(status.label);
                 }
               }
 
@@ -350,11 +404,24 @@ export function useOpenCodeStream(
               onQuestion?.(questionData);
             } else if (isStreamSessionStatus(event)) {
               currentSessionId = event.sessionId;
-              const statusString = event.sessionStatus.type;
               if (isMountedRef.current) {
-                setStatusMessage(statusString);
+                const kind =
+                  event.sessionStatus.type === "busy"
+                    ? "thinking"
+                    : event.sessionStatus.type === "idle"
+                      ? "idle"
+                      : "thinking";
+                const label =
+                  event.sessionStatus.type === "busy" ? "Working on it..." : "";
+                const status: StreamStatus = {
+                  kind: kind as StreamStatus["kind"],
+                  label,
+                };
+                setStreamStatus(status);
+                setStatusMessage(streamStatusToString(status));
                 setSessionId(event.sessionId);
-                onStatus?.(statusString);
+                onStreamStatus?.(status);
+                onStatus?.(label);
               }
             } else if (isStreamError(event)) {
               const err = new Error(event.error);
@@ -365,7 +432,10 @@ export function useOpenCodeStream(
             } else if (isStreamDone(event)) {
               currentSessionId = event.sessionId;
               if (isMountedRef.current) {
-                setStatusMessage("");
+                const status: StreamStatus = { kind: "idle", label: "" };
+                setStreamStatus(status);
+                setStatusMessage(streamStatusToString(status));
+                onStreamStatus?.(status);
                 setSessionId(event.sessionId);
               }
             } else if (isStreamFileEdited(event)) {
@@ -383,6 +453,17 @@ export function useOpenCodeStream(
 
         setIsStreaming(false);
         onComplete?.(accumulatedContent, currentSessionId);
+
+        if (currentSessionId) {
+          void fetch(
+            `/api/opencode/buffer?sessionId=${encodeURIComponent(currentSessionId)}&clear=true`,
+          ).catch((clearError) => {
+            console.warn(
+              "[useOpenCodeStream] Failed to clear stream buffer:",
+              clearError,
+            );
+          });
+        }
 
         return {
           success: true,
@@ -413,6 +494,7 @@ export function useOpenCodeStream(
       sessionId,
       onChunk,
       onStatus,
+      onStreamStatus,
       onQuestion,
       onComplete,
       onError,
@@ -420,6 +502,7 @@ export function useOpenCodeStream(
       onPart,
       onActivity,
       onStreamSplit,
+      onRequestAccepted,
     ],
   );
 
@@ -497,6 +580,55 @@ export function useOpenCodeStream(
                 }
               }
 
+              if (event.part.type === "reasoning") {
+                if (isMountedRef.current) {
+                  const status: StreamStatus = {
+                    kind: "thinking",
+                    label: "Thinking...",
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(status.label);
+                }
+              } else if (event.part.type === "tool") {
+                const toolName = event.part.tool || "unknown";
+                const toolStatus = event.part.state.status;
+                if (toolStatus === "running" && isMountedRef.current) {
+                  const toolCategory = classifyTool(toolName);
+                  const toolInput = event.part.state.input as
+                    | Record<string, unknown>
+                    | undefined;
+                  const label = getToolStatusLabel(
+                    toolName,
+                    toolCategory,
+                    toolInput,
+                  );
+                  const status: StreamStatus = {
+                    kind: "tool",
+                    label,
+                    toolName,
+                    toolCategory,
+                    partId: event.part.id,
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(label);
+                }
+              } else if (isDisplayableTextPart(event.part)) {
+                if (isMountedRef.current) {
+                  const status: StreamStatus = {
+                    kind: "replying",
+                    label: "Replying...",
+                  };
+                  setStreamStatus(status);
+                  setStatusMessage(streamStatusToString(status));
+                  onStreamStatus?.(status);
+                  onStatus?.(status.label);
+                }
+              }
+
               if (
                 !suppressText &&
                 event.delta &&
@@ -520,8 +652,22 @@ export function useOpenCodeStream(
               onQuestion?.(questionData);
             } else if (isStreamSessionStatus(event)) {
               if (isMountedRef.current) {
-                setStatusMessage(event.sessionStatus.type);
-                onStatus?.(event.sessionStatus.type);
+                const kind =
+                  event.sessionStatus.type === "busy"
+                    ? "thinking"
+                    : event.sessionStatus.type === "idle"
+                      ? "idle"
+                      : "thinking";
+                const label =
+                  event.sessionStatus.type === "busy" ? "Working on it..." : "";
+                const status: StreamStatus = {
+                  kind: kind as StreamStatus["kind"],
+                  label,
+                };
+                setStreamStatus(status);
+                setStatusMessage(streamStatusToString(status));
+                onStreamStatus?.(status);
+                onStatus?.(label);
               }
             } else if (isStreamError(event)) {
               const err = new Error(event.error);
@@ -532,7 +678,10 @@ export function useOpenCodeStream(
               break;
             } else if (isStreamDone(event)) {
               if (isMountedRef.current) {
-                setStatusMessage("");
+                const status: StreamStatus = { kind: "idle", label: "" };
+                setStreamStatus(status);
+                setStatusMessage(streamStatusToString(status));
+                onStreamStatus?.(status);
               }
               break;
             } else if (isStreamFileEdited(event)) {
@@ -572,6 +721,7 @@ export function useOpenCodeStream(
     [
       onChunk,
       onStatus,
+      onStreamStatus,
       onQuestion,
       onComplete,
       onError,
@@ -587,6 +737,7 @@ export function useOpenCodeStream(
     isStreaming,
     streamingContent,
     statusMessage,
+    streamStatus,
     sessionId,
     error,
     lastFailedMessageId,

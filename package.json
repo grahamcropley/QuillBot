@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "dev:poll": "next dev --webpack",
+    "dev:start": "./dev-server.sh start",
+    "dev:stop": "./dev-server.sh stop",
+    "dev:status": "./dev-server.sh status",
+    "dev:attach": "./dev-server.sh attach",
     "build": "next build",
     "start": "next start",
     "opencode": "./start-opencode.sh",
@@ -23,6 +27,7 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.39.11",
     "@opencode-ai/sdk": "^1.1.47",
+    "chokidar": "^4.0.3",
     "clsx": "^2.1.0",
     "docx": "^8.5.0",
     "lucide-react": "^0.400.0",

@@ -21,11 +21,16 @@ export function useMarkdownSync({
   enabled = true,
   preferredFileName = "draft.md",
 }: UseMarkdownSyncOptions): UseMarkdownSyncResult {
-  const [content, setContent] = useState("");
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [currentDoc, setCurrentDoc] = useState<{
+    content: string;
+    fileName: string | null;
+  }>({ content: "", fileName: null });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const lastModifiedMapRef = useRef(new Map<string, string>());
+
+  const content = currentDoc.content;
+  const fileName = currentDoc.fileName;
 
   const {
     files,
@@ -41,6 +46,7 @@ export function useMarkdownSync({
       files
         .filter(
           (f) =>
+            !f.name.startsWith(".") &&
             !f.isDirectory &&
             (f.name.endsWith(".md") || f.name.endsWith(".markdown")),
         )
@@ -54,8 +60,7 @@ export function useMarkdownSync({
       try {
         const fileContent = await readFile(targetFileName);
         if (fileContent !== null) {
-          setContent(fileContent);
-          setFileName(targetFileName);
+          setCurrentDoc({ content: fileContent, fileName: targetFileName });
           setLastUpdated(new Date());
         }
       } catch (error) {

@@ -33,18 +33,19 @@ export function FileExplorer({
   onRefresh,
   isLoading,
 }: FileExplorerProps) {
-  const markdownFiles = files.filter(
+  const visibleFiles = files.filter((f) => !f.name.startsWith("."));
+  const markdownFiles = visibleFiles.filter(
     (f) =>
       !f.isDirectory &&
       (f.name.endsWith(".md") || f.name.endsWith(".markdown")),
   );
-  const otherFiles = files.filter((f) => !markdownFiles.includes(f));
+  const otherFiles = visibleFiles.filter((f) => !markdownFiles.includes(f));
 
   return (
     <div className="flex flex-col h-full border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-50">
-          Project Files
+          Documents
         </h3>
         {onRefresh && (
           <Button
@@ -61,7 +62,7 @@ export function FileExplorer({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {files.length === 0 ? (
+        {visibleFiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 p-6 text-center">
             <Folder className="w-12 h-12 mb-2 opacity-50" />
             <p className="text-sm">No files yet</p>
@@ -71,9 +72,6 @@ export function FileExplorer({
           <div className="p-1.5">
             {markdownFiles.length > 0 && (
               <div className="mb-2">
-                <div className="px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  Markdown Documents
-                </div>
                 <div className="space-y-0.5 mt-0.5">
                   {markdownFiles.map((file) => {
                     const Icon = getFileIcon(file.name, file.isDirectory);
@@ -81,6 +79,7 @@ export function FileExplorer({
 
                     return (
                       <button
+                        type="button"
                         key={file.name}
                         onClick={() => onSelectFile(file.name)}
                         className={clsx(

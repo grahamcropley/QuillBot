@@ -13,6 +13,7 @@ import type {
   ToolState,
   SessionStatus,
   ToolPart,
+  ActivityToggleLevel,
 } from "@/types/opencode-events";
 
 interface ProjectState {
@@ -25,6 +26,7 @@ interface ProjectState {
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
+  activityToggleLevel: ActivityToggleLevel;
   currentToolStates: Map<string, { state: ToolState; toolName: string }>;
   retryAttempt?: number;
 
@@ -32,6 +34,12 @@ interface ProjectState {
   getCurrentProject: () => Project | null;
   selectProject: (id: string) => void;
   createProject: (name: string, formData: StarterFormData) => Promise<string>;
+  updateProjectInfo: (
+    updates: Pick<
+      Project,
+      "name" | "contentType" | "wordCount" | "styleHints" | "brief"
+    >,
+  ) => Promise<void>;
   updateDocument: (content: string) => Promise<void>;
   addMessage: (role: Message["role"], content: string) => Promise<void>;
   addMessageWithDetails: (message: Message) => Promise<void>;
@@ -52,6 +60,7 @@ interface ProjectState {
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
   setSessionStatus: (status: SessionStatus) => void;
+  setActivityToggleLevel: (level: ActivityToggleLevel) => void;
   updateToolState: (
     partId: string,
     state: ToolState,
@@ -73,6 +82,50 @@ function hydrateProject(p: Project): Project {
   };
 }
 
+function buildQuestionAnsweredMessage(
+  questionMessage: Message | undefined,
+  answers: string[][],
+): Message | null {
+  if (!questionMessage?.questionData) return null;
+
+  const summaryParts: string[] = [];
+
+  questionMessage.questionData.questions.forEach((q, index) => {
+    const selected = answers[index] ?? [];
+    if (selected.length === 0) return;
+
+    const predefinedLabels = new Set(q.options.map((o) => o.label));
+    const customAnswers = selected.filter((a) => !predefinedLabels.has(a));
+    const predefinedAnswers = selected.filter((a) => predefinedLabels.has(a));
+
+    const parts: string[] = [];
+    if (predefinedAnswers.length > 0) {
+      parts.push(predefinedAnswers.join(", "));
+    }
+    if (customAnswers.length > 0) {
+      parts.push(customAnswers.map((a) => `"${a}"`).join(", "));
+    }
+
+    if (questionMessage.questionData!.questions.length > 1) {
+      summaryParts.push(`**${q.header}:** ${parts.join(", ")}`);
+    } else {
+      summaryParts.push(parts.join(", "));
+    }
+  });
+
+  return {
+    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    role: "question-answered",
+    content: summaryParts.join("\n"),
+    timestamp: new Date(),
+    questionData: {
+      ...questionMessage.questionData,
+      answered: true,
+      answers,
+    },
+  };
+}
+
 export const useProjectStore = create<ProjectState>()((set, get) => ({
   projects: [],
   currentProjectId: null,
@@ -83,6 +136,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
+  activityToggleLevel: "all-activities",
   currentToolStates: new Map(),
 
   fetchProjects: async () => {
@@ -132,6 +186,56 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     } catch (error) {
       console.error("Failed to create project:", error);
       set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  updateProjectInfo: async (updates) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    const previousProject = get().projects.find(
+      (p) => p.id === currentProjectId,
+    );
+    if (!previousProject) return;
+
+    const optimisticProject: Project = {
+      ...previousProject,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === currentProjectId ? optimisticProject : p,
+      ),
+    }));
+
+    try {
+      const response = await fetch(`/api/projects/${currentProjectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update project info");
+      }
+
+      const data = await response.json();
+      const updatedProject = hydrateProject(data.project);
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId ? updatedProject : p,
+        ),
+      }));
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId ? previousProject : p,
+        ),
+      }));
+      console.error("Failed to update project info:", error);
       throw error;
     }
   },
@@ -370,6 +474,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     const { currentProjectId } = get();
     if (!currentProjectId) return;
 
+    const projectBefore = get().projects.find((p) => p.id === currentProjectId);
+    const questionMessage = projectBefore?.messages.find(
+      (m) => m.id === questionId,
+    );
+
     set((state) => ({
       projects: state.projects.map((p) => {
         if (p.id !== currentProjectId) return p;
@@ -391,6 +500,34 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         return { ...p, messages: updatedMessages, updatedAt: new Date() };
       }),
     }));
+
+    const answeredMessage = buildQuestionAnsweredMessage(
+      questionMessage,
+      answers,
+    );
+    if (answeredMessage) {
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === currentProjectId
+            ? {
+                ...p,
+                messages: [...p.messages, answeredMessage],
+                updatedAt: new Date(),
+              }
+            : p,
+        ),
+      }));
+
+      try {
+        await fetch(`/api/projects/${currentProjectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: answeredMessage }),
+        });
+      } catch (error) {
+        console.error("Failed to persist question-answered message:", error);
+      }
+    }
 
     const project = get().projects.find((p) => p.id === currentProjectId);
     const message = project?.messages.find((m) => m.id === questionId);
@@ -502,6 +639,10 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       sessionStatus: status.type,
       retryAttempt: status.type === "retry" ? status.attempt : undefined,
     });
+  },
+
+  setActivityToggleLevel: (level) => {
+    set({ activityToggleLevel: level });
   },
 
   updateToolState: (partId, state, toolName = "unknown") => {

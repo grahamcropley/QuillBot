@@ -68,3 +68,47 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Failed to read file" }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const url = new URL(request.url);
+    const queryPath = url.searchParams.get("path");
+
+    const project = await getProject(id);
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const body = (await request.json().catch(() => null)) as {
+      path?: string;
+      content?: string;
+    } | null;
+
+    const filePath = body?.path ?? queryPath;
+    const content = typeof body?.content === "string" ? body.content : null;
+
+    if (!filePath || content === null) {
+      return NextResponse.json(
+        { error: "Missing path or content" },
+        { status: 400 },
+      );
+    }
+
+    const fullPath = path.join(project.directoryPath, filePath);
+
+    if (!fullPath.startsWith(project.directoryPath)) {
+      return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+    }
+
+    await fs.writeFile(fullPath, content, "utf-8");
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to write file:", error);
+    return NextResponse.json(
+      { error: "Failed to write file" },
+      { status: 500 },
+    );
+  }
+}
