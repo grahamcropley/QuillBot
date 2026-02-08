@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Download, PenLine, Trash2 } from "lucide-react";
-import { ConversationPanel } from "@/components/conversation";
+import { AgentChat } from "@agent-chat/react";
 import { MarkdownPreview } from "@/components/preview";
 import { AnalysisPanel } from "@/components/analysis";
 import { ExportModal } from "@/components/export";
@@ -26,6 +26,14 @@ import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
 import { FileExplorer } from "@/components/preview/file-explorer";
 import { ProjectInfoModal } from "@/components/project-info-modal";
+
+// AgentChat ContextItem type (from @agent-chat/react documentation)
+interface ContextItem {
+  id: string;
+  type: "text-selection" | "image" | "file" | string;
+  label: string;
+  content: string;
+}
 
 interface ProjectInfoValues {
   name: string;
@@ -896,6 +904,19 @@ export default function ProjectPage() {
     useProjectStore.getState().setTextSelection(selection);
   }, []);
 
+  const contextItems = useMemo((): ContextItem[] => {
+    return markedSelections.map((selection, index) => ({
+      id: selection.id,
+      type: "text-selection",
+      label: `Selection ${index + 1} (Line ${selection.line}, Col ${selection.column + 1})`,
+      content: `Line ${selection.line}, Col ${selection.column + 1} (${selection.length} chars): "${selection.text}"`,
+    }));
+  }, [markedSelections]);
+
+  const handleClearContext = useCallback(() => {
+    clearMarkedSelections();
+  }, [clearMarkedSelections]);
+
   const buildSelectionActionMessage = useCallback(
     (instruction: string) => {
       let messageContent = instruction;
@@ -1168,16 +1189,15 @@ export default function ProjectPage() {
             </CardHeader>
             <div className="flex-1 overflow-hidden" data-preserve-selection>
               <PanelErrorBoundary panelName="conversation">
-                <ConversationPanel
-                  messages={displayedMessages}
-                  onSendMessage={handleSendMessage}
-                  onAnswerQuestion={answerQuestion}
-                  onRetryMessage={handleRetryMessage}
-                  isLoading={isStreaming}
-                  streamStatus={streamStatus}
-                  textSelection={textSelection}
-                  onClearSelection={clearTextSelection}
-                  currentFileName={syncedFileName || "draft.md"}
+                <AgentChat
+                  sessionId={
+                    streamSessionId || currentProject.opencodeSessionId || ""
+                  }
+                  directory={currentProject.directoryPath}
+                  placeholder="Ask the agent anything..."
+                  className="quill-agent-chat h-full"
+                  contextItems={contextItems}
+                  onClearContext={handleClearContext}
                 />
               </PanelErrorBoundary>
             </div>
