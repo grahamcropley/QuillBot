@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       projectId,
       command: body.command,
       hasSession: !!sessionId,
+      sessionId: sessionId ?? null,
     });
 
     const project = await getProject(projectId);
@@ -92,12 +93,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.log("[OpenCode API] Project loaded:", {
+      projectId,
+      directoryPath: project.directoryPath,
+      storedSessionId: project.opencodeSessionId ?? null,
+    });
+
     const client = getOpencodeClient(project.directoryPath);
 
     let effectiveSessionId = sessionId || project.opencodeSessionId;
+    console.log("[OpenCode API] Session resolution:", {
+      projectId,
+      providedSessionId: sessionId ?? null,
+      storedSessionId: project.opencodeSessionId ?? null,
+      effectiveSessionId: effectiveSessionId ?? null,
+    });
 
     const createNewSession = async (): Promise<string> => {
-      console.log("[OpenCode API] Creating new session...");
+      console.log("[OpenCode API] Creating new session...", {
+        projectId,
+        directoryPath: project.directoryPath,
+      });
       const sessionResult = await client.session.create({
         directory: project.directoryPath,
         title: `Project ${projectId}`,
@@ -325,6 +341,11 @@ function transformSdkEvent(
       if (questionRequest.sessionID !== targetSessionId) {
         return null;
       }
+      console.log("[OpenCode API] Question asked event:", {
+        requestId: questionRequest.id,
+        eventSessionId: questionRequest.sessionID,
+        targetSessionId,
+      });
       const event: StreamQuestionAsked = {
         type: "question",
         data: {

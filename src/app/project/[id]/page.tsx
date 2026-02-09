@@ -16,6 +16,7 @@ import {
   useMarkdownSync,
   useFileWatcher,
   useFileVersionHistory,
+  useAgentChatInitialMessage,
 } from "@/hooks";
 import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
@@ -651,6 +652,24 @@ export default function ProjectPage() {
     },
   });
 
+  const { sendInitialMessage } = useAgentChatInitialMessage({
+    projectId,
+    sessionId: currentProject?.opencodeSessionId || "",
+    directoryPath: currentProject?.directoryPath || "",
+    onSuccess: (newSessionId) => {
+      void updateProjectInfo({ opencodeSessionId: newSessionId }).catch(
+        (err) => {
+          console.error("[ProjectPage] Failed to persist new session ID:", err);
+        },
+      );
+    },
+    onError: (error) => {
+      console.error("[ProjectPage] Initial message error:", error);
+      setServerErrorMessage(error.message);
+      setIsServerErrorModalOpen(true);
+    },
+  });
+
   useResumeBufferedStream(
     {
       sendMessage,
@@ -899,9 +918,32 @@ export default function ProjectPage() {
     const pendingMessage = pendingInitialMessageRef.current;
     if (pendingMessage) {
       pendingInitialMessageRef.current = null;
-      handleSendMessage(pendingMessage, true);
+
+      const isInitialContent = currentProject?.messages.length === 0;
+      const hasSession = streamSessionId || currentProject?.opencodeSessionId;
+
+      if (isInitialContent && !hasSession) {
+        const commandArgs = !currentProject?.reviewFilename
+          ? buildCommandArgs({
+              contentType: currentProject?.contentType || "blog",
+              wordCount: currentProject?.wordCount || 1000,
+              styleHints: currentProject?.styleHints || "",
+              brief: pendingMessage,
+            })
+          : undefined;
+
+        void sendInitialMessage({
+          content: pendingMessage,
+          command: !currentProject?.reviewFilename
+            ? "write-content"
+            : undefined,
+          commandArgs,
+        });
+      } else {
+        void handleSendMessage(pendingMessage, true);
+      }
     }
-  }, [handleSendMessage]);
+  }, [handleSendMessage, sendInitialMessage, currentProject, streamSessionId]);
 
   const handleRetryMessage = useCallback(
     async (message: Message) => {

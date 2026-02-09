@@ -35,6 +35,8 @@ export interface QuestionData {
   questions: QuestionInfo[];
   answers?: string[][];
   answered?: boolean;
+  error?: boolean;
+  errorMessage?: string;
 }
 
 export interface Message {

@@ -55,6 +55,8 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const isQuestionAnswered = message.role === "question-answered";
+  const isErroredQuestion =
+    message.role === "question" && message.questionData?.error === true;
   const hasError = message.error;
   const isPending = message.status === "pending";
   const isRetrying = message.status === "retrying";
@@ -62,10 +64,37 @@ export function MessageBubble({
   const showContentBubble =
     isUser ||
     isQuestionAnswered ||
+    isErroredQuestion ||
     hasError ||
     isPending ||
     isRetrying ||
     hasContent;
+
+  if (isErroredQuestion) {
+    return (
+      <div className="flex gap-2 flex-row">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-600 dark:bg-red-700">
+          <AlertCircle className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex flex-col items-start">
+          <div className="px-4 py-2 rounded-2xl rounded-bl-md bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 text-red-900 dark:text-red-100 text-[0.8rem] leading-relaxed">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                Question Failed
+              </span>
+            </div>
+            <p className="text-xs text-red-700 dark:text-red-200">
+              {message.questionData?.errorMessage ||
+                "Failed to submit answer. Please continue the conversation to proceed."}
+            </p>
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+            {formatTime(message.timestamp)}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   const allItems = deriveActivityItems(message);
   const filteredItems = filterByToggleLevel(allItems, activityToggleLevel);

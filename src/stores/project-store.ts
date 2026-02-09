@@ -40,9 +40,16 @@ interface ProjectState {
     reviewFilename?: string,
   ) => Promise<string>;
   updateProjectInfo: (
-    updates: Pick<
-      Project,
-      "name" | "contentType" | "wordCount" | "styleHints" | "brief"
+    updates: Partial<
+      Pick<
+        Project,
+        | "name"
+        | "contentType"
+        | "wordCount"
+        | "styleHints"
+        | "brief"
+        | "opencodeSessionId"
+      >
     >,
   ) => Promise<void>;
   updateDocument: (content: string) => Promise<void>;
@@ -484,6 +491,53 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       (m) => m.id === questionId,
     );
 
+    const markQuestionError = (errorMessage: string) => {
+      console.error("[answerQuestion] Marking question as errored:", {
+        questionId,
+        errorMessage,
+      });
+      set((state) => ({
+        projects: state.projects.map((p) => {
+          if (p.id !== currentProjectId) return p;
+          const updatedMessages = p.messages.map((m) => {
+            if (m.id === questionId && m.questionData) {
+              return {
+                ...m,
+                questionData: {
+                  ...m.questionData,
+                  answered: true,
+                  answers,
+                  error: true,
+                  errorMessage,
+                },
+              };
+            }
+            return m;
+          });
+          return { ...p, messages: updatedMessages, updatedAt: new Date() };
+        }),
+        isOpenCodeBusy: false,
+      }));
+
+      const erroredQuestionData = get()
+        .projects.find((p) => p.id === currentProjectId)
+        ?.messages.find((m) => m.id === questionId)?.questionData;
+      if (erroredQuestionData) {
+        void fetch(`/api/projects/${currentProjectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messageUpdate: {
+              id: questionId,
+              updates: { questionData: erroredQuestionData },
+            },
+          }),
+        }).catch((err) =>
+          console.error("[answerQuestion] Failed to persist error state:", err),
+        );
+      }
+    };
+
     set((state) => ({
       projects: state.projects.map((p) => {
         if (p.id !== currentProjectId) return p;
@@ -541,6 +595,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
 
     if (!requestId || !updatedQuestionData) {
       console.error("Could not find request ID for question", questionId);
+      markQuestionError("Could not find question request ID");
       return;
     }
 
@@ -556,6 +611,12 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         }),
       });
 
+      console.log("[answerQuestion] Sending reply to OpenCode:", {
+        projectId: currentProjectId,
+        requestId,
+        answersCount: answers.length,
+      });
+
       const response = await fetch("/api/opencode/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -567,7 +628,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       });
 
       if (!response.ok || !response.body) {
-        console.error("Failed to submit answer:", response.status);
+        const statusText = response.ok
+          ? "No response body"
+          : `HTTP ${response.status}`;
+        console.error("[answerQuestion] Failed to submit answer:", statusText);
+        markQuestionError(`Failed to submit answer: ${statusText}`);
         return;
       }
 
@@ -586,6 +651,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
             try {
               const data = JSON.parse(line.slice(6));
               console.log("[answerQuestion] SSE event:", data);
+
+              if (data.type === "error") {
+                markQuestionError(
+                  data.error || "Failed to submit answer to AI",
+                );
+                return;
+              }
             } catch {
               continue;
             }
@@ -593,7 +665,10 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         }
       }
     } catch (error) {
-      console.error("Failed to submit answer:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error("[answerQuestion] Failed to submit answer:", errorMessage);
+      markQuestionError(`Failed to submit answer: ${errorMessage}`);
     }
   },
 
