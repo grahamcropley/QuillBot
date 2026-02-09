@@ -73,7 +73,10 @@ export function ConversationPanel({
   }, [messages]);
 
   const visibleMessages = useMemo(() => {
-    return messages.filter((message) => message.role !== "question");
+    return messages.filter(
+      (message) =>
+        message.role !== "question" || message.questionData?.error === true,
+    );
   }, [messages]);
 
   const resolvedStatus = useMemo((): StreamStatus => {
