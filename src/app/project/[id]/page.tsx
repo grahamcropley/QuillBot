@@ -11,14 +11,12 @@ import { Modal } from "@/components/ui/modal";
 import { Button, Card, CardHeader, PanelErrorBoundary } from "@/components/ui";
 import { useProjectStore } from "@/stores/project-store";
 import {
-  useOpenCodeStream,
   useTextSelection,
   useMarkdownSync,
   useFileWatcher,
   useFileVersionHistory,
   useAgentChatInitialMessage,
 } from "@/hooks";
-import { useResumeBufferedStream } from "@/hooks/use-resume-buffered-stream";
 import { analyzeContent } from "@/lib/analysis";
 import {
   buildCommandArgs,
@@ -26,7 +24,6 @@ import {
 } from "@/utils/prompt-builder";
 import { formatSelectionsContext } from "@/utils/format-selections";
 import type { TextSelection, Message, ContentType } from "@/types";
-import type { Part, StreamActivity } from "@/types/opencode-events";
 import type { MarkdownPreviewHandle } from "@/components/preview/markdown-preview";
 import { FileExplorer } from "@/components/preview/file-explorer";
 import { ProjectInfoModal } from "@/components/project-info-modal";
@@ -150,8 +147,6 @@ export default function ProjectPage() {
   const updateMessageStatus = useProjectStore(
     (state) => state.updateMessageStatus,
   );
-  const addQuestion = useProjectStore((state) => state.addQuestion);
-  const answerQuestion = useProjectStore((state) => state.answerQuestion);
   const updateDocument = useProjectStore((state) => state.updateDocument);
   const updateProjectInfo = useProjectStore((state) => state.updateProjectInfo);
   const deleteProject = useProjectStore((state) => state.deleteProject);
@@ -326,331 +321,8 @@ export default function ProjectPage() {
   // Track draft.md content separately for analysis (regardless of selected file)
   const [draftContent, setDraftContent] = useState<string>("");
 
-  const [streamingParts, setStreamingParts] = useState<Part[]>([]);
-  const [streamingActivities, setStreamingActivities] = useState<
-    StreamActivity[]
-  >([]);
-  const [streamingSegments, setStreamingSegments] = useState<Message[]>([]);
-  const streamingPartsRef = useRef<Part[]>([]);
-  const streamingActivitiesRef = useRef<StreamActivity[]>([]);
-  const streamingSegmentsRef = useRef<Message[]>([]);
-  const streamSplitCounterRef = useRef(0);
-  const completionProcessedRef = useRef(false);
-  const partIdToSegmentIndexRef = useRef<Map<string, number>>(new Map());
-  const pendingMessageIdRef = useRef<string | null>(null);
-
-  const nextStreamSplitId = useCallback(() => {
-    streamSplitCounterRef.current += 1;
-    return `stream_split_${Date.now()}_${streamSplitCounterRef.current}`;
-  }, []);
-
-  const commitStreamingSegment = useCallback((segment: Message) => {
-    setStreamingSegments((prev) => {
-      const segmentIndex = prev.length;
-      if (segment.parts) {
-        for (const part of segment.parts) {
-          partIdToSegmentIndexRef.current.set(part.id, segmentIndex);
-        }
-      }
-      const next = [...prev, segment];
-      streamingSegmentsRef.current = next;
-      return next;
-    });
-  }, []);
-
-  const resetStreamingCollections = useCallback(() => {
-    setStreamingParts([]);
-    setStreamingActivities([]);
-    streamingPartsRef.current = [];
-    streamingActivitiesRef.current = [];
-  }, []);
-
-  const markPendingMessageSent = useCallback(() => {
-    const pendingId = pendingMessageIdRef.current;
-    if (!pendingId) return;
-    updateMessageStatus(pendingId, "sent");
-    pendingMessageIdRef.current = null;
-  }, [updateMessageStatus]);
-
-  const {
-    sendMessage,
-    isStreaming,
-    streamingContent,
-    statusMessage,
-    streamStatus,
-    sessionId: streamSessionId,
-    resumeBufferedStream,
-    reset,
-  } = useOpenCodeStream({
-    projectId,
-    initialSessionId: currentProject?.opencodeSessionId ?? null,
-    onRequestAccepted: markPendingMessageSent,
-    onQuestion: (questionData) => {
-      console.log("[ProjectPage] onQuestion called with:", questionData);
-
-      const questionMessage: Message = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        role: "question",
-        content: "",
-        questionData,
-        timestamp: new Date(),
-        parts: [...streamingPartsRef.current],
-        activities: [...streamingActivitiesRef.current],
-      };
-
-      resetStreamingCollections();
-
-      addMessageWithDetails(questionMessage);
-    },
-    onStreamSplit: ({ tool, content }) => {
-      const parts = [...streamingPartsRef.current];
-      const activities = [...streamingActivitiesRef.current];
-
-      console.log("[ProjectPage] onStreamSplit called:", {
-        tool,
-        contentLength: content.length,
-        partsCount: parts.length,
-        activitiesCount: activities.length,
-      });
-
-      if (!content.trim() && parts.length === 0 && activities.length === 0) {
-        console.log("[ProjectPage] Skipping empty stream split");
-        return;
-      }
-
-      const segmentId = nextStreamSplitId();
-      console.log("[ProjectPage] Creating stream split segment:", segmentId);
-
-      commitStreamingSegment({
-        id: segmentId,
-        role: "assistant",
-        content,
-        timestamp: new Date(),
-        parts,
-        activities,
-      });
-
-      resetStreamingCollections();
-      console.log("[ProjectPage] Stream split complete, collections reset");
-    },
-    onComplete: (content) => {
-      if (completionProcessedRef.current) {
-        console.log("[ProjectPage] onComplete: Already processed, skipping");
-        return;
-      }
-
-      completionProcessedRef.current = true;
-
-      const finalParts = streamingPartsRef.current;
-      const finalActivities = streamingActivitiesRef.current;
-      const segmentsToStore = [...streamingSegmentsRef.current];
-
-      console.log("[ProjectPage] onComplete called:", {
-        contentLength: content.length,
-        finalPartsCount: finalParts.length,
-        finalActivitiesCount: finalActivities.length,
-        existingSegmentsCount: segmentsToStore.length,
-      });
-
-      // Only create final segment if there's NEW content after last stream split
-      // If we already have segments (from onStreamSplit) and no new content/parts/activities,
-      // don't create a duplicate segment
-      const hasNewContent = content.trim().length > 0;
-      const hasNewPartsOrActivities =
-        finalParts.length > 0 || finalActivities.length > 0;
-      const hasExistingSegments = segmentsToStore.length > 0;
-
-      if (hasNewContent || (hasNewPartsOrActivities && !hasExistingSegments)) {
-        console.log("[ProjectPage] Creating final segment");
-        segmentsToStore.push({
-          id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          role: "assistant",
-          content,
-          timestamp: new Date(),
-          parts: finalParts,
-          activities: finalActivities,
-        });
-      } else {
-        console.log(
-          "[ProjectPage] Skipping final segment creation (would be duplicate)",
-        );
-      }
-
-      console.log(
-        "[ProjectPage] Total segments to store:",
-        segmentsToStore.length,
-      );
-
-      resetStreamingCollections();
-      clearMarkedSelections();
-      reset();
-
-      // Clear streaming segments BEFORE persisting to avoid duplicates in displayedMessages
-      setStreamingSegments([]);
-      streamingSegmentsRef.current = [];
-      partIdToSegmentIndexRef.current.clear();
-
-      void (async () => {
-        for (const segment of segmentsToStore) {
-          console.log("[ProjectPage] Storing segment:", segment.id);
-          await addMessageWithDetails(segment);
-        }
-      })();
-
-      const markdownMatch = content.match(/```markdown\n([\s\S]*?)\n```/);
-      if (markdownMatch) {
-        updateDocument(markdownMatch[1]);
-      }
-
-      const importMetadata = parseImportMetadata(content);
-      if (importMetadata) {
-        void (async () => {
-          let generatedBrief = "";
-
-          try {
-            const briefResponse = await fetch(
-              `/api/projects/${projectId}/files?path=brief.md`,
-            );
-            if (briefResponse.ok) {
-              const briefData = (await briefResponse.json()) as {
-                content?: string;
-              };
-              generatedBrief = briefData.content?.trim() ?? "";
-            }
-          } catch (error) {
-            console.error("Failed to load generated brief.md:", error);
-          }
-
-          try {
-            await updateProjectInfo({
-              name: importMetadata.title,
-              contentType: importMetadata.contentType,
-              wordCount: importMetadata.targetWordCount,
-              styleHints: "",
-              brief: generatedBrief,
-            });
-          } catch (error) {
-            console.error("Failed to persist import metadata:", error);
-          }
-        })();
-      }
-    },
-    onPart: (part: Part, delta) => {
-      if (part.type === "tool" && part.tool === "question") return;
-
-      if (part.type === "step-finish") {
-        const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
-        if (segmentIndex !== undefined) {
-          setStreamingSegments((prev) => {
-            const updated = [...prev];
-            const segment = updated[segmentIndex];
-            if (!segment?.parts) return prev;
-            updated[segmentIndex] = {
-              ...segment,
-              parts: [...segment.parts, part],
-            };
-            streamingSegmentsRef.current = updated;
-            return updated;
-          });
-        } else if (streamingPartsRef.current.length > 0) {
-          const next = [...streamingPartsRef.current, part];
-          streamingPartsRef.current = next;
-          setStreamingParts(next);
-        }
-        return;
-      }
-
-      const segmentIndex = partIdToSegmentIndexRef.current.get(part.id);
-
-      if (segmentIndex !== undefined) {
-        let updatedPart = part as Part;
-        if (part.type === "reasoning") {
-          const existingSegment = streamingSegmentsRef.current[segmentIndex];
-          const existingPart = existingSegment?.parts?.find(
-            (p) => p.id === part.id,
-          );
-          const existingText =
-            existingPart && existingPart.type === "reasoning"
-              ? (existingPart as Record<string, unknown>).text || ""
-              : "";
-          const partText = (part as Record<string, unknown>).text || "";
-          const newText =
-            partText || (delta ? String(existingText) + delta : existingText);
-          updatedPart = { ...part, text: newText } as Part;
-        }
-
-        setStreamingSegments((prev) => {
-          const updated = [...prev];
-          const segment = updated[segmentIndex];
-          if (!segment?.parts) return prev;
-          const updatedParts = segment.parts.map((p) =>
-            p.id === part.id ? updatedPart : p,
-          );
-          updated[segmentIndex] = { ...segment, parts: updatedParts };
-          streamingSegmentsRef.current = updated;
-          return updated;
-        });
-        return;
-      }
-
-      const current = streamingPartsRef.current;
-      const index = current.findIndex((p) => p.id === part.id);
-
-      let updatedPart = part as Part;
-      if (part.type === "reasoning") {
-        const existingPart = index !== -1 ? current[index] : null;
-        const existingText =
-          existingPart && existingPart.type === "reasoning"
-            ? (existingPart as Record<string, unknown>).text || ""
-            : "";
-        const partText = (part as Record<string, unknown>).text || "";
-        const newText =
-          partText || (delta ? String(existingText) + delta : existingText);
-        updatedPart = { ...part, text: newText } as Part;
-      }
-
-      const next =
-        index === -1
-          ? [...current, updatedPart]
-          : current.map((existing, idx) =>
-              idx === index ? updatedPart : existing,
-            );
-      streamingPartsRef.current = next;
-      setStreamingParts(next);
-    },
-    onActivity: (activity) => {
-      const next = [...streamingActivitiesRef.current, activity];
-      streamingActivitiesRef.current = next;
-      setStreamingActivities(next);
-    },
-    onError: (error) => {
-      console.error("OpenCode stream error:", error);
-      const errorMsg = error.message || "Unknown error";
-
-      // Detect server connection errors
-      if (
-        errorMsg.includes("fetch failed") ||
-        errorMsg.includes("HTTP 500") ||
-        errorMsg.includes("Failed to communicate with OpenCode")
-      ) {
-        setServerErrorMessage(
-          "Unable to connect to the OpenCode server. Please ensure it's running and try again.",
-        );
-        setIsServerErrorModalOpen(true);
-      }
-    },
-    onFileEdited: (file) => {
-      const name = file.split("/").pop() ?? file;
-      if (activeFilePath && name === activeFilePath) {
-        setLiveExternalUpdateSource("ai");
-        void setFileLastModified({
-          id: "opencode",
-          name: "OpenCode",
-          kind: "ai",
-        });
-      }
-    },
-  });
+  const isStreaming = false;
+  const streamSessionId = currentProject?.opencodeSessionId ?? null;
 
   const { sendInitialMessage } = useAgentChatInitialMessage({
     projectId,
@@ -669,69 +341,6 @@ export default function ProjectPage() {
       setIsServerErrorModalOpen(true);
     },
   });
-
-  useResumeBufferedStream(
-    {
-      sendMessage,
-      isStreaming,
-      streamingContent,
-      statusMessage,
-      streamStatus,
-      sessionId: streamSessionId || currentProject?.opencodeSessionId || null,
-      error: null,
-      lastFailedMessageId: null,
-      clearError: () => {},
-      reset: () => {},
-      abort: async () => {},
-      resumeBufferedStream,
-    },
-    projectId,
-    true,
-  );
-
-  const displayedMessages = useMemo(() => {
-    if (!currentProject) return [] as Message[];
-
-    const hasStreamingData =
-      streamingContent ||
-      streamingParts.length > 0 ||
-      streamingActivities.length > 0;
-    const hasStreamingSegments = streamingSegments.length > 0;
-
-    if (!isStreaming && !hasStreamingSegments) {
-      return currentProject.messages;
-    }
-
-    if (!hasStreamingData) {
-      const seenIds = new Set(currentProject.messages.map((msg) => msg.id));
-      const dedupedSegments = streamingSegments.filter(
-        (segment) => !seenIds.has(segment.id),
-      );
-      return [...currentProject.messages, ...dedupedSegments];
-    }
-
-    const streamingMessage: Message = {
-      id: "streaming-assistant",
-      role: "assistant",
-      content: streamingContent,
-      timestamp: new Date(),
-      parts: streamingParts,
-      activities: streamingActivities,
-    };
-
-    const seenIds = new Set(currentProject.messages.map((msg) => msg.id));
-    const dedupedSegments = streamingSegments.filter(
-      (segment) => !seenIds.has(segment.id),
-    );
-    return [...currentProject.messages, ...dedupedSegments, streamingMessage];
-  }, [
-    currentProject,
-    isStreaming,
-    streamingContent,
-    streamingParts,
-    streamingActivities,
-    streamingSegments,
-  ]);
 
   useEffect(() => {
     selectProject(projectId);
@@ -785,7 +394,7 @@ export default function ProjectPage() {
     }
   }, [draftContent, currentProject?.brief, setAnalysisMetrics]);
 
-  const sendMessageInternal = useCallback(
+  const handleSendMessage = useCallback(
     async (content: string, isInitialMessage = false, messageId?: string) => {
       if (!currentProject) return;
 
@@ -793,7 +402,6 @@ export default function ProjectPage() {
       let userMessageId = messageId;
       let retryAttempt = 0;
 
-      // Get current message to check retry count
       if (userMessageId) {
         const currentMessage = currentProject.messages.find(
           (m) => m.id === userMessageId,
@@ -810,7 +418,6 @@ export default function ProjectPage() {
           return;
         }
 
-        // Mark as retrying
         if (retryAttempt > 1) {
           updateMessageStatus(
             userMessageId,
@@ -831,39 +438,31 @@ export default function ProjectPage() {
         });
       }
 
-      if (userMessageId) {
-        pendingMessageIdRef.current = userMessageId;
-      }
+      editorRef.current?.flushPendingWrites?.();
 
-      resetStreamingCollections();
-      setStreamingSegments([]);
-      streamingSegmentsRef.current = [];
-      partIdToSegmentIndexRef.current.clear();
-      completionProcessedRef.current = false;
+      const isInitialContent =
+        isInitialMessage && currentProject.messages.length === 0;
+      const commandArgs =
+        isInitialContent && !currentProject.reviewFilename
+          ? buildCommandArgs({
+              contentType: currentProject.contentType,
+              wordCount: currentProject.wordCount,
+              styleHints: currentProject.styleHints,
+              brief: content,
+            })
+          : undefined;
 
-      const result = isInitialMessage
-        ? currentProject.reviewFilename
-          ? await sendMessage({
-              message: content,
-            })
-          : await sendMessage({
-              message: content,
-              command: "write-content",
-              commandArgs: buildCommandArgs({
-                contentType: currentProject.contentType,
-                wordCount: currentProject.wordCount,
-                styleHints: currentProject.styleHints,
-                brief: content,
-              }),
-            })
-        : await sendMessage({
-            message: content,
-          });
+      const result = await sendInitialMessage({
+        content,
+        command:
+          isInitialContent && !currentProject.reviewFilename
+            ? "write-content"
+            : undefined,
+        commandArgs,
+      });
 
       if (result.success) {
-        // Mark as sent
         updateMessageStatus(userMessageId, "sent");
-        pendingMessageIdRef.current = null;
       } else if (userMessageId) {
         updateMessageStatus(
           userMessageId,
@@ -871,28 +470,14 @@ export default function ProjectPage() {
           result.error.message || "Failed to send message",
           retryAttempt,
         );
-        pendingMessageIdRef.current = null;
       }
     },
     [
       currentProject,
       addMessageWithDetails,
-      sendMessage,
       updateMessageStatus,
-      resetStreamingCollections,
+      sendInitialMessage,
     ],
-  );
-
-  const handleSendMessage = useCallback(
-    async (content: string, isInitialMessage = false, messageId?: string) => {
-      if (!currentProject) return;
-
-      // Ensure any debounced file writes are flushed before sending.
-      editorRef.current?.flushPendingWrites?.();
-
-      await sendMessageInternal(content, isInitialMessage, messageId);
-    },
-    [currentProject, sendMessageInternal],
   );
 
   // Track initialization and trigger initial message send
@@ -911,7 +496,7 @@ export default function ProjectPage() {
         ? buildImportProcessingPrompt(currentProject.reviewFilename)
         : currentProject.brief;
     }
-  }, [currentProject, isStreaming]);
+  }, [currentProject]);
 
   // Handle pending initial message outside of the main effect
   useEffect(() => {

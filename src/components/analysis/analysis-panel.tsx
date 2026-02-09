@@ -6,7 +6,6 @@ import { Card, CardHeader, CardContent } from "@/components/ui";
 import type { AnalysisMetrics } from "@/types";
 import { clsx } from "clsx";
 import { ReadabilityModal } from "./readability-modal";
-import { BriefAdherenceModal } from "./brief-adherence-modal";
 
 interface AnalysisPanelProps {
   metrics: AnalysisMetrics | null;
@@ -98,7 +97,6 @@ export function AnalysisPanel({
   cachedBriefScore,
 }: AnalysisPanelProps) {
   const [isReadabilityModalOpen, setIsReadabilityModalOpen] = useState(false);
-  const [isBriefModalOpen, setIsBriefModalOpen] = useState(false);
   if (isLoading) {
     return (
       <Card>
@@ -231,8 +229,7 @@ export function AnalysisPanel({
               status={getScoreStatus(
                 cachedBriefScore ?? metrics.briefAdherenceScore,
               )}
-              onClick={() => setIsBriefModalOpen(true)}
-              clickable={true}
+              clickable={false}
             />
           </div>
         </CardContent>
@@ -244,16 +241,6 @@ export function AnalysisPanel({
         gunningFogScore={metrics.gunningFogScore}
         fleschReadingEase={metrics.fleschReadingEase}
       />
-
-      {projectId && onSendMessage && (
-        <BriefAdherenceModal
-          isOpen={isBriefModalOpen}
-          onClose={() => setIsBriefModalOpen(false)}
-          projectId={projectId}
-          onSendMessage={onSendMessage}
-          onHighlightText={onHighlightText}
-        />
-      )}
     </>
   );
 }

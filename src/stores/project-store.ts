@@ -6,15 +6,7 @@ import type {
   TextSelection,
   MarkedSelection,
   AnalysisMetrics,
-  QuestionData,
 } from "@/types";
-import type {
-  StreamEvent,
-  ToolState,
-  SessionStatus,
-  ToolPart,
-  ActivityToggleLevel,
-} from "@/types/opencode-events";
 
 interface ProjectState {
   projects: Project[];
@@ -26,9 +18,6 @@ interface ProjectState {
   analysisMetrics: AnalysisMetrics | null;
   isHydrated: boolean;
   sessionStatus: "idle" | "busy" | "retry";
-  activityToggleLevel: ActivityToggleLevel;
-  currentToolStates: Map<string, { state: ToolState; toolName: string }>;
-  retryAttempt?: number;
 
   fetchProjects: () => Promise<void>;
   getCurrentProject: () => Project | null;
@@ -62,8 +51,6 @@ interface ProjectState {
     errorMessage?: string,
     retryAttempts?: number,
   ) => void;
-  addQuestion: (questionData: QuestionData) => Promise<void>;
-  answerQuestion: (questionId: string, answers: string[][]) => Promise<void>;
   setOpenCodeBusy: (busy: boolean) => void;
   setTextSelection: (selection: TextSelection | null) => void;
   addMarkedSelection: (selection: MarkedSelection) => void;
@@ -71,15 +58,7 @@ interface ProjectState {
   clearMarkedSelections: () => void;
   setAnalysisMetrics: (metrics: AnalysisMetrics | null) => void;
   deleteProject: (id: string) => Promise<void>;
-  setSessionStatus: (status: SessionStatus) => void;
-  setActivityToggleLevel: (level: ActivityToggleLevel) => void;
-  updateToolState: (
-    partId: string,
-    state: ToolState,
-    toolName?: string,
-  ) => void;
-  clearToolStates: () => void;
-  handleStreamEvent: (event: StreamEvent) => void;
+  setSessionStatus: (status: "idle" | "busy" | "retry") => void;
 }
 
 function hydrateProject(p: Project): Project {
@@ -94,50 +73,6 @@ function hydrateProject(p: Project): Project {
   };
 }
 
-function buildQuestionAnsweredMessage(
-  questionMessage: Message | undefined,
-  answers: string[][],
-): Message | null {
-  if (!questionMessage?.questionData) return null;
-
-  const summaryParts: string[] = [];
-
-  questionMessage.questionData.questions.forEach((q, index) => {
-    const selected = answers[index] ?? [];
-    if (selected.length === 0) return;
-
-    const predefinedLabels = new Set(q.options.map((o) => o.label));
-    const customAnswers = selected.filter((a) => !predefinedLabels.has(a));
-    const predefinedAnswers = selected.filter((a) => predefinedLabels.has(a));
-
-    const parts: string[] = [];
-    if (predefinedAnswers.length > 0) {
-      parts.push(predefinedAnswers.join(", "));
-    }
-    if (customAnswers.length > 0) {
-      parts.push(customAnswers.map((a) => `"${a}"`).join(", "));
-    }
-
-    if (questionMessage.questionData!.questions.length > 1) {
-      summaryParts.push(`**${q.header}:** ${parts.join(", ")}`);
-    } else {
-      summaryParts.push(parts.join(", "));
-    }
-  });
-
-  return {
-    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-    role: "question-answered",
-    content: summaryParts.join("\n"),
-    timestamp: new Date(),
-    questionData: {
-      ...questionMessage.questionData,
-      answered: true,
-      answers,
-    },
-  };
-}
-
 export const useProjectStore = create<ProjectState>()((set, get) => ({
   projects: [],
   currentProjectId: null,
@@ -148,8 +83,6 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   analysisMetrics: null,
   isHydrated: false,
   sessionStatus: "idle",
-  activityToggleLevel: "all-activities",
-  currentToolStates: new Map(),
 
   fetchProjects: async () => {
     set({ isLoading: true });
@@ -425,253 +358,6 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
     }));
   },
 
-  addQuestion: async (questionData) => {
-    console.log("[ProjectStore] addQuestion called with:", questionData);
-    const { currentProjectId, projects } = get();
-    if (!currentProjectId) return;
-
-    // Check if a question with the same requestId already exists
-    const currentProject = projects.find((p) => p.id === currentProjectId);
-    const existingQuestion = currentProject?.messages.find(
-      (m) =>
-        m.role === "question" &&
-        m.questionData?.requestId === questionData.requestId,
-    );
-    if (existingQuestion) {
-      console.log(
-        "[ProjectStore] Question with requestId already exists, skipping:",
-        questionData.requestId,
-      );
-      return;
-    }
-
-    const tempMessage: Message = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      role: "question",
-      content: "",
-      questionData,
-      timestamp: new Date(),
-    };
-
-    console.log("[ProjectStore] Creating question message:", tempMessage);
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === currentProjectId
-          ? {
-              ...p,
-              messages: [...p.messages, tempMessage],
-              updatedAt: new Date(),
-            }
-          : p,
-      ),
-    }));
-
-    console.log("[ProjectStore] Question message added to state");
-
-    try {
-      await fetch(`/api/projects/${currentProjectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: tempMessage }),
-      });
-      // Don't replace client state from server response to avoid race conditions
-      // with answerQuestion updates
-    } catch (error) {
-      console.error("Failed to add question:", error);
-    }
-  },
-
-  answerQuestion: async (questionId, answers) => {
-    const { currentProjectId } = get();
-    if (!currentProjectId) return;
-
-    const projectBefore = get().projects.find((p) => p.id === currentProjectId);
-    const questionMessage = projectBefore?.messages.find(
-      (m) => m.id === questionId,
-    );
-
-    const markQuestionError = (errorMessage: string) => {
-      console.error("[answerQuestion] Marking question as errored:", {
-        questionId,
-        errorMessage,
-      });
-      set((state) => ({
-        projects: state.projects.map((p) => {
-          if (p.id !== currentProjectId) return p;
-          const updatedMessages = p.messages.map((m) => {
-            if (m.id === questionId && m.questionData) {
-              return {
-                ...m,
-                questionData: {
-                  ...m.questionData,
-                  answered: true,
-                  answers,
-                  error: true,
-                  errorMessage,
-                },
-              };
-            }
-            return m;
-          });
-          return { ...p, messages: updatedMessages, updatedAt: new Date() };
-        }),
-        isOpenCodeBusy: false,
-      }));
-
-      const erroredQuestionData = get()
-        .projects.find((p) => p.id === currentProjectId)
-        ?.messages.find((m) => m.id === questionId)?.questionData;
-      if (erroredQuestionData) {
-        void fetch(`/api/projects/${currentProjectId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messageUpdate: {
-              id: questionId,
-              updates: { questionData: erroredQuestionData },
-            },
-          }),
-        }).catch((err) =>
-          console.error("[answerQuestion] Failed to persist error state:", err),
-        );
-      }
-    };
-
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== currentProjectId) return p;
-
-        const updatedMessages = p.messages.map((m) => {
-          if (m.id === questionId && m.questionData) {
-            return {
-              ...m,
-              questionData: {
-                ...m.questionData,
-                answered: true,
-                answers,
-              },
-            };
-          }
-          return m;
-        });
-
-        return { ...p, messages: updatedMessages, updatedAt: new Date() };
-      }),
-    }));
-
-    const answeredMessage = buildQuestionAnsweredMessage(
-      questionMessage,
-      answers,
-    );
-    if (answeredMessage) {
-      set((state) => ({
-        projects: state.projects.map((p) =>
-          p.id === currentProjectId
-            ? {
-                ...p,
-                messages: [...p.messages, answeredMessage],
-                updatedAt: new Date(),
-              }
-            : p,
-        ),
-      }));
-
-      try {
-        await fetch(`/api/projects/${currentProjectId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: answeredMessage }),
-        });
-      } catch (error) {
-        console.error("Failed to persist question-answered message:", error);
-      }
-    }
-
-    const project = get().projects.find((p) => p.id === currentProjectId);
-    const message = project?.messages.find((m) => m.id === questionId);
-    const requestId = message?.questionData?.requestId;
-    const updatedQuestionData = message?.questionData;
-
-    if (!requestId || !updatedQuestionData) {
-      console.error("Could not find request ID for question", questionId);
-      markQuestionError("Could not find question request ID");
-      return;
-    }
-
-    try {
-      await fetch(`/api/projects/${currentProjectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageUpdate: {
-            id: questionId,
-            updates: { questionData: updatedQuestionData },
-          },
-        }),
-      });
-
-      console.log("[answerQuestion] Sending reply to OpenCode:", {
-        projectId: currentProjectId,
-        requestId,
-        answersCount: answers.length,
-      });
-
-      const response = await fetch("/api/opencode/question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId: currentProjectId,
-          requestId,
-          answers,
-        }),
-      });
-
-      if (!response.ok || !response.body) {
-        const statusText = response.ok
-          ? "No response body"
-          : `HTTP ${response.status}`;
-        console.error("[answerQuestion] Failed to submit answer:", statusText);
-        markQuestionError(`Failed to submit answer: ${statusText}`);
-        return;
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value);
-        const lines = text.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              console.log("[answerQuestion] SSE event:", data);
-
-              if (data.type === "error") {
-                markQuestionError(
-                  data.error || "Failed to submit answer to AI",
-                );
-                return;
-              }
-            } catch {
-              continue;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("[answerQuestion] Failed to submit answer:", errorMessage);
-      markQuestionError(`Failed to submit answer: ${errorMessage}`);
-    }
-  },
-
   setOpenCodeBusy: (busy) => {
     set({ isOpenCodeBusy: busy });
   },
@@ -715,73 +401,6 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   },
 
   setSessionStatus: (status) => {
-    set({
-      sessionStatus: status.type,
-      retryAttempt: status.type === "retry" ? status.attempt : undefined,
-    });
-  },
-
-  setActivityToggleLevel: (level) => {
-    set({ activityToggleLevel: level });
-  },
-
-  updateToolState: (partId, state, toolName = "unknown") => {
-    set((current) => {
-      const newMap = new Map(current.currentToolStates);
-      newMap.set(partId, { state, toolName });
-      return { currentToolStates: newMap };
-    });
-  },
-
-  clearToolStates: () => {
-    set({ currentToolStates: new Map() });
-  },
-
-  handleStreamEvent: (event) => {
-    const { setSessionStatus, updateToolState, addQuestion } = get();
-
-    switch (event.type) {
-      case "part": {
-        const part = event.part;
-        if (part.type === "tool") {
-          const toolPart = part as ToolPart;
-          updateToolState(toolPart.id, toolPart.state, toolPart.tool);
-        }
-        break;
-      }
-      case "status": {
-        setSessionStatus(event.sessionStatus);
-        break;
-      }
-      case "question": {
-        const questionRequest = event.data;
-        const questionData: QuestionData = {
-          requestId: questionRequest.requestId,
-          sessionId: questionRequest.sessionId,
-          questions: questionRequest.questions.map((q) => ({
-            ...q,
-            options: q.options.map((opt) => ({
-              label: opt.label,
-              description: opt.description ?? "",
-            })),
-          })),
-          answered: false,
-        };
-        addQuestion(questionData);
-        break;
-      }
-      case "error": {
-        console.error("[ProjectStore] Stream error:", event.error);
-        break;
-      }
-      case "done": {
-        set({ sessionStatus: "idle" });
-        break;
-      }
-      case "file.edited": {
-        console.log("[ProjectStore] File edited:", event.file);
-        break;
-      }
-    }
+    set({ sessionStatus: status });
   },
 }));

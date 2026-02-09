@@ -1,5 +1,3 @@
-import type { Part, StreamActivity } from "@/types/opencode-events";
-
 export type ContentType =
   | "blog"
   | "white-paper"
@@ -45,8 +43,6 @@ export interface Message {
   readonly content: string;
   readonly timestamp: Date;
   readonly questionData?: QuestionData;
-  readonly parts?: Part[];
-  readonly activities?: StreamActivity[];
   readonly error?: boolean;
   readonly errorMessage?: string;
   readonly status?: MessageStatus;
@@ -130,18 +126,3 @@ export interface Project {
 export type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
-
-export interface OpenCodeSession {
-  sessionId: string;
-  projectId: string;
-  isActive: boolean;
-  lastActivity: Date;
-}
-
-export interface StreamChunk {
-  type: "content" | "status" | "done" | "error" | "question";
-  content?: string;
-  error?: string;
-  sessionId?: string;
-  questionData?: QuestionData;
-}
