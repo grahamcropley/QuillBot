@@ -285,6 +285,15 @@ UI updates: File Explorer + Preview refresh
 
 See [AGENTS.md](./AGENTS.md) for detailed development guidelines and architecture decisions.
 
+## Agent-Chat Packages
+
+This project depends on private `@agent-chat/*` packages that are vendored as tarballs. See [AGENT_CHAT_PACKAGES.md](./AGENT_CHAT_PACKAGES.md) for:
+
+- Package management workflow
+- Update procedures
+- 3-phase deployment pipeline
+- Troubleshooting
+
 ## License
 
 MIT
