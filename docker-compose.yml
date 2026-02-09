@@ -9,6 +9,11 @@ services:
       HOME: /app
       XDG_CONFIG_HOME: /app/.config
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      # Provider API Keys (loaded from .env or environment)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      ZAI_CODING_PLAN_API_KEY: ${ZAI_CODING_PLAN_API_KEY:-}
     volumes:
       - type: bind
         source: ./data

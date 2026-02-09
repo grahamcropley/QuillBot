@@ -109,7 +109,28 @@ jobs:
               configShareName="$CONFIG_SHARE_NAME" \
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
-              opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}"
+              opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
+              openrouterApiKey="${{ secrets.OPENROUTER_API_KEY }}" \
+              openaiApiKey="${{ secrets.OPENAI_API_KEY }}" \
+              minimaxApiKey="${{ secrets.MINIMAX_API_KEY }}" \
+              zaiCodingPlanApiKey="${{ secrets.ZAI_CODING_PLAN_API_KEY }}"
+
+      - name: Upload OpenCode config to Azure Files
+        run: |
+          echo "Generating GitHub Copilot auth file..."
+          mkdir -p opencode-config/github-copilot
+          cat > opencode-config/github-copilot/hosts.json <<EOF
+          {
+            "github.com": {
+              "oauth_token": "${{ secrets.COPILOT_OAUTH_TOKEN }}",
+              "user": "oauth"
+            }
+          }
+          EOF
+
+          echo "Uploading config files to Azure Files..."
+          chmod +x scripts/upload-config-to-azure.sh
+          ./scripts/upload-config-to-azure.sh "$AZURE_STORAGE_ACCOUNT_NAME" "$CONFIG_SHARE_NAME"
 
       - name: Configure Easy Auth (Microsoft Entra ID)
         if: ${{ env.ENTRA_CLIENT_ID != '' && env.ENTRA_TENANT_ID != '' }}

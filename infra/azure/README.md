@@ -24,9 +24,15 @@ Required:
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 
-Optional:
+Optional (API keys for OpenCode providers):
 
 - `OPENCODE_API_KEY` (if your OpenCode server expects auth)
+- `OPENROUTER_API_KEY` (for OpenRouter provider)
+- `OPENAI_API_KEY` (for OpenAI provider)
+- `MINIMAX_API_KEY` (for Minimax provider)
+- `ZAI_CODING_PLAN_API_KEY` (for ZAI Coding Plan provider)
+
+**Note**: GitHub Copilot authentication is configured via `opencode-config/github-copilot/hosts.json` (uploaded to Azure Files).
 
 ## GitHub Actions Variables
 
@@ -53,24 +59,56 @@ Optional overrides:
 - `OPENCODE_IMAGE_NAME` (default: `quillbot-opencode`)
 - `OPENCODE_VERSION` (default: `latest`)
 
-## Config Upload (auth.json)
+## Config Upload
 
 After the first deploy, upload OpenCode config files to the Azure Files share
 named by `CONFIG_SHARE_NAME`:
 
 ```bash
+# Upload opencode.json
 az storage file upload \
   --account-name <storage-account> \
   --share-name <config-share> \
-  --source auth.json
+  --source opencode-config/opencode.json \
+  --path opencode.json
+
+# Upload commands directory
+az storage directory create \
+  --account-name <storage-account> \
+  --share-name <config-share> \
+  --name commands
+
+for file in opencode-config/commands/*.md; do
+  az storage file upload \
+    --account-name <storage-account> \
+    --share-name <config-share> \
+    --source "$file" \
+    --path "commands/$(basename "$file")"
+done
+
+# Upload GitHub Copilot auth
+az storage directory create \
+  --account-name <storage-account> \
+  --share-name <config-share> \
+  --name github-copilot
+
+az storage file upload \
+  --account-name <storage-account> \
+  --share-name <config-share> \
+  --source opencode-config/github-copilot/hosts.json \
+  --path github-copilot/hosts.json
 ```
 
-Repeat for `config.json` if you use it.
+**Important**: Do NOT upload `auth.json` (deprecated). Provider API keys are now configured via GitHub Secrets and passed as environment variables.
 
 ## Provider Keys
 
-OpenCode still needs provider credentials (Anthropic/OpenAI/etc.). Add them as
-container app env vars in Azure (or extend the workflow to set them).
+OpenCode provider credentials are configured via GitHub Actions secrets (see above) and passed as environment variables to the container. This is more secure than storing them in files.
+
+If you need to update provider keys:
+
+1. Update the corresponding GitHub Actions secret
+2. Redeploy the application (push to main or trigger workflow manually)
 
 ## Authentication (Easy Auth)
 

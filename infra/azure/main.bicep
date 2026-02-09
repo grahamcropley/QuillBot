@@ -11,6 +11,10 @@ param configShareName string = 'opencode-config'
 param webImage string
 param opencodeImage string
 param opencodeApiKey string = ''
+param openrouterApiKey string = ''
+param openaiApiKey string = ''
+param minimaxApiKey string = ''
+param zaiCodingPlanApiKey string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
 
@@ -133,6 +137,30 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'opencode-api-key'
             value: opencodeApiKey
           }
+        ] : [],
+        openrouterApiKey != '' ? [
+          {
+            name: 'openrouter-api-key'
+            value: openrouterApiKey
+          }
+        ] : [],
+        openaiApiKey != '' ? [
+          {
+            name: 'openai-api-key'
+            value: openaiApiKey
+          }
+        ] : [],
+        minimaxApiKey != '' ? [
+          {
+            name: 'minimax-api-key'
+            value: minimaxApiKey
+          }
+        ] : [],
+        zaiCodingPlanApiKey != '' ? [
+          {
+            name: 'zai-coding-plan-api-key'
+            value: zaiCodingPlanApiKey
+          }
         ] : []
       )
     }
@@ -193,6 +221,30 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
               {
                 name: 'OPENCODE_API_KEY'
                 secretRef: 'opencode-api-key'
+              }
+            ] : [],
+            openrouterApiKey != '' ? [
+              {
+                name: 'OPENROUTER_API_KEY'
+                secretRef: 'openrouter-api-key'
+              }
+            ] : [],
+            openaiApiKey != '' ? [
+              {
+                name: 'OPENAI_API_KEY'
+                secretRef: 'openai-api-key'
+              }
+            ] : [],
+            minimaxApiKey != '' ? [
+              {
+                name: 'MINIMAX_API_KEY'
+                secretRef: 'minimax-api-key'
+              }
+            ] : [],
+            zaiCodingPlanApiKey != '' ? [
+              {
+                name: 'ZAI_CODING_PLAN_API_KEY'
+                secretRef: 'zai-coding-plan-api-key'
               }
             ] : []
           )

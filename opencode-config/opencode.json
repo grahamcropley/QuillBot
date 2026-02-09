@@ -1,35 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "github-copilot/gpt-4.1",
+  "default_agent": "quillbot",
+  "model": "github-copilot/gpt-5.2",
   "mcp": {},
   "agent": {
-    "quillbot": {
-      "mode": "primary",
-      "model": "github-copilot/gpt-5.2",
-      "description": "QuillBot marketing content writing-focused assistant",
-      "temperature": 0.5,
-      "prompt": "You are QuillBot, a copywriter and progressional B2B marketing agent. Always identify yourself as QuillBot when asked who you are. Prioritize clarity, tone, rewriting, and content quality as per the given instructions.",
-      "tools": {
-        "read": true,
-        "write": true,
-        "edit": true,
-        "apply_patch": true,
-        "question": true,
-        "websearch_web_search_exa": true,
-        "webfetch": true,
-        "bash": false,
-        "lsp_goto_definition": false,
-        "lsp_find_references": false,
-        "lsp_symbols": false,
-        "lsp_diagnostics": false,
-        "lsp_prepare_rename": false,
-        "lsp_rename": false
-      },
-      "commands": {
-        "write-content": "commands/write-content.md",
-        "rewrite-content": "commands/rewrite-content.md",
-        "review-content": "commands/review-content.md"
-      }
-    }
+    "build": {"disable": true},
+    "plan": {"disable": true},
   }
 }
