@@ -12,7 +12,7 @@ Minimal, focused server and agent configuration.
 
 **Key Settings:**
 
-- **Model**: `{env:AZURE_MODEL}` (for example `azure/gpt-5.2-chat`)
+- **Model**: `{env:AZURE_MODEL}` (for example `gpt-5.2-chat`)
 - **Temperature**: 0.7 (balanced creativity/consistency)
 - **Server Port**: 9090
 - **Environment**: development
@@ -94,6 +94,7 @@ This runs `start-opencode.sh` which:
 ## Notes
 
 - All config files are **gitignored** (except README.md and CONFIG.md)
-- Provider credentials come from environment variables (`AZURE_API_KEY`, `AZURE_RESOURCE_NAME`)
+- Provider credentials come from environment variables (`AZURE_API_KEY`, `AZURE_RESOURCE_NAME`).
+- The Azure OpenAI endpoint is derived by OpenCode from `AZURE_RESOURCE_NAME` (no `baseURL` override in `opencode.json`).
 - Commands are markdown files with embedded system instructions
 - Commands are designed to integrate with the question tool for user interaction
