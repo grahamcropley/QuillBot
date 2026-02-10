@@ -19,7 +19,6 @@ env:
   AZURE_LOG_ANALYTICS_NAME: ${{ vars.AZURE_LOG_ANALYTICS_NAME }}
   AZURE_STORAGE_ACCOUNT_NAME: ${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
   AZURE_RESOURCE_NAME: ${{ vars.AZURE_RESOURCE_NAME }}
-  AZURE_MODEL: ${{ vars.AZURE_MODEL || 'azure/gpt-5.2-chat' }}
   DATA_SHARE_NAME: ${{ vars.DATA_SHARE_NAME || 'quillbot-data' }}
   CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
   WEB_IMAGE_NAME: ${{ vars.WEB_IMAGE_NAME || 'quillbot-web' }}
@@ -165,7 +164,6 @@ jobs:
               opencodeImage="$OPENCODE_IMAGE" \
               configRevision="$CONFIG_REV" \
               azureResourceName="$AZURE_RESOURCE_NAME" \
-              azureModel="$AZURE_MODEL" \
               opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
               azureApiKey="${{ secrets.AZURE_API_KEY }}"
 
