@@ -23,7 +23,7 @@ The **QuillBot** agent is configured as a primary agent specialized for content 
 - ❌ Task delegation: delegate, todo (not available)
 - ❌ Language Server: lsp (disabled)
 
-**Model:** `{env:AZURE_MODEL}` (for example `azure/gpt-5.2-chat`)
+**Model:** `{env:AZURE_MODEL}` (for example `gpt-5.2-chat`)
 
 **Configuration:** Defined in `opencode.json` under `agent.quillbot`
 

@@ -11,7 +11,7 @@ services:
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
       AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME:-}
       AZURE_API_KEY: ${AZURE_API_KEY:-}
-      AZURE_MODEL: ${AZURE_MODEL:-azure/gpt-5.2-chat}
+      AZURE_MODEL: ${AZURE_MODEL:-gpt-5.2-chat}
     volumes:
       - type: bind
         source: ./data

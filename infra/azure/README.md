@@ -44,7 +44,7 @@ Set these repository variables:
 - `AZURE_LOG_ANALYTICS_NAME`
 - `AZURE_STORAGE_ACCOUNT_NAME` (globally unique, lowercase)
 - `AZURE_RESOURCE_NAME` (Azure OpenAI resource name)
-- `AZURE_MODEL` (default: `azure/gpt-5.2-chat`, must match deployed model/deployment name)
+- `AZURE_MODEL` (default: `gpt-5.2-chat`, must match deployed model/deployment name)
 
 Authentication (for Easy Auth with Entra ID):
 

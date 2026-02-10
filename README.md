@@ -75,7 +75,7 @@ OPENCODE_API_URL=http://localhost:9090
 OPENCODE_API_KEY=                    # Optional
 AZURE_RESOURCE_NAME=
 AZURE_API_KEY=
-AZURE_MODEL=azure/gpt-5.2-chat
+ AZURE_MODEL=gpt-5.2-chat
 
 # Simulate Azure Easy Auth user for local development
 # Format: email|display_name
@@ -106,7 +106,7 @@ export OPENCODE_API_KEY=
 # Azure OpenAI / Foundry provider
 export AZURE_RESOURCE_NAME=
 export AZURE_API_KEY=
-export AZURE_MODEL=azure/gpt-5.2-chat
+ export AZURE_MODEL=gpt-5.2-chat
 
 # Start the stack
 docker compose up --build
