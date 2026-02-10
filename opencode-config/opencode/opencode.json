@@ -10,6 +10,13 @@
         "apiKey": "{env:AZURE_API_KEY}",
         "baseURL": "https://{env:AZURE_RESOURCE_NAME}.cognitiveservices.azure.com/openai",
         "apiVersion": "2025-04-01-preview"
+      },
+      "models": {
+        "gpt-5.2-chat": {
+          "options": {
+            "useCompletionUrls": true
+          }
+        }
       }
     }
   },
