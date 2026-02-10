@@ -20,14 +20,14 @@ A content authoring platform that connects to a headless OpenCode server, guidin
 
 ### Prerequisites
 
-1. **Node.js 18+** and npm/yarn/pnpm
+1. **Node.js 18+** and pnpm (via Corepack recommended)
 2. **OpenCode server** running on `http://localhost:9090`
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 ```
 
 ### Running the Development Environment
@@ -194,29 +194,29 @@ data/projects/{projectId}/
 
 ```bash
 # Development server
-npm run dev
+pnpm dev
 
 # Production build
-npm run build
+pnpm build
 
 # Type checking
-npm run typecheck
+pnpm typecheck
 
 # Linting
-npm run lint
-npm run lint:fix
+pnpm lint
+pnpm lint:fix
 
 # Format code
-npm run format
+pnpm format
 
 # Run tests
-npm test
+pnpm test
 
 # Run single test file
-npm test -- path/to/test.spec.ts
+pnpm test -- path/to/test.spec.ts
 
 # Watch mode
-npm test -- --watch
+pnpm test -- --watch
 ```
 
 ### Tech Stack
@@ -287,7 +287,7 @@ See [AGENTS.md](./AGENTS.md) for detailed development guidelines and architectur
 
 ## Agent-Chat Packages
 
-This project depends on private `@agent-chat/*` packages that are vendored as tarballs. See [AGENT_CHAT_PACKAGES.md](./AGENT_CHAT_PACKAGES.md) for:
+This project uses internal `@agent-chat/*` workspace packages from `packages/*`. See [AGENT_CHAT_PACKAGES.md](./AGENT_CHAT_PACKAGES.md) for:
 
 - Package management workflow
 - Update procedures

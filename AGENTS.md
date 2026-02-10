@@ -5,6 +5,7 @@
 ## Project Overview
 
 This is a content authoring platform that:
+
 1. Connects to a headless OpenCode server configured with `/write-content` command
 2. Guides users through a curated content creation journey
 3. Provides real-time markdown preview and inline editing
@@ -31,36 +32,43 @@ This is a content authoring platform that:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Development server
-npm run dev
+pnpm dev
 
 # Production build
-npm run build
+pnpm build
 
 # Type checking
-npm run typecheck
+pnpm typecheck
 
 # Linting
-npm run lint
-npm run lint:fix
+pnpm lint
+pnpm lint:fix
 
 # Format code
-npm run format
+pnpm format
 
 # Run all tests
-npm test
+pnpm test
 
 # Run single test file
-npm test -- path/to/test.spec.ts
+pnpm test -- path/to/test.spec.ts
 
 # Run tests matching pattern
-npm test -- -t "pattern"
+pnpm test -- -t "pattern"
 
 # Run tests in watch mode
-npm test -- --watch
+pnpm test -- --watch
 ```
+
+### Monorepo Notes
+
+- Package manager is pinned in `package.json` via `packageManager`
+- Workspaces are defined in `pnpm-workspace.yaml`
+- Internal AgentChat packages live under `packages/*` and are consumed via `workspace:*`
+- Install and run commands from repo root (not inside `packages/*`)
 
 ---
 
@@ -117,31 +125,31 @@ const DEFAULT_CONFIG = {
 
 ```typescript
 // Order: 1) React/Next 2) External 3) Internal 4) Types 5) Styles
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
-import { z } from 'zod';
-import { create } from 'zustand';
+import { z } from "zod";
+import { create } from "zustand";
 
-import { OpenCodeClient } from '@/lib/opencode';
-import { ProjectCard } from '@/components/project-card';
+import { OpenCodeClient } from "@/lib/opencode";
+import { ProjectCard } from "@/components/project-card";
 
-import type { Project, Message } from '@/types';
+import type { Project, Message } from "@/types";
 
-import './styles.css';
+import "./styles.css";
 ```
 
 ### Naming Conventions
 
-| Entity | Convention | Example |
-|--------|------------|---------|
-| Components | PascalCase | `ProjectSelector.tsx` |
-| Hooks | camelCase, `use` prefix | `useOpenCodeStream.ts` |
-| Utilities | camelCase | `parseMarkdown.ts` |
-| Types/Interfaces | PascalCase | `ContentType`, `Project` |
-| Constants | SCREAMING_SNAKE | `MAX_WORD_COUNT` |
-| Files | kebab-case | `project-selector.tsx` |
-| Folders | kebab-case | `components/starter-form/` |
+| Entity           | Convention              | Example                    |
+| ---------------- | ----------------------- | -------------------------- |
+| Components       | PascalCase              | `ProjectSelector.tsx`      |
+| Hooks            | camelCase, `use` prefix | `useOpenCodeStream.ts`     |
+| Utilities        | camelCase               | `parseMarkdown.ts`         |
+| Types/Interfaces | PascalCase              | `ContentType`, `Project`   |
+| Constants        | SCREAMING_SNAKE         | `MAX_WORD_COUNT`           |
+| Files            | kebab-case              | `project-selector.tsx`     |
+| Folders          | kebab-case              | `components/starter-form/` |
 
 ### Component Structure
 
@@ -158,15 +166,15 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onSelect, isActive = false }: ProjectCardProps) {
   // 1. Hooks first
   const router = useRouter();
-  
+
   // 2. Derived state
   const formattedDate = formatDate(project.updatedAt);
-  
+
   // 3. Handlers
   const handleClick = useCallback(() => {
     onSelect(project.id);
   }, [project.id, onSelect]);
-  
+
   // 4. Render
   return (
     <div onClick={handleClick} data-active={isActive}>
@@ -180,7 +188,7 @@ export function ProjectCard({ project, onSelect, isActive = false }: ProjectCard
 
 ```typescript
 // Use Result type for operations that can fail
-type Result<T, E = Error> = 
+type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
 
@@ -214,7 +222,7 @@ interface ProjectState {
   currentProject: Project | null;
   projects: Project[];
   isLoading: boolean;
-  
+
   // Actions
   selectProject: (id: string) => void;
   createProject: (name: string) => Promise<void>;
@@ -225,9 +233,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   currentProject: null,
   projects: [],
   isLoading: false,
-  
+
   selectProject: (id) => {
-    const project = get().projects.find(p => p.id === id);
+    const project = get().projects.find((p) => p.id === id);
     set({ currentProject: project ?? null });
   },
   // ...
@@ -239,6 +247,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 ## Directory Structure
 
 ```
+packages/
+├── react/                  # @agent-chat/react
+├── server-core/            # @agent-chat/server-core
+└── server-next/            # @agent-chat/server-next
+pnpm-workspace.yaml         # Workspace package globs
+
 src/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx
@@ -284,11 +298,11 @@ describe('ProjectCard', () => {
   it('calls onSelect with project id when clicked', async () => {
     const onSelect = vi.fn();
     const project = createMockProject({ id: 'proj-1' });
-    
+
     render(<ProjectCard project={project} onSelect={onSelect} />);
-    
+
     await userEvent.click(screen.getByRole('button'));
-    
+
     expect(onSelect).toHaveBeenCalledWith('proj-1');
   });
 });
@@ -318,14 +332,16 @@ describe('Content Creation Flow', () => {
 // Form selections → prepended sentences
 function buildPrompt(form: StarterForm, brief: string): string {
   const sentences: string[] = [];
-  
-  sentences.push(`Create a ${form.contentType} with approximately ${form.wordCount} words.`);
-  
+
+  sentences.push(
+    `Create a ${form.contentType} with approximately ${form.wordCount} words.`,
+  );
+
   if (form.styleHints) {
     sentences.push(`Style guidance: ${form.styleHints}`);
   }
-  
-  return [...sentences, '', 'Brief:', brief].join('\n');
+
+  return [...sentences, "", "Brief:", brief].join("\n");
 }
 ```
 

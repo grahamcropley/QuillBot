@@ -2,6 +2,7 @@
   "name": "loopup-quillbot",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "dev": "next dev",
     "dev:poll": "next dev --webpack",
@@ -20,9 +21,9 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@agent-chat/react": "file:./agent-chat-react-0.1.0.tgz",
-    "@agent-chat/server-core": "file:./agent-chat-server-core-0.1.0.tgz",
-    "@agent-chat/server-next": "file:./agent-chat-server-next-0.1.0.tgz",
+    "@agent-chat/react": "workspace:*",
+    "@agent-chat/server-core": "workspace:*",
+    "@agent-chat/server-next": "workspace:*",
     "@codemirror/commands": "^6.10.1",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.12.1",
@@ -51,6 +52,7 @@
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

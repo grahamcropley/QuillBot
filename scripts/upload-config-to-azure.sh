@@ -14,7 +14,7 @@ echo "1. Uploading opencode.json..."
 az storage file upload \
   --account-name "$STORAGE_ACCOUNT" \
   --share-name "$CONFIG_SHARE" \
-  --source opencode-config/opencode.json \
+  --source opencode-config/opencode/opencode.json \
   --path opencode.json
 
 echo "✓ opencode.json uploaded"
@@ -28,7 +28,7 @@ az storage directory create \
   2>/dev/null || echo "Directory already exists"
 
 echo "3. Uploading command definitions..."
-for file in opencode-config/commands/*.md; do
+for file in opencode-config/opencode/commands/*.md; do
   filename=$(basename "$file")
   echo "  - $filename"
   az storage file upload \
@@ -49,15 +49,15 @@ az storage directory create \
   2>/dev/null || echo "Directory already exists"
 
 echo "5. Uploading GitHub Copilot auth..."
-if [ -f "opencode-config/github-copilot/hosts.json" ]; then
+if [ -f "opencode-config/opencode/github-copilot/hosts.json" ]; then
   az storage file upload \
     --account-name "$STORAGE_ACCOUNT" \
     --share-name "$CONFIG_SHARE" \
-    --source opencode-config/github-copilot/hosts.json \
+    --source opencode-config/opencode/github-copilot/hosts.json \
     --path github-copilot/hosts.json
   echo "✓ GitHub Copilot auth uploaded"
 else
-  echo "⚠ Warning: opencode-config/github-copilot/hosts.json not found"
+  echo "⚠ Warning: opencode-config/opencode/github-copilot/hosts.json not found"
   echo "  GitHub Copilot authentication will not work without this file"
 fi
 

@@ -118,8 +118,8 @@ jobs:
       - name: Upload OpenCode config to Azure Files
         run: |
           echo "Generating GitHub Copilot auth file..."
-          mkdir -p opencode-config/github-copilot
-          cat > opencode-config/github-copilot/hosts.json <<EOF
+          mkdir -p opencode-config/opencode/github-copilot
+          cat > opencode-config/opencode/github-copilot/hosts.json <<EOF
           {
             "github.com": {
               "oauth_token": "${{ secrets.COPILOT_OAUTH_TOKEN }}",

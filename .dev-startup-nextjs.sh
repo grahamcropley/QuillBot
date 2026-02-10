@@ -8,4 +8,4 @@ if [ -f "/home/graham/github/QuillBot/.env.local" ]; then
   export $(grep -v '^#' /home/graham/github/QuillBot/.env.local | xargs)
 fi
 sleep 2
-exec npm run dev
+exec pnpm dev
