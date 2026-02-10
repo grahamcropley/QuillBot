@@ -1,0 +1,33 @@
+{
+  "name": "@agent-chat/server-core",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Framework-agnostic core state and OpenCode event integration for AgentChat",
+  "license": "UNLICENSED",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "pack:check": "pnpm run build && pnpm pack --dry-run"
+  },
+  "dependencies": {
+    "@opencode-ai/sdk": "^1.1.53"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  }
+}

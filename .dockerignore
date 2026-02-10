@@ -12,6 +12,3 @@ yarn-error.log*
 pnpm-debug.log*
 .env
 .env.*
-
-# Include vendored agent-chat packages
-!agent-chat-*.tgz
