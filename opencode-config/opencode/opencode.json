@@ -8,15 +8,9 @@
     "azure": {
       "options": {
         "apiKey": "{env:AZURE_API_KEY}",
-        "apiVersion": "v1"
       },
       "models": {
         "gpt-5.2-chat": {
-          "options": {
-            "useCompletionUrls": true
-          }
-        },
-        "azure/gpt-5.2-chat": {
           "options": {
             "useCompletionUrls": true
           }
