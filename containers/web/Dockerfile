@@ -14,7 +14,6 @@ RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 COPY --from=deps /app/node_modules /app/node_modules
 COPY . .
 RUN pnpm run build
-RUN pnpm prune --prod
 
 FROM node:20-slim AS runner
 WORKDIR /app
