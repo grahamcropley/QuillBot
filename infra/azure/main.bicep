@@ -219,6 +219,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                 name: 'AZURE_RESOURCE_NAME'
                 value: azureResourceName
               }
+              {
+                name: 'AZURE_MODEL'
+                value: azureModel
+              }
             ],
             opencodeApiKey != '' ? [
               {
