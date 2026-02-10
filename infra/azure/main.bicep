@@ -4,17 +4,20 @@ param location string = resourceGroup().location
 param appName string = 'quillbot'
 param environmentName string = '${appName}-env'
 param logAnalyticsName string = '${appName}-logs'
+param deployApp bool = true
 param acrName string
 param storageAccountName string
 param dataShareName string = 'quillbot-data'
 param configShareName string = 'opencode-config'
-param webImage string
-param opencodeImage string
+param webImage string = ''
+param opencodeImage string = ''
 param opencodeApiKey string = ''
+param copilotOAuthToken string = ''
 param openrouterApiKey string = ''
 param openaiApiKey string = ''
 param minimaxApiKey string = ''
 param zaiCodingPlanApiKey string = ''
+param configRevision string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
 
@@ -102,7 +105,7 @@ resource configStorage 'Microsoft.App/managedEnvironments/storages@2023-05-01' =
 
 var acrCredentials = listCredentials(acr.id, '2023-07-01')
 
-resource app 'Microsoft.App/containerApps@2023-05-01' = {
+resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
   name: appName
   location: location
   dependsOn: [
@@ -136,6 +139,12 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           {
             name: 'opencode-api-key'
             value: opencodeApiKey
+          }
+        ] : [],
+        copilotOAuthToken != '' ? [
+          {
+            name: 'copilot-oauth-token'
+            value: copilotOAuthToken
           }
         ] : [],
         openrouterApiKey != '' ? [
@@ -174,6 +183,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
               {
                 name: 'OPENCODE_API_URL'
                 value: 'http://localhost:9090'
+              }
+              {
+                name: 'CONFIG_REV'
+                value: configRevision
               }
             ],
             opencodeApiKey != '' ? [
@@ -216,11 +229,21 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
                 name: 'XDG_CONFIG_HOME'
                 value: '/app/.config'
               }
+              {
+                name: 'CONFIG_REV'
+                value: configRevision
+              }
             ],
             opencodeApiKey != '' ? [
               {
                 name: 'OPENCODE_API_KEY'
                 secretRef: 'opencode-api-key'
+              }
+            ] : [],
+            copilotOAuthToken != '' ? [
+              {
+                name: 'COPILOT_OAUTH_TOKEN'
+                secretRef: 'copilot-oauth-token'
               }
             ] : [],
             openrouterApiKey != '' ? [
@@ -283,5 +306,3 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
     }
   }
 }
-
-output webUrl string = 'https://${app.properties.configuration.ingress.fqdn}'

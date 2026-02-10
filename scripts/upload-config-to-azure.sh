@@ -41,25 +41,14 @@ done
 echo "✓ Commands uploaded"
 echo ""
 
-echo "4. Creating github-copilot directory..."
-az storage directory create \
+echo "4. Removing deprecated github-copilot auth file from config share..."
+az storage file delete \
   --account-name "$STORAGE_ACCOUNT" \
   --share-name "$CONFIG_SHARE" \
-  --name github-copilot \
-  2>/dev/null || echo "Directory already exists"
+  --path github-copilot/hosts.json \
+  2>/dev/null || echo "No deprecated github-copilot/hosts.json found"
 
-echo "5. Uploading GitHub Copilot auth..."
-if [ -f "opencode-config/opencode/github-copilot/hosts.json" ]; then
-  az storage file upload \
-    --account-name "$STORAGE_ACCOUNT" \
-    --share-name "$CONFIG_SHARE" \
-    --source opencode-config/opencode/github-copilot/hosts.json \
-    --path github-copilot/hosts.json
-  echo "✓ GitHub Copilot auth uploaded"
-else
-  echo "⚠ Warning: opencode-config/opencode/github-copilot/hosts.json not found"
-  echo "  GitHub Copilot authentication will not work without this file"
-fi
+echo "✓ Config share contains non-secret files only"
 
 echo ""
 echo "✓ Upload complete!"

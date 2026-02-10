@@ -9,6 +9,7 @@ services:
       HOME: /app
       XDG_CONFIG_HOME: /app/.config
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      COPILOT_OAUTH_TOKEN: ${COPILOT_OAUTH_TOKEN:-}
       # Provider API Keys (loaded from .env or environment)
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}

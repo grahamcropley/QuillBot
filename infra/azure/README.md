@@ -27,12 +27,11 @@ Required:
 Optional (API keys for OpenCode providers):
 
 - `OPENCODE_API_KEY` (if your OpenCode server expects auth)
+- `COPILOT_OAUTH_TOKEN` (for GitHub Copilot provider auth)
 - `OPENROUTER_API_KEY` (for OpenRouter provider)
 - `OPENAI_API_KEY` (for OpenAI provider)
 - `MINIMAX_API_KEY` (for Minimax provider)
 - `ZAI_CODING_PLAN_API_KEY` (for ZAI Coding Plan provider)
-
-**Note**: GitHub Copilot authentication is configured via `opencode-config/opencode/github-copilot/hosts.json` (uploaded to Azure Files).
 
 ## GitHub Actions Variables
 
@@ -61,7 +60,7 @@ Optional overrides:
 
 ## Config Upload
 
-After the first deploy, upload OpenCode config files to the Azure Files share
+After infrastructure and file shares exist, upload non-secret OpenCode config files to the Azure Files share
 named by `CONFIG_SHARE_NAME`:
 
 ```bash
@@ -85,30 +84,29 @@ for file in opencode-config/opencode/commands/*.md; do
     --source "$file" \
     --path "commands/$(basename "$file")"
 done
-
-# Upload GitHub Copilot auth
-az storage directory create \
-  --account-name <storage-account> \
-  --share-name <config-share> \
-  --name github-copilot
-
-az storage file upload \
-  --account-name <storage-account> \
-  --share-name <config-share> \
-  --source opencode-config/opencode/github-copilot/hosts.json \
-  --path github-copilot/hosts.json
 ```
 
-**Important**: Do NOT upload `auth.json` (deprecated). Provider API keys are now configured via GitHub Secrets and passed as environment variables.
+**Important**: Do NOT upload `auth.json` or token-bearing files like `github-copilot/hosts.json`. Provider credentials are configured via GitHub Secrets and passed as environment variables.
 
 ## Provider Keys
 
-OpenCode provider credentials are configured via GitHub Actions secrets (see above) and passed as environment variables to the container. This is more secure than storing them in files.
+OpenCode provider credentials are configured via GitHub Actions secrets (see above) and passed as environment variables to the container. This is more secure than storing them in mounted files.
 
 If you need to update provider keys:
 
 1. Update the corresponding GitHub Actions secret
 2. Redeploy the application (push to main or trigger workflow manually)
+
+## Deployment Order
+
+The GitHub Actions workflow follows this sequence:
+
+1. Build and push container images to ACR
+2. Ensure infra resources and Azure Files shares exist
+3. Upload non-secret config files to the config share
+4. Update Container App secrets from GitHub secrets (when app exists)
+5. Deploy/update the Container App revision with image tags and `CONFIG_REV`
+6. Run health checks against running status and ingress endpoint
 
 ## Authentication (Easy Auth)
 

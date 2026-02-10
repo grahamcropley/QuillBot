@@ -73,6 +73,7 @@ Create a `.env.local` file in the root directory:
 ```env
 OPENCODE_API_URL=http://localhost:9090
 OPENCODE_API_KEY=                    # Optional
+COPILOT_OAUTH_TOKEN=                 # Optional (for GitHub Copilot provider)
 
 # Simulate Azure Easy Auth user for local development
 # Format: email|display_name
@@ -100,6 +101,9 @@ export OPENCODE_IMAGE=ghcr.io/ohmyopencode/opencode:latest
 # Optional: API key if your OpenCode server enforces auth
 export OPENCODE_API_KEY=
 
+# Optional: GitHub Copilot OAuth token (if using Copilot provider)
+export COPILOT_OAUTH_TOKEN=
+
 # Start the stack
 docker compose up --build
 ```
@@ -110,6 +114,7 @@ Open the UI at [http://localhost:3000](http://localhost:3000).
 
 - Bind mount location: `./data` on host → `/app/data` in both containers
 - OpenCode config: `./opencode-config` on host → `/app/.config/opencode`
+- Keep secrets in environment variables; do not store token-bearing auth files in `opencode-config`
 - Web Dockerfile: `containers/web/Dockerfile`
 - If your OpenCode server needs provider keys (e.g. Anthropic/OpenAI), add them
   to the `opencode` service environment in `docker-compose.yml`.

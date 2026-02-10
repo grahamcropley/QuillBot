@@ -90,15 +90,83 @@ jobs:
             OPENCODE_VERSION=${{ env.OPENCODE_VERSION }}
           tags: ${{ steps.acr.outputs.loginServer }}/${{ env.OPENCODE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-      - name: Deploy Container Apps
+      - name: Ensure infrastructure and file shares
+        run: |
+          az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep \
+            --parameters \
+              deployApp=false \
+              location="$AZURE_LOCATION" \
+              appName="$AZURE_APP_NAME" \
+              environmentName="$AZURE_ENV_NAME" \
+              logAnalyticsName="$AZURE_LOG_ANALYTICS_NAME" \
+              acrName="$AZURE_ACR_NAME" \
+              storageAccountName="$AZURE_STORAGE_ACCOUNT_NAME" \
+              dataShareName="$DATA_SHARE_NAME" \
+              configShareName="$CONFIG_SHARE_NAME"
+
+      - name: Upload OpenCode config to Azure Files
+        run: |
+          echo "Uploading config files to Azure Files..."
+          chmod +x scripts/upload-config-to-azure.sh
+          ./scripts/upload-config-to-azure.sh "$AZURE_STORAGE_ACCOUNT_NAME" "$CONFIG_SHARE_NAME"
+
+      - name: Update Container App secrets
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          COPILOT_OAUTH_TOKEN: ${{ secrets.COPILOT_OAUTH_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          ZAI_CODING_PLAN_API_KEY: ${{ secrets.ZAI_CODING_PLAN_API_KEY }}
+        run: |
+          if ! az containerapp show --name "$AZURE_APP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" > /dev/null 2>&1; then
+            echo "Container App not created yet; secrets will be applied during deployment"
+            exit 0
+          fi
+
+          SECRET_ARGS=()
+          if [ -n "$OPENCODE_API_KEY" ]; then
+            SECRET_ARGS+=("opencode-api-key=$OPENCODE_API_KEY")
+          fi
+          if [ -n "$COPILOT_OAUTH_TOKEN" ]; then
+            SECRET_ARGS+=("copilot-oauth-token=$COPILOT_OAUTH_TOKEN")
+          fi
+          if [ -n "$OPENROUTER_API_KEY" ]; then
+            SECRET_ARGS+=("openrouter-api-key=$OPENROUTER_API_KEY")
+          fi
+          if [ -n "$OPENAI_API_KEY" ]; then
+            SECRET_ARGS+=("openai-api-key=$OPENAI_API_KEY")
+          fi
+          if [ -n "$MINIMAX_API_KEY" ]; then
+            SECRET_ARGS+=("minimax-api-key=$MINIMAX_API_KEY")
+          fi
+          if [ -n "$ZAI_CODING_PLAN_API_KEY" ]; then
+            SECRET_ARGS+=("zai-coding-plan-api-key=$ZAI_CODING_PLAN_API_KEY")
+          fi
+
+          if [ ${#SECRET_ARGS[@]} -eq 0 ]; then
+            echo "No non-empty secrets configured; skipping secret update"
+            exit 0
+          fi
+
+          az containerapp secret set \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --secrets "${SECRET_ARGS[@]}"
+
+      - name: Deploy/Update Container App revision
         run: |
           WEB_IMAGE="${{ steps.acr.outputs.loginServer }}/${WEB_IMAGE_NAME}:${IMAGE_TAG}"
           OPENCODE_IMAGE="${{ steps.acr.outputs.loginServer }}/${OPENCODE_IMAGE_NAME}:${IMAGE_TAG}"
+          CONFIG_REV="${IMAGE_TAG}-${GITHUB_RUN_NUMBER}"
 
           az deployment group create \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file infra/azure/main.bicep \
             --parameters \
+              deployApp=true \
               location="$AZURE_LOCATION" \
               appName="$AZURE_APP_NAME" \
               environmentName="$AZURE_ENV_NAME" \
@@ -109,28 +177,13 @@ jobs:
               configShareName="$CONFIG_SHARE_NAME" \
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
+              configRevision="$CONFIG_REV" \
               opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
+              copilotOAuthToken="${{ secrets.COPILOT_OAUTH_TOKEN }}" \
               openrouterApiKey="${{ secrets.OPENROUTER_API_KEY }}" \
               openaiApiKey="${{ secrets.OPENAI_API_KEY }}" \
               minimaxApiKey="${{ secrets.MINIMAX_API_KEY }}" \
               zaiCodingPlanApiKey="${{ secrets.ZAI_CODING_PLAN_API_KEY }}"
-
-      - name: Upload OpenCode config to Azure Files
-        run: |
-          echo "Generating GitHub Copilot auth file..."
-          mkdir -p opencode-config/opencode/github-copilot
-          cat > opencode-config/opencode/github-copilot/hosts.json <<EOF
-          {
-            "github.com": {
-              "oauth_token": "${{ secrets.COPILOT_OAUTH_TOKEN }}",
-              "user": "oauth"
-            }
-          }
-          EOF
-
-          echo "Uploading config files to Azure Files..."
-          chmod +x scripts/upload-config-to-azure.sh
-          ./scripts/upload-config-to-azure.sh "$AZURE_STORAGE_ACCOUNT_NAME" "$CONFIG_SHARE_NAME"
 
       - name: Configure Easy Auth (Microsoft Entra ID)
         if: ${{ env.ENTRA_CLIENT_ID != '' && env.ENTRA_TENANT_ID != '' }}
@@ -163,3 +216,47 @@ jobs:
           else
             echo "Easy Auth already enabled, skipping configuration"
           fi
+
+      - name: Health check
+        run: |
+          FQDN=$(az containerapp show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+
+          if [ -z "$FQDN" ]; then
+            echo "No ingress FQDN found for container app"
+            exit 1
+          fi
+
+          for attempt in {1..20}; do
+            STATUS=$(az containerapp show \
+              --name "$AZURE_APP_NAME" \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --query "properties.runningStatus" -o tsv)
+            if [ "$STATUS" = "Running" ]; then
+              break
+            fi
+            echo "Waiting for Running status (attempt $attempt/20): $STATUS"
+            sleep 15
+          done
+
+          STATUS=$(az containerapp show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.runningStatus" -o tsv)
+          if [ "$STATUS" != "Running" ]; then
+            echo "Container app is not Running (status: $STATUS)"
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -sS -L -o /dev/null -w "%{http_code}" "https://$FQDN")
+          case "$HTTP_CODE" in
+            200|302|401)
+              echo "Health probe returned HTTP $HTTP_CODE"
+              ;;
+            *)
+              echo "Unexpected health probe code: $HTTP_CODE"
+              exit 1
+              ;;
+          esac
