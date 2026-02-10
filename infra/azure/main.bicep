@@ -14,7 +14,6 @@ param opencodeImage string = ''
 param opencodeApiKey string = ''
 param azureApiKey string = ''
 param azureResourceName string = ''
-param azureModel string = 'azure/gpt-5.2-chat'
 param configRevision string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
@@ -166,10 +165,6 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                 name: 'AZURE_RESOURCE_NAME'
                 value: azureResourceName
               }
-              {
-                name: 'AZURE_MODEL'
-                value: azureModel
-              }
             ],
             opencodeApiKey != '' ? [
               {
@@ -201,29 +196,29 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
             '9090'
             '--print-logs'
           ]
-          env: concat(
-            [
-              {
-                name: 'HOME'
-                value: '/app'
-              }
-              {
-                name: 'XDG_CONFIG_HOME'
-                value: '/app/.config'
-              }
-              {
-                name: 'CONFIG_REV'
-                value: configRevision
-              }
-              {
-                name: 'AZURE_RESOURCE_NAME'
-                value: azureResourceName
-              }
-              {
-                name: 'AZURE_MODEL'
-                value: azureModel
-              }
-            ],
+           env: concat(
+             [
+               {
+                 name: 'HOME'
+                 value: '/app'
+               }
+               {
+                 name: 'XDG_CONFIG_HOME'
+                 value: '/app/.config'
+               }
+               {
+                 name: 'CONFIG_REV'
+                 value: configRevision
+               }
+               {
+                 name: 'AZURE_RESOURCE_NAME'
+                 value: azureResourceName
+               }
+               {
+                 name: 'OPENCODE_ENABLE_EXA'
+                 value: '1'
+               }
+             ],
             opencodeApiKey != '' ? [
               {
                 name: 'OPENCODE_API_KEY'
