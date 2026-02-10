@@ -42,9 +42,7 @@ export function useAgentChatInitialMessage(
       }
 
       try {
-        let effectiveSessionId = sessionId;
-
-        if (!effectiveSessionId) {
+        const createSession = async () => {
           const createSessionResponse = await fetch("/api/sessions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -60,12 +58,24 @@ export function useAgentChatInitialMessage(
             );
           }
 
-          const sessionData = await createSessionResponse.json();
-          effectiveSessionId = sessionData.id;
+          const sessionData = (await createSessionResponse.json()) as {
+            id?: string;
+          };
+
+          if (!sessionData.id) {
+            throw new Error("Failed to create session: missing id");
+          }
 
           if (isMountedRef.current) {
-            onSuccess?.(effectiveSessionId);
+            onSuccess?.(sessionData.id);
           }
+
+          return sessionData.id;
+        };
+
+        let effectiveSessionId = sessionId;
+        if (!effectiveSessionId) {
+          effectiveSessionId = await createSession();
         }
 
         const messageBody: {
@@ -96,14 +106,25 @@ export function useAgentChatInitialMessage(
           messageBody.content = `${contextContent}\n\nBrief:\n${content}`;
         }
 
-        const messageResponse = await fetch(
-          `/api/sessions/${encodeURIComponent(effectiveSessionId)}/messages`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(messageBody),
-          },
-        );
+        const sendMessage = async (nextSessionId: string) => {
+          return fetch(
+            `/api/sessions/${encodeURIComponent(nextSessionId)}/messages`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(messageBody),
+            },
+          );
+        };
+
+        let messageResponse = await sendMessage(effectiveSessionId);
+
+        // If the sessionId is persisted in our project store but no longer exists in OpenCode
+        // (e.g. after opencode restarts), recreate the session and retry once.
+        if (messageResponse.status === 404) {
+          effectiveSessionId = await createSession();
+          messageResponse = await sendMessage(effectiveSessionId);
+        }
 
         if (!messageResponse.ok) {
           const errorText = await messageResponse.text();
