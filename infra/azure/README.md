@@ -32,7 +32,7 @@ Optional (API keys for OpenCode providers):
 - `MINIMAX_API_KEY` (for Minimax provider)
 - `ZAI_CODING_PLAN_API_KEY` (for ZAI Coding Plan provider)
 
-**Note**: GitHub Copilot authentication is configured via `opencode-config/github-copilot/hosts.json` (uploaded to Azure Files).
+**Note**: GitHub Copilot authentication is configured via `opencode-config/opencode/github-copilot/hosts.json` (uploaded to Azure Files).
 
 ## GitHub Actions Variables
 
@@ -69,7 +69,7 @@ named by `CONFIG_SHARE_NAME`:
 az storage file upload \
   --account-name <storage-account> \
   --share-name <config-share> \
-  --source opencode-config/opencode.json \
+  --source opencode-config/opencode/opencode.json \
   --path opencode.json
 
 # Upload commands directory
@@ -78,7 +78,7 @@ az storage directory create \
   --share-name <config-share> \
   --name commands
 
-for file in opencode-config/commands/*.md; do
+for file in opencode-config/opencode/commands/*.md; do
   az storage file upload \
     --account-name <storage-account> \
     --share-name <config-share> \
@@ -95,7 +95,7 @@ az storage directory create \
 az storage file upload \
   --account-name <storage-account> \
   --share-name <config-share> \
-  --source opencode-config/github-copilot/hosts.json \
+  --source opencode-config/opencode/github-copilot/hosts.json \
   --path github-copilot/hosts.json
 ```
 
