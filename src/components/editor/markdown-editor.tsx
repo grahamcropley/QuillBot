@@ -140,6 +140,7 @@ const themeCompartment = new Compartment();
 const readOnlyCompartment = new Compartment();
 
 const externalUpdateSource = StateEffect.define<"ai" | "system">();
+const externalAiHighlightRanges = StateEffect.define<Array<[number, number]>>();
 
 const appendUserChangeRanges = StateEffect.define<Array<[number, number]>>();
 const appendAiChangeRanges = StateEffect.define<Array<[number, number]>>();
@@ -228,6 +229,234 @@ function computeMinimalChange(
     to: endOld,
     insert: newText.slice(start, endNew),
   };
+}
+
+function buildLineStartOffsets(text: string): number[] {
+  const lines = text.split("\n");
+  const starts = new Array<number>(lines.length);
+  let offset = 0;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    starts[i] = offset;
+    offset += lines[i].length;
+    if (i < lines.length - 1) {
+      offset += 1;
+    }
+  }
+
+  return starts;
+}
+
+function buildLcsMatches(
+  oldLines: string[],
+  newLines: string[],
+): Array<{ oldIndex: number; newIndex: number }> {
+  const n = oldLines.length;
+  const m = newLines.length;
+
+  if (n === 0 || m === 0) {
+    return [];
+  }
+
+  const maxCells = 80_000;
+  if (n * m > maxCells) {
+    return [];
+  }
+
+  const dp = Array.from({ length: n + 1 }, () =>
+    new Array<number>(m + 1).fill(0),
+  );
+
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      if (oldLines[i] === newLines[j]) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+
+  const matches: Array<{ oldIndex: number; newIndex: number }> = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < n && j < m) {
+    if (oldLines[i] === newLines[j]) {
+      matches.push({ oldIndex: i, newIndex: j });
+      i += 1;
+      j += 1;
+      continue;
+    }
+
+    if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i += 1;
+    } else {
+      j += 1;
+    }
+  }
+
+  return matches;
+}
+
+function appendLineRange(
+  ranges: Array<[number, number]>,
+  lineStarts: number[],
+  lines: string[],
+  lineIndex: number,
+  docLength: number,
+): void {
+  const startOffset = lineStarts[lineIndex];
+  if (typeof startOffset !== "number") return;
+
+  const lineText = lines[lineIndex] ?? "";
+  const endOffset = Math.min(docLength, startOffset + lineText.length);
+  if (endOffset > startOffset) {
+    ranges.push([startOffset, endOffset]);
+  }
+}
+
+function appendUnmatchedNewLineRanges(
+  ranges: Array<[number, number]>,
+  oldSlice: string[],
+  newSlice: string[],
+  globalNewStart: number,
+  globalNewLineStarts: number[],
+  fullNewLines: string[],
+  newTextLength: number,
+): void {
+  if (newSlice.length === 0) return;
+
+  const localMatches = buildLcsMatches(oldSlice, newSlice);
+  if (localMatches.length === 0) {
+    for (let i = 0; i < newSlice.length; i += 1) {
+      appendLineRange(
+        ranges,
+        globalNewLineStarts,
+        fullNewLines,
+        globalNewStart + i,
+        newTextLength,
+      );
+    }
+    return;
+  }
+
+  let prevNew = -1;
+
+  const sentinelMatches = [
+    ...localMatches,
+    { oldIndex: oldSlice.length, newIndex: newSlice.length },
+  ];
+
+  for (const match of sentinelMatches) {
+    const newStart = prevNew + 1;
+    const newEnd = match.newIndex - 1;
+
+    if (newStart <= newEnd) {
+      for (let i = newStart; i <= newEnd; i += 1) {
+        appendLineRange(
+          ranges,
+          globalNewLineStarts,
+          fullNewLines,
+          globalNewStart + i,
+          newTextLength,
+        );
+      }
+    }
+
+    prevNew = match.newIndex;
+  }
+}
+
+function normalizeRanges(
+  ranges: Array<[number, number]>,
+): Array<[number, number]> {
+  if (ranges.length <= 1) return ranges;
+
+  const sorted = ranges
+    .filter(([from, to]) => to > from)
+    .sort((a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]));
+
+  if (sorted.length <= 1) return sorted;
+
+  const merged: Array<[number, number]> = [sorted[0]];
+  for (let i = 1; i < sorted.length; i += 1) {
+    const [from, to] = sorted[i];
+    const last = merged[merged.length - 1];
+    if (from <= last[1]) {
+      last[1] = Math.max(last[1], to);
+    } else {
+      merged.push([from, to]);
+    }
+  }
+
+  return merged;
+}
+
+function computeAiHighlightRanges(
+  oldText: string,
+  newText: string,
+): Array<[number, number]> {
+  if (oldText === newText) {
+    return [];
+  }
+
+  const oldLines = oldText.split("\n");
+  const newLines = newText.split("\n");
+  const matches = buildLcsMatches(oldLines, newLines);
+
+  if (matches.length === 0) {
+    const minimal = computeMinimalChange(oldText, newText);
+    const start = minimal.from;
+    const end = minimal.from + minimal.insert.length;
+    if (end > start) {
+      return [[start, end]];
+    }
+    return [];
+  }
+
+  const newLineStarts = buildLineStartOffsets(newText);
+  const ranges: Array<[number, number]> = [];
+  let prevOld = -1;
+  let prevNew = -1;
+
+  const sentinelMatches = [
+    ...matches,
+    { oldIndex: oldLines.length, newIndex: newLines.length },
+  ];
+
+  for (const match of sentinelMatches) {
+    const oldStart = prevOld + 1;
+    const oldEnd = match.oldIndex - 1;
+    const newStart = prevNew + 1;
+    const newEnd = match.newIndex - 1;
+
+    const oldChanged = oldStart <= oldEnd;
+    const newChanged = newStart <= newEnd;
+
+    if (newChanged) {
+      if (oldChanged) {
+        appendUnmatchedNewLineRanges(
+          ranges,
+          oldLines.slice(oldStart, oldEnd + 1),
+          newLines.slice(newStart, newEnd + 1),
+          newStart,
+          newLineStarts,
+          newLines,
+          newText.length,
+        );
+      } else {
+        for (let i = newStart; i <= newEnd; i += 1) {
+          appendLineRange(ranges, newLineStarts, newLines, i, newText.length);
+        }
+      }
+    }
+
+    prevOld = match.oldIndex;
+    prevNew = match.newIndex;
+  }
+
+  return normalizeRanges(ranges);
 }
 
 const userChangeHighlightField = StateField.define<DecorationSet>({
@@ -425,10 +654,14 @@ export const MarkdownEditor = forwardRef<
     const handleUpdate = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         let source: "ai" | "system" | null = null;
+        let aiRangesOverride: Array<[number, number]> | null = null;
         for (const tr of update.transactions) {
           for (const eff of tr.effects) {
             if (eff.is(externalUpdateSource)) {
               source = eff.value;
+            }
+            if (eff.is(externalAiHighlightRanges)) {
+              aiRangesOverride = eff.value;
             }
           }
         }
@@ -440,10 +673,15 @@ export const MarkdownEditor = forwardRef<
         }
 
         const ranges = rangesFromChanges(update.changes);
-        if (ranges.length > 0) {
-          if (source === "ai") {
-            update.view.dispatch({ effects: appendAiChangeRanges.of(ranges) });
-          } else if (source === null) {
+        if (source === "ai") {
+          const aiRanges = aiRangesOverride ?? ranges;
+          if (aiRanges.length > 0) {
+            update.view.dispatch({
+              effects: appendAiChangeRanges.of(aiRanges),
+            });
+          }
+        } else if (ranges.length > 0) {
+          if (source === null) {
             update.view.dispatch({
               effects: appendUserChangeRanges.of(ranges),
             });
@@ -546,13 +784,24 @@ export const MarkdownEditor = forwardRef<
     const currentContent = editor.state.doc.toString();
     if (currentContent !== content) {
       const minimal = computeMinimalChange(currentContent, content);
+      const effects: Array<StateEffect<unknown>> = [
+        externalUpdateSource.of(externalUpdateSourceProp),
+      ];
+
+      if (externalUpdateSourceProp === "ai") {
+        const aiRanges = computeAiHighlightRanges(currentContent, content);
+        if (aiRanges.length > 0) {
+          effects.push(externalAiHighlightRanges.of(aiRanges));
+        }
+      }
+
       editor.dispatch({
         changes: {
           from: minimal.from,
           to: minimal.to,
           insert: minimal.insert,
         },
-        effects: externalUpdateSource.of(externalUpdateSourceProp),
+        effects,
       });
     }
   }, [content, externalUpdateSourceProp]);

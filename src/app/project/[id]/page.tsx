@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Download, PenLine, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, PenLine } from "lucide-react";
 import { AgentChat } from "@agent-chat/react";
 import { MarkdownPreview } from "@/components/preview";
 import { AnalysisPanel } from "@/components/analysis";
@@ -49,6 +49,8 @@ interface ImportMetadata {
   contentType: ContentType;
   targetWordCount: number;
 }
+
+const AI_EXTERNAL_UPDATE_GRACE_MS = 5000;
 
 function parseImportMetadata(content: string): ImportMetadata | null {
   const match = content.match(
@@ -267,6 +269,10 @@ export default function ProjectPage() {
   const [liveExternalUpdateSource, setLiveExternalUpdateSource] = useState<
     "ai" | "system"
   >("system");
+  const [chatStatus, setChatStatus] = useState<"idle" | "busy" | "retry">(
+    "idle",
+  );
+  const lastBusyAtRef = useRef<number>(0);
 
   const prevActiveFilePathRef = useRef<string | null>(activeFilePath);
   const prevSyncedContentRef = useRef<string>(syncedContent);
@@ -275,23 +281,26 @@ export default function ProjectPage() {
     // File switches should never be attributed as AI edits.
     if (prevActiveFilePathRef.current !== activeFilePath) {
       setLiveExternalUpdateSource("system");
+      prevSyncedContentRef.current = syncedContent;
     }
     prevActiveFilePathRef.current = activeFilePath;
-  }, [activeFilePath]);
+  }, [activeFilePath, syncedContent]);
 
   useEffect(() => {
-    // One-shot: after we observe the disk content update, reset attribution.
-    if (liveExternalUpdateSource !== "ai") {
-      prevSyncedContentRef.current = syncedContent;
+    if (syncedContent === prevSyncedContentRef.current) {
       return;
     }
 
-    if (syncedContent !== prevSyncedContentRef.current) {
-      setLiveExternalUpdateSource("system");
-    }
+    const wasRecentlyBusy =
+      Date.now() - lastBusyAtRef.current <= AI_EXTERNAL_UPDATE_GRACE_MS;
+    const nextSource: "ai" | "system" =
+      chatStatus === "busy" || chatStatus === "retry" || wasRecentlyBusy
+        ? "ai"
+        : "system";
 
+    setLiveExternalUpdateSource(nextSource);
     prevSyncedContentRef.current = syncedContent;
-  }, [liveExternalUpdateSource, syncedContent]);
+  }, [chatStatus, syncedContent]);
 
   const [hasNewerLiveUpdates, setHasNewerLiveUpdates] = useState(false);
   const lastLiveContentRef = useRef<string>("");
@@ -321,8 +330,18 @@ export default function ProjectPage() {
   // Track draft.md content separately for analysis (regardless of selected file)
   const [draftContent, setDraftContent] = useState<string>("");
 
-  const isStreaming = false;
+  const isStreaming = chatStatus === "busy" || chatStatus === "retry";
   const streamSessionId = currentProject?.opencodeSessionId ?? null;
+
+  const handleChatStatusChange = useCallback(
+    (status: "idle" | "busy" | "retry") => {
+      setChatStatus(status);
+      if (status === "busy" || status === "retry") {
+        lastBusyAtRef.current = Date.now();
+      }
+    },
+    [],
+  );
 
   const { sendInitialMessage } = useAgentChatInitialMessage({
     projectId,
@@ -488,6 +507,7 @@ export default function ProjectPage() {
     if (
       currentProject &&
       currentProject.messages.length === 0 &&
+      !currentProject.opencodeSessionId &&
       !isStreaming &&
       !hasInitialized.current.has(currentProject.id)
     ) {
@@ -496,7 +516,7 @@ export default function ProjectPage() {
         ? buildImportProcessingPrompt(currentProject.reviewFilename)
         : currentProject.brief;
     }
-  }, [currentProject]);
+  }, [currentProject, isStreaming]);
 
   // Handle pending initial message outside of the main effect
   useEffect(() => {
@@ -524,11 +544,9 @@ export default function ProjectPage() {
             : undefined,
           commandArgs,
         });
-      } else {
-        void handleSendMessage(pendingMessage, true);
       }
     }
-  }, [handleSendMessage, sendInitialMessage, currentProject, streamSessionId]);
+  }, [sendInitialMessage, currentProject, streamSessionId]);
 
   const handleRetryMessage = useCallback(
     async (message: Message) => {
@@ -692,7 +710,9 @@ export default function ProjectPage() {
     }
   }, []);
 
-  const handleDeleteProject = useCallback(async () => {
+  const handleDeleteProject = useCallback(() => {
+    setProjectInfoSaveError("");
+    setIsProjectInfoModalOpen(false);
     setIsDeleteModalOpen(true);
   }, []);
 
@@ -840,7 +860,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-hidden">
+    <div className="flex h-full flex-col gap-3 overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={handleBackClick}>
@@ -884,14 +904,6 @@ export default function ProjectPage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button
-            variant="ghost"
-            onClick={handleDeleteProject}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </Button>
         </div>
       </div>
 
@@ -903,7 +915,7 @@ export default function ProjectPage() {
           style={{ width: leftPanelWidth > 0 ? leftPanelWidth : "35%" }}
           className="flex-shrink-0 flex flex-col min-h-0 min-w-[500px]"
         >
-          <Card className="flex flex-1 flex-col overflow-hidden h-full rounded-r-none border-r-0">
+          <Card className="flex flex-1 flex-col overflow-hidden h-full">
             <CardHeader className="flex-shrink-0 pb-2">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Conversation
@@ -918,6 +930,7 @@ export default function ProjectPage() {
                   directory={currentProject.directoryPath}
                   placeholder="Ask the agent anything..."
                   className="quill-agent-chat h-full"
+                  onStatusChange={handleChatStatusChange}
                   contextItems={contextItems}
                   onClearContext={handleClearContext}
                 />
@@ -935,8 +948,8 @@ export default function ProjectPage() {
           <div className="h-8 w-1 bg-gray-300 rounded-full group-hover:bg-blue-500" />
         </button>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-3 pr-4 overflow-hidden">
-          <div className="flex flex-wrap gap-3 pr-2">
+        <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+          <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[240px] max-h-[400px] overflow-hidden">
               <PanelErrorBoundary panelName="file-explorer">
                 <FileExplorer
@@ -965,10 +978,7 @@ export default function ProjectPage() {
             </div>
           </div>
 
-          <div
-            ref={previewRef}
-            className="flex-1 min-h-0 overflow-hidden pr-4 pb-4"
-          >
+          <div ref={previewRef} className="flex-1 min-h-0 overflow-hidden">
             <PanelErrorBoundary panelName="preview">
               <MarkdownPreview
                 key={activeFilePath ?? "no-file"}
@@ -1129,6 +1139,7 @@ export default function ProjectPage() {
         }}
         onSave={handleSaveProjectInfo}
         onGenerateSummary={handleGenerateAiSummary}
+        onDelete={handleDeleteProject}
         isGeneratingSummary={isGeneratingSummary}
       />
     </div>

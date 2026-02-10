@@ -35,6 +35,8 @@ interface RawMessage {
       input?: {
         [key: string]: unknown;
       };
+      output?: string;
+      error?: string;
       metadata?: {
         [key: string]: unknown;
       };
@@ -59,6 +61,81 @@ export interface SendMessageOptions {
   contextItems?: ContextItem[];
 }
 
+const PSEUDO_MESSAGES_STORAGE_PREFIX = "agent-chat:pseudo-messages:";
+
+function getPseudoMessagesStorageKey(sessionId: string): string {
+  return `${PSEUDO_MESSAGES_STORAGE_PREFIX}${sessionId}`;
+}
+
+function isQaEntry(
+  value: unknown,
+): value is { header: string; answers: string[] } {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.header === "string" &&
+    Array.isArray(value.answers) &&
+    value.answers.every((answer) => typeof answer === "string")
+  );
+}
+
+function isPseudoMessage(value: unknown): value is Message {
+  if (!isRecord(value)) return false;
+  return (
+    value.pseudo === true &&
+    typeof value.id === "string" &&
+    typeof value.sessionId === "string" &&
+    (value.role === "user" || value.role === "assistant") &&
+    typeof value.createdAt === "number" &&
+    Array.isArray(value.parts) &&
+    Array.isArray(value.qaAnswers) &&
+    value.qaAnswers.every(isQaEntry)
+  );
+}
+
+function readPseudoMessagesFromStorage(sessionId: string): Message[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(
+      getPseudoMessagesStorageKey(sessionId),
+    );
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(isPseudoMessage);
+  } catch {
+    return [];
+  }
+}
+
+function writePseudoMessagesToStorage(
+  sessionId: string,
+  pseudoMessages: Message[],
+): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      getPseudoMessagesStorageKey(sessionId),
+      JSON.stringify(pseudoMessages),
+    );
+  } catch {
+    // Ignore storage failures and continue with in-memory state.
+  }
+}
+
+function mergeUniquePseudoMessages(messages: Message[]): Message[] {
+  const byId = new Map<string, Message>();
+  for (const message of messages) {
+    byId.set(message.id, message);
+  }
+  const merged = Array.from(byId.values());
+  merged.sort((a, b) => a.createdAt - b.createdAt);
+  return merged;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -77,11 +154,16 @@ function mergeToolPayload(
   };
 }
 
-function mapParts(
-  rawParts: RawMessage["parts"],
-): MessagePart[] {
+function mapParts(rawParts: RawMessage["parts"]): MessagePart[] {
   return rawParts.map((p) => {
     const metadata = isRecord(p.state?.metadata) ? p.state.metadata : undefined;
+    const toolPayload = mergeToolPayload(p.state?.input, metadata);
+
+    const enrichedToolPayload =
+      p.state?.error && p.state.error.trim().length > 0
+        ? { ...(toolPayload ?? {}), error: p.state.error }
+        : toolPayload;
+
     return {
       id: p.id,
       type: p.type,
@@ -89,7 +171,7 @@ function mapParts(
       tool: p.tool,
       toolStatus: p.state?.status as MessagePart["toolStatus"],
       toolTitle: p.state?.title,
-      toolInput: mergeToolPayload(p.state?.input, metadata),
+      toolInput: enrichedToolPayload,
     };
   });
 }
@@ -139,13 +221,15 @@ function mapQuestionRequest(raw: RawQuestionRequest): QuestionRequest {
   return {
     id: raw.id,
     sessionId: raw.sessionID,
-    questions: raw.questions.map((q): QuestionInfo => ({
-      question: q.question,
-      header: q.header,
-      options: q.options,
-      multiple: q.multiple,
-      custom: q.custom,
-    })),
+    questions: raw.questions.map(
+      (q): QuestionInfo => ({
+        question: q.question,
+        header: q.header,
+        options: q.options,
+        multiple: q.multiple,
+        custom: q.custom,
+      }),
+    ),
   };
 }
 
@@ -160,26 +244,41 @@ export function useChat({
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingQuestion, setPendingQuestion] = useState<QuestionRequest | null>(null);
+  const [pendingQuestion, setPendingQuestion] =
+    useState<QuestionRequest | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pseudoMessagesRef = useRef<Message[]>([]);
   const displayOverridesRef = useRef<Map<string, DisplayOverride>>(new Map());
   const onMessagesChangeRef = useRef(onMessagesChange);
   const onStatusChangeRef = useRef(onStatusChange);
 
-  onMessagesChangeRef.current = onMessagesChange;
-  onStatusChangeRef.current = onStatusChange;
+  useEffect(() => {
+    onMessagesChangeRef.current = onMessagesChange;
+  }, [onMessagesChange]);
+
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    onStatusChangeRef.current?.(status);
+  }, [status]);
 
   useEffect(() => {
     if (!sessionId) return;
+
+    const initialPseudoMessages = readPseudoMessagesFromStorage(sessionId);
 
     setMessages([]);
     setError(null);
     setStatus("idle");
     setPendingQuestion(null);
-    pseudoMessagesRef.current = [];
+    pseudoMessagesRef.current = initialPseudoMessages;
 
-    const eventUrl = new URL(`${backendUrl}/api/sessions/${sessionId}/events`, window.location.origin);
+    const eventUrl = new URL(
+      `${backendUrl}/api/sessions/${sessionId}/events`,
+      window.location.origin,
+    );
     if (directory) {
       eventUrl.searchParams.set("directory", directory);
     }
@@ -193,7 +292,10 @@ export function useChat({
       return merged;
     };
 
-    const handleMessages = (raw: RawMessage[], serverOverrides?: Record<string, DisplayOverride>) => {
+    const handleMessages = (
+      raw: RawMessage[],
+      serverOverrides?: Record<string, DisplayOverride>,
+    ) => {
       if (serverOverrides) {
         for (const [key, override] of Object.entries(serverOverrides)) {
           if (!displayOverridesRef.current.has(key)) {
@@ -217,14 +319,18 @@ export function useChat({
       handleMessages(data.messages, data.displayOverrides);
       const newStatus = data.status.type as SessionStatus;
       setStatus(newStatus);
-      onStatusChangeRef.current?.(newStatus);
-      setPendingQuestion(data.question ? mapQuestionRequest(data.question) : null);
+      setPendingQuestion(
+        data.question ? mapQuestionRequest(data.question) : null,
+      );
     });
 
     eventSource.addEventListener("messages", (e: MessageEvent) => {
       const data = JSON.parse(e.data) as
         | RawMessage[]
-        | { messages: RawMessage[]; displayOverrides?: Record<string, DisplayOverride> };
+        | {
+            messages: RawMessage[];
+            displayOverrides?: Record<string, DisplayOverride>;
+          };
 
       if (Array.isArray(data)) {
         handleMessages(data);
@@ -236,12 +342,7 @@ export function useChat({
     eventSource.addEventListener("status", (e: MessageEvent) => {
       const raw = JSON.parse(e.data) as { type: string };
       const newStatus = raw.type as SessionStatus;
-      setStatus((prev) => {
-        if (prev !== newStatus) {
-          onStatusChangeRef.current?.(newStatus);
-        }
-        return newStatus;
-      });
+      setStatus((prev) => (prev === newStatus ? prev : newStatus));
     });
 
     eventSource.addEventListener("question", (e: MessageEvent) => {
@@ -280,7 +381,10 @@ export function useChat({
       }
 
       try {
-        const messageUrl = new URL(`${backendUrl}/api/sessions/${sessionId}/messages`, window.location.origin);
+        const messageUrl = new URL(
+          `${backendUrl}/api/sessions/${sessionId}/messages`,
+          window.location.origin,
+        );
         if (directory) {
           messageUrl.searchParams.set("directory", directory);
         }
@@ -301,23 +405,23 @@ export function useChat({
           }));
         }
 
-        const res = await fetch(
-          messageUrl.toString(),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-            signal: abortRef.current.signal,
-          },
-        );
+        const res = await fetch(messageUrl.toString(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: abortRef.current.signal,
+        });
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({})) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? `Send failed: ${res.status}`);
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        const message = err instanceof Error ? err.message : "Failed to send message";
+        const message =
+          err instanceof Error ? err.message : "Failed to send message";
         setError(message);
       } finally {
         setIsLoading(false);
@@ -340,29 +444,40 @@ export function useChat({
         );
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({})) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? `Reply failed: ${res.status}`);
         }
 
         setPendingQuestion(null);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to submit answer";
+        const message =
+          err instanceof Error ? err.message : "Failed to submit answer";
         setError(message);
       }
     },
     [backendUrl],
   );
 
-  const addPseudoMessage = useCallback((message: Message) => {
-    pseudoMessagesRef.current = [...pseudoMessagesRef.current, message];
-    setMessages((prev) => {
-      const serverMessages = prev.filter((m) => !m.pseudo);
-      const merged = [...serverMessages, ...pseudoMessagesRef.current];
-      merged.sort((a, b) => a.createdAt - b.createdAt);
-      onMessagesChangeRef.current?.(merged);
-      return merged;
-    });
-  }, []);
+  const addPseudoMessage = useCallback(
+    (message: Message) => {
+      pseudoMessagesRef.current = mergeUniquePseudoMessages([
+        ...pseudoMessagesRef.current,
+        message,
+      ]);
+      writePseudoMessagesToStorage(sessionId, pseudoMessagesRef.current);
+
+      setMessages((prev) => {
+        const serverMessages = prev.filter((m) => !m.pseudo);
+        const merged = [...serverMessages, ...pseudoMessagesRef.current];
+        merged.sort((a, b) => a.createdAt - b.createdAt);
+        onMessagesChangeRef.current?.(merged);
+        return merged;
+      });
+    },
+    [sessionId],
+  );
 
   const rejectQuestion = useCallback(
     async (requestId: string) => {
@@ -375,13 +490,16 @@ export function useChat({
         );
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({})) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? `Reject failed: ${res.status}`);
         }
 
         setPendingQuestion(null);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to reject question";
+        const message =
+          err instanceof Error ? err.message : "Failed to reject question";
         setError(message);
       }
     },

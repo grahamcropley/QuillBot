@@ -41,7 +41,8 @@ function createMockEventSourceClass() {
       close: vi.fn(),
       onerror: null,
       addEventListener(event: string, cb: (e: MessageEvent) => void) {
-        if (!mockESInstance.listeners[event]) mockESInstance.listeners[event] = [];
+        if (!mockESInstance.listeners[event])
+          mockESInstance.listeners[event] = [];
         mockESInstance.listeners[event].push(cb);
       },
       removeEventListener() {},
@@ -61,7 +62,11 @@ function emitSSE(event: string, data: unknown) {
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", createMockEventSourceClass());
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }),
+  );
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -83,8 +88,20 @@ describe("AgentChat", () => {
 
   it("renders messages from SSE snapshot", async () => {
     const messages: Message[] = [
-      { id: "m1", sessionId: "ses_1", role: "user", createdAt: 1, parts: [{ id: "p1", type: "text", text: "Hello" }] },
-      { id: "m2", sessionId: "ses_1", role: "assistant", createdAt: 2, parts: [{ id: "p2", type: "text", text: "Hi there!" }] },
+      {
+        id: "m1",
+        sessionId: "ses_1",
+        role: "user",
+        createdAt: 1,
+        parts: [{ id: "p1", type: "text", text: "Hello" }],
+      },
+      {
+        id: "m2",
+        sessionId: "ses_1",
+        role: "assistant",
+        createdAt: 2,
+        parts: [{ id: "p2", type: "text", text: "Hi there!" }],
+      },
     ];
 
     render(<AgentChat sessionId="ses_1" />);
@@ -110,7 +127,9 @@ describe("AgentChat", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Ask me anything...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Ask me anything..."),
+      ).toBeInTheDocument();
     });
   });
 
@@ -122,7 +141,9 @@ describe("AgentChat", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /send message/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /send message/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -139,7 +160,9 @@ describe("AgentChat", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /send message/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /send message/i }),
+      ).toBeInTheDocument();
     });
 
     await user.type(screen.getByPlaceholderText("Type a message..."), "hello");
@@ -150,7 +173,9 @@ describe("AgentChat", () => {
     });
 
     const calls = vi.mocked(fetch).mock.calls;
-    const messageCall = calls.find((call) => String(call[0]).includes("/api/sessions/ses_1/messages"));
+    const messageCall = calls.find((call) =>
+      String(call[0]).includes("/api/sessions/ses_1/messages"),
+    );
     expect(messageCall).toBeDefined();
 
     const messageUrl = new URL(String(messageCall?.[0]));
@@ -169,7 +194,13 @@ describe("AgentChat", () => {
     });
 
     const messages: Message[] = [
-      { id: "m1", sessionId: "ses_1", role: "user", createdAt: 1, parts: [{ id: "p1", type: "text", text: "New message" }] },
+      {
+        id: "m1",
+        sessionId: "ses_1",
+        role: "user",
+        createdAt: 1,
+        parts: [{ id: "p1", type: "text", text: "New message" }],
+      },
     ];
 
     act(() => {
@@ -181,8 +212,7 @@ describe("AgentChat", () => {
     });
   });
 
-  it("collapses consecutive activity items and expands on demand", async () => {
-    const user = userEvent.setup();
+  it("renders consecutive activity items without collapse controls", async () => {
     const messages: Message[] = [
       {
         id: "m-activity",
@@ -191,9 +221,24 @@ describe("AgentChat", () => {
         createdAt: 10,
         parts: [
           { id: "p-text", type: "text", text: "Running a few actions." },
-          { id: "p-tool-1", type: "tool", toolStatus: "completed", toolTitle: "first.txt" },
-          { id: "p-tool-2", type: "tool", toolStatus: "completed", toolTitle: "second.txt" },
-          { id: "p-tool-3", type: "tool", toolStatus: "completed", toolTitle: "third.txt" },
+          {
+            id: "p-tool-1",
+            type: "tool",
+            toolStatus: "completed",
+            toolTitle: "first.txt",
+          },
+          {
+            id: "p-tool-2",
+            type: "tool",
+            toolStatus: "completed",
+            toolTitle: "second.txt",
+          },
+          {
+            id: "p-tool-3",
+            type: "tool",
+            toolStatus: "completed",
+            toolTitle: "third.txt",
+          },
         ],
       },
     ];
@@ -210,20 +255,13 @@ describe("AgentChat", () => {
     await waitFor(() => {
       expect(screen.getByText("first.txt")).toBeInTheDocument();
       expect(screen.getByText("second.txt")).toBeInTheDocument();
-      expect(screen.getByText("Show 1 more actions")).toBeInTheDocument();
-      expect(screen.queryByText("third.txt")).not.toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText("Show 1 more actions"));
-
-    await waitFor(() => {
       expect(screen.getByText("third.txt")).toBeInTheDocument();
-      expect(screen.getByText("Hide activity")).toBeInTheDocument();
+      expect(screen.queryByText("Show 1 more actions")).not.toBeInTheDocument();
+      expect(screen.queryByText("Hide activity")).not.toBeInTheDocument();
     });
   });
 
-  it("renders compact tool labels and step separators", async () => {
-    const user = userEvent.setup();
+  it("renders compact tool labels and hides step markers", async () => {
     const messages: Message[] = [
       {
         id: "m-steps",
@@ -253,16 +291,13 @@ describe("AgentChat", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Step")).toBeInTheDocument();
       expect(screen.getByText("activity-demo.txt")).toBeInTheDocument();
-      expect(screen.queryByText("data/projects/activity-demo.txt")).not.toBeInTheDocument();
-      expect(screen.getByText("Show 1 more actions")).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText("Show 1 more actions"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Done")).toBeInTheDocument();
+      expect(
+        screen.queryByText("data/projects/activity-demo.txt"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Step")).not.toBeInTheDocument();
+      expect(screen.queryByText("Done")).not.toBeInTheDocument();
+      expect(screen.queryByText("Show 1 more actions")).not.toBeInTheDocument();
     });
   });
 
@@ -274,7 +309,12 @@ describe("AgentChat", () => {
         role: "assistant",
         createdAt: 12,
         parts: [
-          { id: "a1", type: "tool", toolStatus: "running", toolTitle: "activity.log" },
+          {
+            id: "a1",
+            type: "tool",
+            toolStatus: "running",
+            toolTitle: "activity.log",
+          },
         ],
       },
     ];
@@ -291,6 +331,10 @@ describe("AgentChat", () => {
     await waitFor(() => {
       expect(screen.getByText("activity.log")).toBeInTheDocument();
       expect(container.querySelector(".bg-zinc-100")).not.toBeInTheDocument();
+      const runningTool = screen.getByLabelText("Tool activity.log running");
+      expect(
+        runningTool.querySelector(".animate-spin"),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -303,7 +347,12 @@ describe("AgentChat", () => {
         createdAt: 13,
         parts: [
           { id: "empty", type: "text", text: "   " },
-          { id: "tool", type: "tool", toolStatus: "completed", toolTitle: "activity.log" },
+          {
+            id: "tool",
+            type: "tool",
+            toolStatus: "completed",
+            toolTitle: "activity.log",
+          },
         ],
       },
     ];
@@ -332,7 +381,12 @@ describe("AgentChat", () => {
         createdAt: 14,
         parts: [
           { id: "txt", type: "text", text: "Done. Updated the file." },
-          { id: "tool", type: "tool", toolStatus: "completed", toolTitle: "read" },
+          {
+            id: "tool",
+            type: "tool",
+            toolStatus: "completed",
+            toolTitle: "read",
+          },
         ],
       },
     ];
@@ -413,6 +467,131 @@ describe("AgentChat", () => {
     expect(readPill.className).toContain("bg-emerald-600");
   });
 
+  it("shows file tool error detail in the activity label", async () => {
+    render(<AgentChat sessionId="ses_1" />);
+
+    act(() => {
+      emitSSE("snapshot", {
+        messages: [
+          {
+            info: {
+              id: "m-file-error",
+              sessionID: "ses_1",
+              role: "assistant",
+              time: { created: 18, completed: 18 },
+            },
+            parts: [
+              {
+                id: "read-error-1",
+                type: "tool",
+                tool: "read",
+                state: {
+                  status: "error",
+                  title: "brief.md",
+                  input: {
+                    filePath:
+                      "/home/graham/github/QuillBot/data/projects/proj_1770688342415_97wr9zk/brief.md",
+                  },
+                  error:
+                    "Error: File not found: /home/graham/github/QuillBot/data/projects/proj_1770688342415_97wr9zk/brief.md",
+                },
+              },
+            ],
+          },
+        ],
+        status: { type: "idle" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("READ")).toBeInTheDocument();
+      expect(screen.getByText("brief.md")).toBeInTheDocument();
+      expect(screen.getByText("[Not Found]")).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          "/home/graham/github/QuillBot/data/projects/proj_1770688342415_97wr9zk/brief.md",
+        ),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("renders apply_patch activity as UPDATE", async () => {
+    const messages: Message[] = [
+      {
+        id: "m-apply-patch-pill",
+        sessionId: "ses_1",
+        role: "assistant",
+        createdAt: 19,
+        parts: [
+          {
+            id: "apply-patch-1",
+            type: "tool",
+            tool: "apply_patch",
+            toolStatus: "completed",
+            toolTitle: "draft.md",
+            toolInput: {
+              path: "draft.md",
+            },
+          },
+        ],
+      },
+    ];
+
+    render(<AgentChat sessionId="ses_1" />);
+
+    act(() => {
+      emitSSE("snapshot", {
+        messages: makeRawMessages(messages),
+        status: { type: "idle" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("UPDATE")).toBeInTheDocument();
+      expect(screen.queryByText("APPLY_")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows attempted URL for failed webfetch activity", async () => {
+    const messages: Message[] = [
+      {
+        id: "m-webfetch-error",
+        sessionId: "ses_1",
+        role: "assistant",
+        createdAt: 20,
+        parts: [
+          {
+            id: "webfetch-error-1",
+            type: "tool",
+            tool: "webfetch",
+            toolStatus: "error",
+            toolTitle: "webfetch",
+            toolInput: {
+              url: "https://www.googggle.co.uk",
+            },
+          },
+        ],
+      },
+    ];
+
+    render(<AgentChat sessionId="ses_1" />);
+
+    act(() => {
+      emitSSE("snapshot", {
+        messages: makeRawMessages(messages),
+        status: { type: "idle" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("WEB")).toBeInTheDocument();
+      expect(
+        screen.getByText("https://www.googggle.co.uk"),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("webfetch")).not.toBeInTheDocument();
+    });
+  });
+
   it("renders edit activities as UPDATE with orange styling", async () => {
     const messages: Message[] = [
       {
@@ -447,7 +626,8 @@ describe("AgentChat", () => {
 
     await waitFor(() => {
       expect(screen.getByText("UPDATE")).toBeInTheDocument();
-      expect(screen.getByText("docs/draft.md")).toBeInTheDocument();
+      expect(screen.getByText("draft.md")).toBeInTheDocument();
+      expect(screen.queryByText("docs/draft.md")).not.toBeInTheDocument();
       expect(screen.getByText("+2")).toBeInTheDocument();
       expect(screen.getByText("-1")).toBeInTheDocument();
     });
@@ -530,10 +710,18 @@ describe("AgentChat", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /expand update diff for docs\/draft\.md/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /expand update diff for draft\.md/i,
+        }),
+      ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /expand update diff for docs\/draft\.md/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /expand update diff for draft\.md/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("-line two")).toBeInTheDocument();
@@ -543,6 +731,74 @@ describe("AgentChat", () => {
       expect(screen.queryByText("@@ -1,3 +1,3 @@")).not.toBeInTheDocument();
       expect(screen.queryByText(" line one")).not.toBeInTheDocument();
       expect(screen.queryByText(" line three")).not.toBeInTheDocument();
+    });
+  });
+
+  it("summarizes multi-file UPDATE activity and splits expanded output by filename", async () => {
+    const user = userEvent.setup();
+    const messages: Message[] = [
+      {
+        id: "m-update-multi-file",
+        sessionId: "ses_1",
+        role: "assistant",
+        createdAt: 16,
+        parts: [
+          {
+            id: "apply-patch-multi",
+            type: "tool",
+            tool: "apply_patch",
+            toolStatus: "completed",
+            toolTitle: "Success",
+            toolInput: {
+              patchText:
+                "*** Begin Patch\n*** Update File: data/projects/proj_1/draft.md\n@@\n-old line\n+new line\n+extra line\n*** Update File: data/projects/proj_1/brief.md\n@@\n-old brief\n+new brief\n*** End Patch",
+            },
+          },
+        ],
+      },
+    ];
+
+    render(<AgentChat sessionId="ses_1" />);
+
+    act(() => {
+      emitSSE("snapshot", {
+        messages: makeRawMessages(messages),
+        status: { type: "idle" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("UPDATE")).toBeInTheDocument();
+      expect(
+        screen.getByText("Success. draft.md [+2/-1], brief.md [+1/-1]"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("data/projects/proj_1/draft.md"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("data/projects/proj_1/brief.md"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /expand update diff for multiple files/i,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /expand update diff for multiple files/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("draft.md").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("brief.md").length).toBeGreaterThan(0);
+      expect(screen.getByText("-old line")).toBeInTheDocument();
+      expect(screen.getByText("+new line")).toBeInTheDocument();
+      expect(screen.getByText("+extra line")).toBeInTheDocument();
+      expect(screen.getByText("-old brief")).toBeInTheDocument();
+      expect(screen.getByText("+new brief")).toBeInTheDocument();
     });
   });
 
@@ -630,12 +886,22 @@ describe("AgentChat", () => {
     await waitFor(() => {
       expect(screen.getByText("docs/notes.md")).toBeInTheDocument();
       expect(screen.getByText("+1")).toBeInTheDocument();
-      expect(screen.queryByText("docs/notes.md [+0/-0]")).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /expand write content for docs\/notes\.md/i })).toBeInTheDocument();
+      expect(
+        screen.queryByText("docs/notes.md [+0/-0]"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /expand write content for docs\/notes\.md/i,
+        }),
+      ).toBeInTheDocument();
       expect(screen.queryByText("Hello world")).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /expand write content for docs\/notes\.md/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /expand write content for docs\/notes\.md/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Hello world")).toBeInTheDocument();
@@ -677,10 +943,18 @@ describe("AgentChat", () => {
 
     await waitFor(() => {
       expect(screen.queryByText("@@ -1,2 +1,3 @@")).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /expand write diff for docs\/draft\.md/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /expand write diff for docs\/draft\.md/i,
+        }),
+      ).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /expand write diff for docs\/draft\.md/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /expand write diff for docs\/draft\.md/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("@@ -1,2 +1,3 @@")).toBeInTheDocument();
@@ -697,7 +971,13 @@ describe("AgentChat", () => {
         sessionId: "ses_1",
         role: "assistant",
         createdAt: 1,
-        parts: [{ id: "p1", type: "text", text: "Here is a diagram:\n\n![architecture diagram](https://example.com/diagram.png)\n\nAnd an inline ![icon](https://example.com/icon.svg) image." }],
+        parts: [
+          {
+            id: "p1",
+            type: "text",
+            text: "Here is a diagram:\n\n![architecture diagram](https://example.com/diagram.png)\n\nAnd an inline ![icon](https://example.com/icon.svg) image.",
+          },
+        ],
       },
     ];
 
@@ -713,7 +993,10 @@ describe("AgentChat", () => {
     await waitFor(() => {
       const images = screen.getAllByRole("img");
       expect(images).toHaveLength(2);
-      expect(images[0]).toHaveAttribute("src", "https://example.com/diagram.png");
+      expect(images[0]).toHaveAttribute(
+        "src",
+        "https://example.com/diagram.png",
+      );
       expect(images[0]).toHaveAttribute("alt", "architecture diagram");
       expect(images[0]).toHaveAttribute("loading", "lazy");
       expect(images[1]).toHaveAttribute("src", "https://example.com/icon.svg");
@@ -742,8 +1025,14 @@ describe("AgentChat", () => {
           question: "Which framework do you prefer?",
           header: "Framework",
           options: [
-            { label: "React", description: "A JavaScript library for building UIs" },
-            { label: "Vue", description: "The progressive JavaScript framework" },
+            {
+              label: "React",
+              description: "A JavaScript library for building UIs",
+            },
+            {
+              label: "Vue",
+              description: "The progressive JavaScript framework",
+            },
           ],
           multiple: false,
           custom: true,
@@ -778,7 +1067,11 @@ describe("AgentChat", () => {
       render(<AgentChat sessionId="ses_1" />);
 
       act(() => {
-        emitSSE("snapshot", { messages: [], status: { type: "idle" }, question: null });
+        emitSSE("snapshot", {
+          messages: [],
+          status: { type: "idle" },
+          question: null,
+        });
       });
 
       act(() => {
@@ -786,7 +1079,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Which framework do you prefer?")).toBeInTheDocument();
+        expect(
+          screen.getByText("Which framework do you prefer?"),
+        ).toBeInTheDocument();
         expect(screen.getByText("React")).toBeInTheDocument();
         expect(screen.getByText("Vue")).toBeInTheDocument();
       });
@@ -804,7 +1099,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Which framework do you prefer?")).toBeInTheDocument();
+        expect(
+          screen.getByText("Which framework do you prefer?"),
+        ).toBeInTheDocument();
       });
     });
 
@@ -842,6 +1139,46 @@ describe("AgentChat", () => {
       });
 
       // Pseudo-message should appear
+      await waitFor(() => {
+        expect(screen.getByText("Question Answered")).toBeInTheDocument();
+      });
+    });
+
+    it("keeps pseudo question-response bubble after remount for same session", async () => {
+      const user = userEvent.setup();
+      const firstRender = render(<AgentChat sessionId="ses_1" />);
+
+      act(() => {
+        emitSSE("snapshot", {
+          messages: [],
+          status: { type: "idle" },
+          question: singleQuestion,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("React"));
+      await user.click(screen.getByRole("button", { name: /submit/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Question Answered")).toBeInTheDocument();
+      });
+
+      firstRender.unmount();
+
+      render(<AgentChat sessionId="ses_1" />);
+
+      act(() => {
+        emitSSE("snapshot", {
+          messages: [],
+          status: { type: "idle" },
+          question: null,
+        });
+      });
+
       await waitFor(() => {
         expect(screen.getByText("Question Answered")).toBeInTheDocument();
       });
@@ -906,7 +1243,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Which framework do you prefer?")).toBeInTheDocument();
+        expect(
+          screen.getByText("Which framework do you prefer?"),
+        ).toBeInTheDocument();
       });
 
       // Click the × close button
@@ -932,7 +1271,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Which framework do you prefer?")).toBeInTheDocument();
+        expect(
+          screen.getByText("Which framework do you prefer?"),
+        ).toBeInTheDocument();
       });
 
       act(() => {
@@ -940,7 +1281,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByText("Which framework do you prefer?")).not.toBeInTheDocument();
+        expect(
+          screen.queryByText("Which framework do you prefer?"),
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -975,7 +1318,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("2 selections will be sent with next message")).toBeInTheDocument();
+        expect(
+          screen.getByText("2 selections will be sent with next message"),
+        ).toBeInTheDocument();
       });
     });
 
@@ -993,7 +1338,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText("1 selection will be sent with next message")).toBeInTheDocument();
+        expect(
+          screen.getByText("1 selection will be sent with next message"),
+        ).toBeInTheDocument();
       });
     });
 
@@ -1011,7 +1358,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByText(/selections? will be sent/)).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/selections? will be sent/),
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -1032,7 +1381,9 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByLabelText("Clear context selections")).toBeInTheDocument();
+        expect(
+          screen.getByLabelText("Clear context selections"),
+        ).toBeInTheDocument();
       });
 
       await user.click(screen.getByLabelText("Clear context selections"));
@@ -1057,10 +1408,15 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText("Type a message..."),
+        ).toBeInTheDocument();
       });
 
-      await user.type(screen.getByPlaceholderText("Type a message..."), "Explain this code");
+      await user.type(
+        screen.getByPlaceholderText("Type a message..."),
+        "Explain this code",
+      );
       await user.click(screen.getByRole("button", { name: /send message/i }));
 
       await waitFor(() => {
@@ -1068,15 +1424,23 @@ describe("AgentChat", () => {
       });
 
       const calls = vi.mocked(fetch).mock.calls;
-      const messageCall = calls.find((call) => String(call[0]).includes("/api/sessions/ses_1/messages"));
+      const messageCall = calls.find((call) =>
+        String(call[0]).includes("/api/sessions/ses_1/messages"),
+      );
       expect(messageCall).toBeDefined();
 
       const body = JSON.parse(messageCall![1]!.body as string);
       expect(body.content).toBe("Explain this code");
       expect(body.contextParts).toHaveLength(2);
-      expect(body.contextParts[0].label).toBe("Selection from document (line 42)");
-      expect(body.contextParts[0].content).toBe("The quick brown fox jumps over the lazy dog.");
-      expect(body.contextParts[1].label).toBe("Selection from document (line 99)");
+      expect(body.contextParts[0].label).toBe(
+        "Selection from document (line 42)",
+      );
+      expect(body.contextParts[0].content).toBe(
+        "The quick brown fox jumps over the lazy dog.",
+      );
+      expect(body.contextParts[1].label).toBe(
+        "Selection from document (line 99)",
+      );
     });
 
     it("calls onClearContext after sending message with context", async () => {
@@ -1096,10 +1460,15 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText("Type a message..."),
+        ).toBeInTheDocument();
       });
 
-      await user.type(screen.getByPlaceholderText("Type a message..."), "hello");
+      await user.type(
+        screen.getByPlaceholderText("Type a message..."),
+        "hello",
+      );
       await user.click(screen.getByRole("button", { name: /send message/i }));
 
       await waitFor(() => {
@@ -1123,10 +1492,15 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText("Type a message..."),
+        ).toBeInTheDocument();
       });
 
-      await user.type(screen.getByPlaceholderText("Type a message..."), "hello");
+      await user.type(
+        screen.getByPlaceholderText("Type a message..."),
+        "hello",
+      );
       await user.click(screen.getByRole("button", { name: /send message/i }));
 
       await waitFor(() => {
@@ -1134,7 +1508,9 @@ describe("AgentChat", () => {
       });
 
       const calls = vi.mocked(fetch).mock.calls;
-      const messageCall = calls.find((call) => String(call[0]).includes("/api/sessions/ses_1/messages"));
+      const messageCall = calls.find((call) =>
+        String(call[0]).includes("/api/sessions/ses_1/messages"),
+      );
       expect(messageCall).toBeDefined();
 
       const body = JSON.parse(messageCall![1]!.body as string);
@@ -1152,7 +1528,11 @@ describe("AgentChat", () => {
           createdAt: 1,
           parts: [
             { id: "p1", type: "text", text: "Explain this code" },
-            { id: "p2", type: "text", text: "--- Selection (line 42) ---\nconst x = 1;" },
+            {
+              id: "p2",
+              type: "text",
+              text: "--- Selection (line 42) ---\nconst x = 1;",
+            },
           ],
         },
       ];
@@ -1176,7 +1556,9 @@ describe("AgentChat", () => {
         expect(screen.getByText("Explain this code")).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/Selection \(line 42\)/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Selection \(line 42\)/),
+      ).not.toBeInTheDocument();
       expect(screen.queryByText(/const x = 1/)).not.toBeInTheDocument();
       expect(screen.getByText("+ 1 item")).toBeInTheDocument();
     });
@@ -1216,10 +1598,15 @@ describe("AgentChat", () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText("Type a message..."),
+        ).toBeInTheDocument();
       });
 
-      await user.type(screen.getByPlaceholderText("Type a message..."), "Review this");
+      await user.type(
+        screen.getByPlaceholderText("Type a message..."),
+        "Review this",
+      );
       await user.click(screen.getByRole("button", { name: /send message/i }));
 
       await waitFor(() => {
@@ -1236,7 +1623,11 @@ describe("AgentChat", () => {
               createdAt: 1,
               parts: [
                 { id: "p1", type: "text", text: "Review this" },
-                { id: "p2", type: "text", text: "--- Selection from file.ts ---\nfunction hello() {}" },
+                {
+                  id: "p2",
+                  type: "text",
+                  text: "--- Selection from file.ts ---\nfunction hello() {}",
+                },
               ],
             },
           ]),
@@ -1253,7 +1644,9 @@ describe("AgentChat", () => {
         expect(screen.getByText("Review this")).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/Selection from file\.ts/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Selection from file\.ts/),
+      ).not.toBeInTheDocument();
       expect(screen.getByText("+ 1 item")).toBeInTheDocument();
     });
   });

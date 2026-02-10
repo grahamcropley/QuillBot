@@ -22,6 +22,7 @@ interface ProjectInfoModalProps {
   onClose: () => void;
   onSave: (values: ProjectInfoFormValues) => Promise<void>;
   onGenerateSummary: () => Promise<string>;
+  onDelete: () => void;
 }
 
 const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string }[] = [
@@ -51,6 +52,7 @@ export function ProjectInfoModal({
   onClose,
   onSave,
   onGenerateSummary,
+  onDelete,
 }: ProjectInfoModalProps) {
   const [name, setName] = useState(initialValues.name);
   const [contentType, setContentType] = useState<ContentType>(
@@ -217,23 +219,35 @@ export function ProjectInfoModal({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2">
+        <div className="flex items-center justify-between gap-2 pt-2">
           <Button
             type="button"
             variant="ghost"
-            onClick={onClose}
-            disabled={isSaving}
+            onClick={onDelete}
+            disabled={isSaving || isGeneratingSummary}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            Cancel
+            Delete
           </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            isLoading={isSaving}
-            disabled={!isDirty || isSaving}
-          >
-            Save Changes
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              isLoading={isSaving}
+              disabled={!isDirty || isSaving}
+            >
+              Save Changes
+            </Button>
+          </div>
         </div>
       </div>
     </div>

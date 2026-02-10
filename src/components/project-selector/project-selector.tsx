@@ -357,83 +357,79 @@ function ProjectListRow({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
       className={clsx(
-        "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors group rounded-lg border cursor-pointer",
+        "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors group rounded-lg border",
         isSelected
           ? "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
           : "bg-white border-gray-100 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-gray-800/50",
       )}
     >
-      <div className={clsx("p-1.5 rounded-md flex-shrink-0", config.bgColor)}>
-        <Icon className={clsx("w-4 h-4", config.color)} />
-      </div>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex flex-1 min-w-0 items-center gap-3 text-left"
+      >
+        <div className={clsx("p-1.5 rounded-md flex-shrink-0", config.bgColor)}>
+          <Icon className={clsx("w-4 h-4", config.color)} />
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm text-gray-900 dark:text-gray-50 truncate">
-          {project.name}
-        </p>
-        {project.brief ? (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {project.brief}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm text-gray-900 dark:text-gray-50 truncate">
+            {project.name}
           </p>
-        ) : null}
-      </div>
+          {project.brief ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {project.brief}
+            </p>
+          ) : null}
+        </div>
 
-      <ContentTypeBadge contentType={project.contentType} />
+        <ContentTypeBadge contentType={project.contentType} />
 
-      {project.wordCount > 0 && (
-        <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500 w-20 text-right flex-shrink-0">
-          ~{project.wordCount.toLocaleString()} words
+        {project.wordCount > 0 && (
+          <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500 w-20 text-right flex-shrink-0">
+            ~{project.wordCount.toLocaleString()} words
+          </span>
+        )}
+
+        <span className="text-xs text-gray-400 dark:text-gray-500 w-20 text-right flex-shrink-0 hidden sm:inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {formatRelativeTime(project.updatedAt)}
         </span>
-      )}
 
-      <span className="text-xs text-gray-400 dark:text-gray-500 w-20 text-right flex-shrink-0 hidden sm:inline-flex items-center gap-1">
-        <Clock className="w-3 h-3" />
-        {formatRelativeTime(project.updatedAt)}
-      </span>
+        <span
+          className="text-xs text-gray-400 dark:text-gray-500 w-32 text-right flex-shrink-0 hidden md:inline-flex items-center gap-1 justify-end truncate"
+          title={
+            project.lastModifiedByName
+              ? `Last modified by ${project.lastModifiedByName}`
+              : undefined
+          }
+        >
+          <User className="w-3 h-3" />
+          {project.lastModifiedByName ?? "Unknown"}
+        </span>
 
-      <span
-        className="text-xs text-gray-400 dark:text-gray-500 w-32 text-right flex-shrink-0 hidden md:inline-flex items-center gap-1 justify-end truncate"
-        title={
-          project.lastModifiedByName
-            ? `Last modified by ${project.lastModifiedByName}`
-            : undefined
-        }
-      >
-        <User className="w-3 h-3" />
-        {project.lastModifiedByName ?? "Unknown"}
-      </span>
+        <span className="text-xs text-gray-400 dark:text-gray-500 w-28 text-right flex-shrink-0 hidden lg:inline-flex items-center gap-1 justify-end">
+          <Calendar className="w-3 h-3" />
+          {formatRelativeTime(project.createdAt)}
+        </span>
 
-      <span className="text-xs text-gray-400 dark:text-gray-500 w-28 text-right flex-shrink-0 hidden lg:inline-flex items-center gap-1 justify-end">
-        <Calendar className="w-3 h-3" />
-        {formatRelativeTime(project.createdAt)}
-      </span>
-
-      <span
-        className="text-xs text-gray-400 dark:text-gray-500 w-32 text-right flex-shrink-0 hidden lg:inline-flex items-center gap-1 justify-end truncate"
-        title={
-          project.createdByName
-            ? `Created by ${project.createdByName}`
-            : undefined
-        }
-      >
-        <User className="w-3 h-3" />
-        {project.createdByName ?? "Unknown"}
-      </span>
+        <span
+          className="text-xs text-gray-400 dark:text-gray-500 w-32 text-right flex-shrink-0 hidden lg:inline-flex items-center gap-1 justify-end truncate"
+          title={
+            project.createdByName
+              ? `Created by ${project.createdByName}`
+              : undefined
+          }
+        >
+          <User className="w-3 h-3" />
+          {project.createdByName ?? "Unknown"}
+        </span>
+      </button>
 
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
+        onClick={() => {
           onDelete(project.id, project.name);
         }}
         className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg flex-shrink-0"
@@ -561,6 +557,16 @@ export function ProjectSelector({
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
             Your Projects
           </h2>
+          <div className="flex gap-2">
+            <Button onClick={onCreateNew} size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              Create New
+            </Button>
+            <Button onClick={onReviewExisting} size="sm" variant="ghost">
+              <FileText className="w-4 h-4 mr-1" />
+              Review Existing
+            </Button>
+          </div>
         </div>
         <div className="text-center py-16 bg-gray-50 dark:bg-gray-950 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
           <FileText className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
@@ -571,20 +577,6 @@ export function ProjectSelector({
             Create your first content project to get started with AI-powered
             authoring.
           </p>
-          <div className="flex gap-2">
-            <Button onClick={onCreateNew} className="mt-6 flex-1">
-              <Plus className="w-4 h-4 mr-1.5" />
-              Create New
-            </Button>
-            <Button
-              onClick={onReviewExisting}
-              className="mt-6 flex-1"
-              variant="ghost"
-            >
-              <FileText className="w-4 h-4 mr-1.5" />
-              Review Existing
-            </Button>
-          </div>
         </div>
       </div>
     );

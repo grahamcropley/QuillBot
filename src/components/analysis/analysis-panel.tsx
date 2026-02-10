@@ -99,7 +99,7 @@ export function AnalysisPanel({
   const [isReadabilityModalOpen, setIsReadabilityModalOpen] = useState(false);
   if (isLoading) {
     return (
-      <Card>
+      <Card className="!shadow-none">
         <CardHeader className="pb-2">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
@@ -122,7 +122,7 @@ export function AnalysisPanel({
 
   if (!metrics) {
     return (
-      <Card>
+      <Card className="!shadow-none">
         <CardHeader className="pb-2">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
@@ -156,7 +156,7 @@ export function AnalysisPanel({
 
   return (
     <>
-      <Card>
+      <Card className="!shadow-none">
         <CardHeader className="pb-2">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />

@@ -12,6 +12,8 @@ const BRAILLE_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
 const INLINE_ACTIVITY_VISIBLE_COUNT = 20;
 const SHOW_START_STOP_PARTS = false;
 const ROLLUP_ACTIVITIES = false;
+const STATUS_ICON_SLOT_CLASS =
+  "inline-flex h-4 w-4 flex-none items-center justify-center";
 
 function BrailleSpinner() {
   const [frame, setFrame] = useState(0);
@@ -24,7 +26,7 @@ function BrailleSpinner() {
   }, []);
 
   return (
-    <span className="inline-block font-mono text-base text-zinc-400 dark:text-zinc-500">
+    <span className="inline-block font-mono text-[13px] leading-none text-zinc-400 dark:text-zinc-500">
       {BRAILLE_FRAMES[frame]}
     </span>
   );
@@ -102,6 +104,7 @@ function isVisiblePart(part: MessagePart): boolean {
 function compactPathLikeText(value: string): string {
   const normalized = value.trim();
   if (!normalized) return "tool";
+  if (/^https?:\/\//i.test(normalized)) return normalized;
   if (!normalized.includes("/") && !normalized.includes("\\"))
     return normalized;
   if (normalized.includes(" ")) return normalized;
@@ -109,6 +112,51 @@ function compactPathLikeText(value: string): string {
   const parts = normalized.split(/[\\/]/).filter(Boolean);
   if (parts.length === 0) return normalized;
   return parts[parts.length - 1];
+}
+
+function extractHttpUrl(value: string): string | null {
+  const match = value.match(/https?:\/\/\S+/i);
+  if (!match) return null;
+
+  const trimmed = match[0].replace(/[)\],.;!?]+$/, "").trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function getWebToolLabel(part: MessagePart): string | null {
+  if (part.tool !== "webfetch" && part.tool !== "websearch") {
+    return null;
+  }
+
+  const input = isRecord(part.toolInput) ? part.toolInput : undefined;
+  const nestedInput = getNestedRecord(input, "input");
+  const nestedArguments = getNestedRecord(input, "arguments");
+  const nestedMetadata = getNestedRecord(input, "metadata");
+
+  const candidates = [
+    part.toolTitle,
+    getStringValue(input, ["url", "uri", "href", "link"]),
+    getStringValue(nestedInput, ["url", "uri", "href", "link"]),
+    getStringValue(nestedArguments, ["url", "uri", "href", "link"]),
+    getStringValue(nestedMetadata, ["url", "uri", "href", "link"]),
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const extracted = extractHttpUrl(candidate.trim());
+    if (extracted) {
+      return extracted;
+    }
+  }
+
+  return null;
+}
+
+function getToolActivityLabel(part: MessagePart): string {
+  const webLabel = getWebToolLabel(part);
+  if (webLabel) return webLabel;
+
+  const rawLabel = part.toolTitle ?? part.tool ?? "tool";
+  return compactPathLikeText(rawLabel);
 }
 
 function TextPartView({
@@ -144,6 +192,13 @@ interface TodoItem {
 interface DiffLine {
   kind: "add" | "remove" | "meta" | "context";
   text: string;
+}
+
+interface UpdateFileSection {
+  fileName: string;
+  diffLines: DiffLine[];
+  additions: number;
+  deletions: number;
 }
 
 function TodoPartView({ part }: { part: MessagePart }) {
@@ -184,37 +239,6 @@ function TodoPartView({ part }: { part: MessagePart }) {
     summaryText = parts.length > 0 ? parts.join(", ") : `${total} todos`;
   }
 
-  const renderStatusIcon = (status: string | undefined) => {
-    if (status === "pending") {
-      return <PulsingThrobSpinner />;
-    }
-    if (status === "running") {
-      return <span className="animate-spin">◌</span>;
-    }
-    if (status === "completed") {
-      return (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={3}
-        >
-          <title>Completed</title>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      );
-    }
-    if (status === "error") {
-      return "!";
-    }
-    return "◌";
-  };
-
   return (
     <button
       type="button"
@@ -228,13 +252,11 @@ function TodoPartView({ part }: { part: MessagePart }) {
           : "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-400",
       )}
     >
-      <span className="inline-flex items-center justify-center">
-        {renderStatusIcon(part.toolStatus)}
-      </span>
+      <ToolStatusIcon status={part.toolStatus} />
       <span className="shrink-0 rounded bg-purple-600 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white dark:bg-purple-500 sm:text-[10px]">
         TODO
       </span>
-      <span className="truncate">{summaryText}</span>
+      <span className="min-w-0 truncate">{summaryText}</span>
     </button>
   );
 }
@@ -246,6 +268,7 @@ function getToolPillLabel(toolName?: string): string {
     read: "FILE",
     write: "FILE",
     edit: "EDIT",
+    apply_patch: "UPDATE",
     bash: "BASH",
     glob: "FIND",
     grep: "GREP",
@@ -275,6 +298,7 @@ function isFileToolName(toolName?: string): boolean {
     toolName === "read" ||
     toolName === "write" ||
     toolName === "edit" ||
+    toolName === "apply_patch" ||
     toolName === "glob" ||
     toolName === "grep" ||
     toolName === "ast_grep_search" ||
@@ -284,7 +308,7 @@ function isFileToolName(toolName?: string): boolean {
 
 function getFileActivityPillLabel(toolName?: string): string {
   if (toolName === "read") return "READ";
-  if (toolName === "edit") return "UPDATE";
+  if (toolName === "edit" || toolName === "apply_patch") return "UPDATE";
   if (toolName === "write" || toolName === "ast_grep_replace") return "WRITE";
   if (
     toolName === "glob" ||
@@ -305,6 +329,21 @@ function getStringValue(
     if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
+  }
+  return null;
+}
+
+function getStringFromUnknown(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  if (isRecord(value)) {
+    const nestedMessage = getStringValue(value, [
+      "message",
+      "detail",
+      "reason",
+    ]);
+    if (nestedMessage) return nestedMessage;
   }
   return null;
 }
@@ -382,23 +421,205 @@ function normalizeRelativePath(pathValue: string, cwdValue?: string): string {
   const normalizedPath = pathValue.replace(/\\/g, "/").trim();
   if (!normalizedPath) return "file";
 
-  if (!isAbsolutePathLike(normalizedPath)) {
-    return normalizedPath.replace(/^\.\//, "");
-  }
-
   const normalizedCwd = cwdValue
     ?.replace(/\\/g, "/")
     .trim()
     .replace(/\/+$/, "");
+
+  if (!isAbsolutePathLike(normalizedPath)) {
+    const cleanedPath = normalizedPath.replace(/^\.\//, "");
+
+    if (normalizedCwd) {
+      const pathSegments = splitPathSegments(cleanedPath);
+      const cwdSegments = splitPathSegments(normalizedCwd);
+      const maxMatch = Math.min(pathSegments.length, cwdSegments.length);
+
+      for (let matchLength = maxMatch; matchLength > 0; matchLength -= 1) {
+        const cwdTail = cwdSegments.slice(cwdSegments.length - matchLength);
+        const pathHead = pathSegments.slice(0, matchLength);
+        const isMatch = cwdTail.every(
+          (segment, index) => segment === pathHead[index],
+        );
+
+        if (isMatch) {
+          const relative = pathSegments.slice(matchLength).join("/");
+          if (relative) {
+            return stripProjectWorkspacePrefix(relative);
+          }
+        }
+      }
+    }
+
+    return stripProjectWorkspacePrefix(cleanedPath);
+  }
+
   if (normalizedCwd) {
     const relative = toRelativeFromCwd(normalizedPath, normalizedCwd);
     if (relative) {
-      return relative;
+      return stripProjectWorkspacePrefix(relative);
     }
   }
 
   const parts = splitPathSegments(normalizedPath);
   return parts[parts.length - 1] ?? "file";
+}
+
+function stripProjectWorkspacePrefix(pathValue: string): string {
+  const match = pathValue.match(/^data\/projects\/[^/]+\/(.+)$/);
+  return match?.[1] ?? pathValue;
+}
+
+function toFilenameOnly(pathValue: string): string {
+  const normalized = pathValue.replace(/\\/g, "/").trim();
+  if (!normalized) return "file";
+
+  const withoutDotSlash = normalized.replace(/^\.\//, "");
+  const withoutDiffPrefix = withoutDotSlash.replace(/^[ab]\//, "");
+  const parts = splitPathSegments(withoutDiffPrefix);
+  return parts[parts.length - 1] ?? withoutDiffPrefix;
+}
+
+function getPatchHeaderPath(line: string): string | null {
+  const applyPatchMatch = line.match(
+    /^\*\*\* (?:Update|Add|Delete) File:\s+(.+)$/,
+  );
+  if (applyPatchMatch) return applyPatchMatch[1];
+
+  const gitDiffMatch = line.match(/^diff --git\s+a\/(.+?)\s+b\/(.+)$/);
+  if (gitDiffMatch) return gitDiffMatch[2];
+
+  const unifiedHeaderMatch = line.match(/^(?:\+\+\+|---)\s+(.+)$/);
+  if (unifiedHeaderMatch) return unifiedHeaderMatch[1];
+
+  return null;
+}
+
+function normalizePatchPath(
+  pathValue: string,
+  cwdValue?: string,
+): string | null {
+  const trimmed = pathValue.trim();
+  if (!trimmed) return null;
+
+  const withoutQuotes = trimmed.replace(/^['"]|['"]$/g, "");
+  const withoutDiffPrefix = withoutQuotes.replace(/^[ab]\//, "");
+  if (withoutDiffPrefix === "/dev/null") return null;
+
+  return toFilenameOnly(normalizeRelativePath(withoutDiffPrefix, cwdValue));
+}
+
+function parseUpdateFileSections(
+  diffText: string,
+  fallbackPath: string,
+  cwdValue?: string,
+): UpdateFileSection[] {
+  const lines = diffText.replace(/\r/g, "").split("\n");
+  const sections: UpdateFileSection[] = [];
+  const sectionMap = new Map<string, UpdateFileSection>();
+  const fallbackName = toFilenameOnly(fallbackPath);
+
+  const ensureSection = (name: string | null): UpdateFileSection => {
+    const fileName = name ?? fallbackName;
+    const existing = sectionMap.get(fileName);
+    if (existing) return existing;
+
+    const section: UpdateFileSection = {
+      fileName,
+      diffLines: [],
+      additions: 0,
+      deletions: 0,
+    };
+    sectionMap.set(fileName, section);
+    sections.push(section);
+    return section;
+  };
+
+  let currentSection: UpdateFileSection | null = null;
+
+  for (const line of lines) {
+    const headerPath = getPatchHeaderPath(line);
+    if (headerPath !== null) {
+      const normalizedPath = normalizePatchPath(headerPath, cwdValue);
+      currentSection = ensureSection(normalizedPath);
+      continue;
+    }
+
+    if (
+      line.startsWith("*** Begin Patch") ||
+      line.startsWith("*** End Patch")
+    ) {
+      continue;
+    }
+    if (line.startsWith("@@")) {
+      continue;
+    }
+
+    if (line.startsWith("+") && !line.startsWith("+++")) {
+      const section = currentSection ?? ensureSection(null);
+      section.diffLines.push({ kind: "add", text: line });
+      section.additions += 1;
+      continue;
+    }
+
+    if (line.startsWith("-") && !line.startsWith("---")) {
+      const section = currentSection ?? ensureSection(null);
+      section.diffLines.push({ kind: "remove", text: line });
+      section.deletions += 1;
+    }
+  }
+
+  return sections;
+}
+
+function formatFileToolErrorDetail(rawError: string | null): string | null {
+  if (!rawError) return null;
+
+  const normalized = rawError.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+
+  if (
+    /(not found|no such file|enoent|does not exist|cannot find)/i.test(
+      normalized,
+    )
+  ) {
+    return "Not Found";
+  }
+  if (
+    /(permission denied|eacces|eperm|operation not permitted)/i.test(normalized)
+  ) {
+    return "Permission Denied";
+  }
+  if (/(timed? out|timeout)/i.test(normalized)) {
+    return "Timed Out";
+  }
+  if (/(already exists|eexist)/i.test(normalized)) {
+    return "Already Exists";
+  }
+  if (/(is a directory|eisdir)/i.test(normalized)) {
+    return "Is a Directory";
+  }
+  if (/(not a directory|enotdir)/i.test(normalized)) {
+    return "Not a Directory";
+  }
+
+  const withoutPrefix = normalized.replace(/^error:\s*/i, "");
+  const withSanitizedAbsolutePaths = withoutPrefix.replace(
+    /([A-Za-z]:[\\/][^\s\])]+|\/[^\s\])]+)/g,
+    (value) => {
+      const trailing = value.match(/[)\],.:;!?]+$/)?.[0] ?? "";
+      const core = trailing ? value.slice(0, -trailing.length) : value;
+      const basename = normalizeRelativePath(core.replace(/\\/g, "/"));
+      return `${basename}${trailing}`;
+    },
+  );
+  const withSanitizedProjectPaths = withSanitizedAbsolutePaths.replace(
+    /\bdata\/projects\/[^\s\])]+/g,
+    (value) => normalizeRelativePath(value),
+  );
+
+  const cleaned = withSanitizedProjectPaths.trim();
+  if (!cleaned) return null;
+  return cleaned.length > 64 ? `${cleaned.slice(0, 61)}...` : cleaned;
 }
 
 function parseUnifiedDiff(diffText: string): DiffLine[] {
@@ -477,6 +698,7 @@ function getNestedRecord(
 function parseFileActivityPart(part: MessagePart): {
   label: string;
   path: string;
+  errorDetail: string | null;
   readRangeSummary: string | null;
   additions: number;
   deletions: number;
@@ -484,6 +706,7 @@ function parseFileActivityPart(part: MessagePart): {
   contentLineCount: number | null;
   contentText: string | null;
   diffLines: DiffLine[];
+  updateSections: UpdateFileSection[];
   expandable: boolean;
 } {
   const input = isRecord(part.toolInput) ? part.toolInput : undefined;
@@ -520,6 +743,29 @@ function parseFileActivityPart(part: MessagePart): {
     getStringValue(input, ["cwd", "directory", "workdir", "root"]) ??
     getStringValue(getNestedRecord(input, "path"), ["cwd", "root"]);
 
+  const rawErrorDetail =
+    getStringValue(input, [
+      "error",
+      "message",
+      "detail",
+      "reason",
+      "stderr",
+      "errorMessage",
+    ]) ??
+    getStringFromUnknown(input?.error) ??
+    getStringValue(nestedMetadata, [
+      "error",
+      "message",
+      "detail",
+      "reason",
+      "stderr",
+      "errorMessage",
+    ]) ??
+    getStringFromUnknown(nestedMetadata?.error) ??
+    getStringValue(nestedDiff, ["error", "message", "detail", "reason"]) ??
+    getStringValue(nestedFileDiff, ["error", "message", "detail", "reason"]);
+  const errorDetail = formatFileToolErrorDetail(rawErrorDetail);
+
   const relativePath = normalizeRelativePath(rawPath, cwd ?? undefined);
   const label = getFileActivityPillLabel(part.tool);
   const readOffset =
@@ -546,6 +792,7 @@ function parseFileActivityPart(part: MessagePart): {
     getStringValue(input, [
       "diff",
       "patch",
+      "patchText",
       "unifiedDiff",
       "unified",
       "changes",
@@ -554,6 +801,7 @@ function parseFileActivityPart(part: MessagePart): {
     getStringValue(nestedMetadata, [
       "diff",
       "patch",
+      "patchText",
       "unifiedDiff",
       "unified",
       "changes",
@@ -594,6 +842,43 @@ function parseFileActivityPart(part: MessagePart): {
     : beforeText !== null && afterText !== null
       ? buildSimpleDiff(beforeText, afterText)
       : [];
+  let updateSections: UpdateFileSection[] = [];
+
+  if (label === "UPDATE" && unifiedDiff) {
+    updateSections = parseUpdateFileSections(
+      unifiedDiff,
+      relativePath,
+      cwd ?? undefined,
+    );
+  }
+
+  if (
+    label === "UPDATE" &&
+    updateSections.length === 0 &&
+    diffLines.length > 0
+  ) {
+    const filtered = diffLines.filter(
+      (line) => line.kind === "add" || line.kind === "remove",
+    );
+    const fallbackCounts = countDiffLines(filtered);
+    updateSections = [
+      {
+        fileName: toFilenameOnly(relativePath),
+        diffLines: filtered,
+        additions: fallbackCounts.additions,
+        deletions: fallbackCounts.deletions,
+      },
+    ];
+  }
+
+  const updateTotals = updateSections.reduce(
+    (acc, section) => {
+      acc.additions += section.additions;
+      acc.deletions += section.deletions;
+      return acc;
+    },
+    { additions: 0, deletions: 0 },
+  );
 
   const counted = countDiffLines(diffLines);
   const additionsFromPayload =
@@ -607,8 +892,16 @@ function parseFileActivityPart(part: MessagePart): {
     getNumberValue(nestedMetadata, ["deletions", "removed", "deletes"]) ??
     getNumberValue(nestedFileDiff, ["deletions", "removed", "deletes"]);
 
-  const additions = additionsFromPayload ?? counted.additions;
-  const deletions = deletionsFromPayload ?? counted.deletions;
+  const additions =
+    additionsFromPayload ??
+    (label === "UPDATE" && updateSections.length > 0
+      ? updateTotals.additions
+      : counted.additions);
+  const deletions =
+    deletionsFromPayload ??
+    (label === "UPDATE" && updateSections.length > 0
+      ? updateTotals.deletions
+      : counted.deletions);
   const contentLineCount =
     typeof input?.content === "string"
       ? input.content.length === 0
@@ -624,13 +917,19 @@ function parseFileActivityPart(part: MessagePart): {
       hasDiffSource);
 
   const hasDiffDetails =
-    (label === "WRITE" || label === "UPDATE") && diffLines.length > 0;
+    (label === "WRITE" || label === "UPDATE") &&
+    (label === "UPDATE"
+      ? updateSections.some((section) => section.diffLines.length > 0)
+      : diffLines.length > 0);
   const hasContentDetails = label === "WRITE" && contentText !== null;
   const expandable = hasDiffDetails || hasContentDetails;
+  const displayPath =
+    label === "UPDATE" ? toFilenameOnly(relativePath) : relativePath;
 
   return {
     label,
-    path: relativePath,
+    path: displayPath,
+    errorDetail,
     readRangeSummary,
     additions,
     deletions,
@@ -638,18 +937,23 @@ function parseFileActivityPart(part: MessagePart): {
     contentLineCount,
     contentText,
     diffLines,
+    updateSections,
     expandable,
   };
 }
 
 function ToolStatusIcon({ status }: { status: MessagePart["toolStatus"] }) {
   if (status === "pending") {
-    return <PulsingThrobSpinner />;
+    return (
+      <span className={STATUS_ICON_SLOT_CLASS}>
+        <PulsingThrobSpinner />
+      </span>
+    );
   }
 
   if (status === "running") {
     return (
-      <span className="inline-flex items-center justify-center animate-spin">
+      <span className={STATUS_ICON_SLOT_CLASS}>
         <BrailleSpinner />
       </span>
     );
@@ -657,33 +961,57 @@ function ToolStatusIcon({ status }: { status: MessagePart["toolStatus"] }) {
 
   if (status === "completed") {
     return (
-      <svg
-        className="h-4 w-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={3}
-      >
-        <title>Completed</title>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
+      <span className={STATUS_ICON_SLOT_CLASS}>
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={3}
+        >
+          <title>Completed</title>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </span>
     );
   }
 
   if (status === "error") {
-    return <span>!</span>;
+    return (
+      <span className={cn(STATUS_ICON_SLOT_CLASS, "text-[13px] leading-none")}>
+        !
+      </span>
+    );
   }
 
-  return <span>◌</span>;
+  return (
+    <span className={cn(STATUS_ICON_SLOT_CLASS, "text-[13px] leading-none")}>
+      ◌
+    </span>
+  );
 }
 
 function FilePartView({ part }: { part: MessagePart }) {
   const [expanded, setExpanded] = useState(false);
   const parsed = parseFileActivityPart(part);
+  const updateSummaryText =
+    parsed.label === "UPDATE" && parsed.updateSections.length > 1
+      ? `Success. ${parsed.updateSections
+          .map(
+            (section) =>
+              `${section.fileName} [+${section.additions}/-${section.deletions}]`,
+          )
+          .join(", ")}`
+      : null;
+  const summaryTarget = updateSummaryText ?? parsed.path;
   const summaryView =
     parsed.label === "READ" && parsed.readRangeSummary !== null ? (
       <span className="italic"> [{parsed.readRangeSummary}]</span>
-    ) : parsed.hasCountSummary ? (
+    ) : parsed.hasCountSummary && !updateSummaryText ? (
       <span className="italic">
         {" ["}
         <span className="text-emerald-800 dark:text-emerald-300">
@@ -705,15 +1033,32 @@ function FilePartView({ part }: { part: MessagePart }) {
       </span>
     ) : null;
 
+  const errorSummary =
+    part.toolStatus === "error" && parsed.errorDetail ? (
+      <span className="italic"> [{parsed.errorDetail}]</span>
+    ) : null;
+
   const isRead = parsed.label === "READ";
   const isWriteLike = parsed.label === "WRITE" || parsed.label === "UPDATE";
+  const renderedUpdateSections =
+    parsed.label === "UPDATE"
+      ? parsed.updateSections
+          .map((section) => ({
+            ...section,
+            diffLines: section.diffLines.filter(
+              (line) => line.kind === "add" || line.kind === "remove",
+            ),
+          }))
+          .filter((section) => section.diffLines.length > 0)
+      : [];
   const renderedDiffLines =
     parsed.label === "UPDATE"
-      ? parsed.diffLines.filter(
-          (line) => line.kind === "add" || line.kind === "remove",
-        )
+      ? renderedUpdateSections.flatMap((section) => section.diffLines)
       : parsed.diffLines;
-  const hasDiffDetails = renderedDiffLines.length > 0;
+  const hasDiffDetails =
+    parsed.label === "UPDATE"
+      ? renderedUpdateSections.length > 0
+      : renderedDiffLines.length > 0;
   const hasContentDetails =
     parsed.label === "WRITE" && parsed.contentText !== null && !hasDiffDetails;
   const canExpand = parsed.expandable && (hasDiffDetails || hasContentDetails);
@@ -740,20 +1085,19 @@ function FilePartView({ part }: { part: MessagePart }) {
 
   const row = (
     <div className="flex w-full items-center gap-1.5 px-2.5 py-1 sm:gap-2 sm:px-3 sm:py-1.5">
-      <span className="inline-flex items-center justify-center">
-        <ToolStatusIcon status={part.toolStatus} />
-      </span>
+      <ToolStatusIcon status={part.toolStatus} />
       <span className={pillClasses}>{parsed.label}</span>
-      <span className="truncate">
-        <span>{parsed.path}</span>
+      <span className="min-w-0 truncate">
+        <span>{summaryTarget}</span>
         {summaryView}
+        {errorSummary}
       </span>
     </div>
   );
 
   const expandLabel = hasContentDetails
     ? `${expanded ? "Collapse" : "Expand"} write content for ${parsed.path}`
-    : `${expanded ? "Collapse" : "Expand"} ${parsed.label.toLowerCase()} diff for ${parsed.path}`;
+    : `${expanded ? "Collapse" : "Expand"} ${parsed.label.toLowerCase()} diff for ${updateSummaryText ? "multiple files" : parsed.path}`;
 
   return (
     <div className={containerClasses}>
@@ -772,7 +1116,33 @@ function FilePartView({ part }: { part: MessagePart }) {
       )}
       {canExpand && expanded && (
         <div className="border-t border-zinc-200 px-2.5 pb-2.5 pt-2 dark:border-zinc-700 sm:px-3">
-          {hasDiffDetails ? (
+          {hasDiffDetails && parsed.label === "UPDATE" ? (
+            <div className="space-y-2">
+              {renderedUpdateSections.map((section) => (
+                <div key={`${part.id}-${section.fileName}`}>
+                  <div className="mb-1 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 sm:text-[11px]">
+                    {section.fileName}
+                  </div>
+                  <pre className="max-h-72 overflow-auto rounded border border-zinc-200 bg-zinc-100 p-2 text-[10px] leading-relaxed dark:border-zinc-700 dark:bg-zinc-900/40 sm:text-[11px]">
+                    {section.diffLines.map((line, index) => (
+                      <div
+                        key={`${part.id}-${section.fileName}-diff-${index}`}
+                        className={cn(
+                          "whitespace-pre",
+                          line.kind === "add" &&
+                            "text-emerald-700 dark:text-emerald-400",
+                          line.kind === "remove" &&
+                            "text-rose-700 dark:text-rose-400",
+                        )}
+                      >
+                        {line.text}
+                      </div>
+                    ))}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          ) : hasDiffDetails ? (
             <pre className="max-h-72 overflow-auto rounded border border-zinc-200 bg-zinc-100 p-2 text-[10px] leading-relaxed dark:border-zinc-700 dark:bg-zinc-900/40 sm:text-[11px]">
               {renderedDiffLines.map((line, index) => (
                 <div
@@ -802,8 +1172,7 @@ function FilePartView({ part }: { part: MessagePart }) {
 }
 
 function ToolPartView({ part }: { part: MessagePart }) {
-  const rawLabel = part.toolTitle ?? part.tool ?? "tool";
-  const label = compactPathLikeText(rawLabel);
+  const label = getToolActivityLabel(part);
   const pillLabel = getToolPillLabel(part.tool);
 
   return (
@@ -817,15 +1186,11 @@ function ToolPartView({ part }: { part: MessagePart }) {
           : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400",
       )}
     >
-      {part.toolStatus === "pending" ? (
-        <PulsingThrobSpinner />
-      ) : (
-        <ToolStatusIcon status={part.toolStatus} />
-      )}
+      <ToolStatusIcon status={part.toolStatus} />
       <span className="shrink-0 rounded bg-zinc-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white dark:bg-zinc-600 sm:text-[10px]">
         {pillLabel}
       </span>
-      <span className="truncate">{label}</span>
+      <span className="min-w-0 truncate">{label}</span>
     </output>
   );
 }

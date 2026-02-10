@@ -426,6 +426,7 @@ export const MarkdownPreview = forwardRef<
   const lastDocumentKeyRef = useRef<string | undefined>(documentKey);
   const pendingDocumentSwitchRef = useRef(false);
   const pendingDocumentSwitchTimerRef = useRef<number | null>(null);
+  const discardOverrideTimerRef = useRef<number | null>(null);
   const latestCachedContentRef = useRef<string | null>(null);
   const latestCachedHighlightsRef = useRef<{
     user: Array<[number, number]>;
@@ -472,6 +473,15 @@ export const MarkdownPreview = forwardRef<
       };
     }
   }, [content]);
+
+  useEffect(() => {
+    return () => {
+      if (discardOverrideTimerRef.current) {
+        window.clearTimeout(discardOverrideTimerRef.current);
+        discardOverrideTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!documentKey) return;
@@ -672,12 +682,24 @@ export const MarkdownPreview = forwardRef<
   }, [editContent, onCreateSnapshot]);
 
   const handleDiscardChanges = useCallback(() => {
+    if (discardOverrideTimerRef.current) {
+      window.clearTimeout(discardOverrideTimerRef.current);
+      discardOverrideTimerRef.current = null;
+    }
+
+    setExternalUpdateOverride("system");
     lastEditSourceRef.current = "external";
     const baseline = baselineContentRef.current ?? "";
     setEditContent(baseline);
     setHasUnsavedChanges(false);
     void onDiscardToBaseline?.(baseline);
     editorRef.current?.clearChangeHighlights?.();
+
+    discardOverrideTimerRef.current = window.setTimeout(() => {
+      discardOverrideTimerRef.current = null;
+      setExternalUpdateOverride(null);
+      editorRef.current?.clearChangeHighlights?.();
+    }, 0);
   }, [onDiscardToBaseline]);
 
   useEffect(() => {

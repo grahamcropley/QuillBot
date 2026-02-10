@@ -6,6 +6,7 @@ import {
   setMessages,
   listTrackedSessions,
   getSessionPreferences,
+  setSessionPreferences,
   getSessionPreferencesByQuestionRequest,
   getTrackedSession,
   getMessages,
@@ -160,10 +161,13 @@ export function createAgentChatNextHandlers() {
         });
 
         if (error || !foundSession) {
-          return NextResponse.json({ error: "Session not found" }, { status: 404 });
+          return NextResponse.json(
+            { error: "Session not found" },
+            { status: 404 },
+          );
         }
 
-        trackSession(foundSession);
+        trackSession(foundSession, preferences);
 
         const { data: messagesData } = await opencode.session.messages({
           sessionID: sessionId,
@@ -185,11 +189,15 @@ export function createAgentChatNextHandlers() {
       const { sessionId } = await context.params;
       const url = new URL(request.url);
       const directoryParam = url.searchParams.get("directory");
-      
+
       let preferences = getSessionPreferences(sessionId);
       // If not in store, use directory from query param (for cross-request recovery)
       if (!preferences.directory && directoryParam) {
         preferences = { ...preferences, directory: directoryParam };
+      }
+
+      if (directoryParam && getTrackedSession(sessionId)) {
+        setSessionPreferences(sessionId, preferences);
       }
 
       try {
@@ -211,10 +219,13 @@ export function createAgentChatNextHandlers() {
           });
 
           if (error || !foundSession) {
-            return NextResponse.json({ error: "Session not found" }, { status: 404 });
+            return NextResponse.json(
+              { error: "Session not found" },
+              { status: 404 },
+            );
           }
 
-          trackSession(foundSession);
+          trackSession(foundSession, preferences);
         }
 
         const parts: Array<{ type: "text"; text: string }> = [
@@ -261,11 +272,15 @@ export function createAgentChatNextHandlers() {
       const { sessionId } = await context.params;
       const url = new URL(request.url);
       const directoryParam = url.searchParams.get("directory");
-      
+
       let preferences = getSessionPreferences(sessionId);
       // If not in store, use directory from query param (for cross-request recovery)
       if (!preferences.directory && directoryParam) {
         preferences = { ...preferences, directory: directoryParam };
+      }
+
+      if (directoryParam && getTrackedSession(sessionId)) {
+        setSessionPreferences(sessionId, preferences);
       }
 
       await ensureEventListener(preferences.directory);
@@ -283,7 +298,7 @@ export function createAgentChatNextHandlers() {
           });
         }
 
-        trackSession(foundSession);
+        trackSession(foundSession, preferences);
 
         const { data: messagesData } = await opencode.session.messages({
           sessionID: sessionId,
@@ -302,7 +317,9 @@ export function createAgentChatNextHandlers() {
         start(controller) {
           const send = (event: string, data: unknown) => {
             controller.enqueue(
-              encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+              encoder.encode(
+                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
+              ),
             );
           };
 
