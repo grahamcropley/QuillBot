@@ -26,6 +26,7 @@
   },
   "mcp": {},
   "agent": {
+    "title": { "disable": true },
     "build": { "disable": true },
     "plan": { "disable": true }
   }
