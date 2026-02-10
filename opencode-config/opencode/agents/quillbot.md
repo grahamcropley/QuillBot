@@ -1,7 +1,7 @@
 ---
 description: QuillBot marketing content writing-focused assistant
 mode: primary
-model: "{env:AZURE_MODEL}"
+model: azure/gpt-5.2-chat
 temperature: 0.5
 permission:
   "*": deny
