@@ -41,10 +41,10 @@ export function UserMenuClient({ user }: UserMenuClientProps) {
         <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
           {initials}
         </div>
-        <span className="hidden sm:block text-sm text-gray-700 dark:text-gray-300 max-w-[150px] truncate">
+        <span className="hidden sm:block text-sm text-white max-w-[150px] truncate">
           {user.name}
         </span>
-        <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+        <ChevronDownIcon className="h-4 w-4 text-white/70" />
       </button>
 
       {isOpen && (
