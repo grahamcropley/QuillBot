@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "../../../lib/cn";
-import type { ContextItem } from "../AgentChat.types";
+import type { ContextItem } from "../agent-chat.types";
 
 interface ChatInputProps {
   onSend: (content: string) => void;

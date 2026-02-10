@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AgentChat } from "./AgentChat";
-import type { Message, ContextItem } from "./AgentChat.types";
+import { AgentChat } from "./agent-chat";
+import type { Message, ContextItem } from "./agent-chat.types";
 
 function makeRawMessages(messages: Message[]) {
   return messages.map((m) => ({

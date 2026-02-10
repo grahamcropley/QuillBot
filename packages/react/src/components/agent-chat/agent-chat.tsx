@@ -2,15 +2,15 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { cn } from "../../lib/cn";
-import type { AgentChatProps, Message, MessagePart } from "./AgentChat.types";
+import type { AgentChatProps, Message, MessagePart } from "./agent-chat.types";
 import {
   ChatMessage,
   ChatInput,
   QuestionModal,
   TodoListModal,
 } from "./components";
-import { TodoModalProvider, useTodoModal } from "./context/TodoModalContext";
-import { useChat } from "./hooks/useChat";
+import { TodoModalProvider, useTodoModal } from "./context/todo-modal-context";
+import { useChat } from "./hooks/use-chat";
 
 function isActivityPart(part: MessagePart): boolean {
   return (

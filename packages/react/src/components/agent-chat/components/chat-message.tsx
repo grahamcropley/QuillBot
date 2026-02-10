@@ -1,8 +1,8 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { cn } from "../../../lib/cn";
-import { useTodoModal } from "../context/TodoModalContext";
-import { MarkdownRenderer } from "./MarkdownRenderer";
-import type { Message, MessagePart, QaEntry } from "../AgentChat.types";
+import { useTodoModal } from "../context/todo-modal-context";
+import { MarkdownRenderer } from "./markdown-renderer";
+import type { Message, MessagePart, QaEntry } from "../agent-chat.types";
 
 interface ChatMessageProps {
   message: Message;

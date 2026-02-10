@@ -1,5 +1,5 @@
-export { ChatMessage } from "./ChatMessage";
-export { ChatInput } from "./ChatInput";
-export { MarkdownRenderer } from "./MarkdownRenderer";
-export { QuestionModal } from "./QuestionModal";
-export { TodoListModal } from "./TodoListModal";
+export { ChatMessage } from "./chat-message";
+export { ChatInput } from "./chat-input";
+export { MarkdownRenderer } from "./markdown-renderer";
+export { QuestionModal } from "./question-modal";
+export { TodoListModal } from "./todo-list-modal";

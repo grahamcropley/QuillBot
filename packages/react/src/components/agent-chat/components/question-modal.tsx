@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { cn } from "../../../lib/cn";
-import type { QuestionRequest } from "../AgentChat.types";
+import type { QuestionRequest } from "../agent-chat.types";
 
 interface QuestionModalProps {
   request: QuestionRequest;

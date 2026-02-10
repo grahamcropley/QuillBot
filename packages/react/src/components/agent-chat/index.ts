@@ -1,4 +1,4 @@
-export { AgentChat } from "./AgentChat";
+export { AgentChat } from "./agent-chat";
 export type {
   AgentChatProps,
   ContextItem,
@@ -9,4 +9,4 @@ export type {
   QuestionOption,
   QuestionInfo,
   QuestionRequest,
-} from "./AgentChat.types";
+} from "./agent-chat.types";

@@ -6,7 +6,7 @@ import type {
   QuestionRequest,
   QuestionInfo,
   ContextItem,
-} from "../AgentChat.types";
+} from "../agent-chat.types";
 
 interface UseChatOptions {
   sessionId: string;
