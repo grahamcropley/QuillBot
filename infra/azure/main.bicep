@@ -12,11 +12,9 @@ param configShareName string = 'opencode-config'
 param webImage string = ''
 param opencodeImage string = ''
 param opencodeApiKey string = ''
-param copilotOAuthToken string = ''
-param openrouterApiKey string = ''
-param openaiApiKey string = ''
-param minimaxApiKey string = ''
-param zaiCodingPlanApiKey string = ''
+param azureApiKey string = ''
+param azureResourceName string = ''
+param azureModel string = 'azure/gpt-5.2-chat'
 param configRevision string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
@@ -141,34 +139,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
             value: opencodeApiKey
           }
         ] : [],
-        copilotOAuthToken != '' ? [
+        azureApiKey != '' ? [
           {
-            name: 'copilot-oauth-token'
-            value: copilotOAuthToken
-          }
-        ] : [],
-        openrouterApiKey != '' ? [
-          {
-            name: 'openrouter-api-key'
-            value: openrouterApiKey
-          }
-        ] : [],
-        openaiApiKey != '' ? [
-          {
-            name: 'openai-api-key'
-            value: openaiApiKey
-          }
-        ] : [],
-        minimaxApiKey != '' ? [
-          {
-            name: 'minimax-api-key'
-            value: minimaxApiKey
-          }
-        ] : [],
-        zaiCodingPlanApiKey != '' ? [
-          {
-            name: 'zai-coding-plan-api-key'
-            value: zaiCodingPlanApiKey
+            name: 'azure-api-key'
+            value: azureApiKey
           }
         ] : []
       )
@@ -187,6 +161,14 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
               {
                 name: 'CONFIG_REV'
                 value: configRevision
+              }
+              {
+                name: 'AZURE_RESOURCE_NAME'
+                value: azureResourceName
+              }
+              {
+                name: 'AZURE_MODEL'
+                value: azureModel
               }
             ],
             opencodeApiKey != '' ? [
@@ -233,6 +215,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                 name: 'CONFIG_REV'
                 value: configRevision
               }
+              {
+                name: 'AZURE_RESOURCE_NAME'
+                value: azureResourceName
+              }
             ],
             opencodeApiKey != '' ? [
               {
@@ -240,34 +226,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                 secretRef: 'opencode-api-key'
               }
             ] : [],
-            copilotOAuthToken != '' ? [
+            azureApiKey != '' ? [
               {
-                name: 'COPILOT_OAUTH_TOKEN'
-                secretRef: 'copilot-oauth-token'
-              }
-            ] : [],
-            openrouterApiKey != '' ? [
-              {
-                name: 'OPENROUTER_API_KEY'
-                secretRef: 'openrouter-api-key'
-              }
-            ] : [],
-            openaiApiKey != '' ? [
-              {
-                name: 'OPENAI_API_KEY'
-                secretRef: 'openai-api-key'
-              }
-            ] : [],
-            minimaxApiKey != '' ? [
-              {
-                name: 'MINIMAX_API_KEY'
-                secretRef: 'minimax-api-key'
-              }
-            ] : [],
-            zaiCodingPlanApiKey != '' ? [
-              {
-                name: 'ZAI_CODING_PLAN_API_KEY'
-                secretRef: 'zai-coding-plan-api-key'
+                name: 'AZURE_API_KEY'
+                secretRef: 'azure-api-key'
               }
             ] : []
           )

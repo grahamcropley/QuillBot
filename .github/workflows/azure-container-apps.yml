@@ -18,6 +18,8 @@ env:
   AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
   AZURE_LOG_ANALYTICS_NAME: ${{ vars.AZURE_LOG_ANALYTICS_NAME }}
   AZURE_STORAGE_ACCOUNT_NAME: ${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
+  AZURE_RESOURCE_NAME: ${{ vars.AZURE_RESOURCE_NAME }}
+  AZURE_MODEL: ${{ vars.AZURE_MODEL || 'azure/gpt-5.2-chat' }}
   DATA_SHARE_NAME: ${{ vars.DATA_SHARE_NAME || 'quillbot-data' }}
   CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
   WEB_IMAGE_NAME: ${{ vars.WEB_IMAGE_NAME || 'quillbot-web' }}
@@ -115,11 +117,7 @@ jobs:
       - name: Update Container App secrets
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          COPILOT_OAUTH_TOKEN: ${{ secrets.COPILOT_OAUTH_TOKEN }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-          ZAI_CODING_PLAN_API_KEY: ${{ secrets.ZAI_CODING_PLAN_API_KEY }}
+          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
         run: |
           if ! az containerapp show --name "$AZURE_APP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" > /dev/null 2>&1; then
             echo "Container App not created yet; secrets will be applied during deployment"
@@ -130,20 +128,8 @@ jobs:
           if [ -n "$OPENCODE_API_KEY" ]; then
             SECRET_ARGS+=("opencode-api-key=$OPENCODE_API_KEY")
           fi
-          if [ -n "$COPILOT_OAUTH_TOKEN" ]; then
-            SECRET_ARGS+=("copilot-oauth-token=$COPILOT_OAUTH_TOKEN")
-          fi
-          if [ -n "$OPENROUTER_API_KEY" ]; then
-            SECRET_ARGS+=("openrouter-api-key=$OPENROUTER_API_KEY")
-          fi
-          if [ -n "$OPENAI_API_KEY" ]; then
-            SECRET_ARGS+=("openai-api-key=$OPENAI_API_KEY")
-          fi
-          if [ -n "$MINIMAX_API_KEY" ]; then
-            SECRET_ARGS+=("minimax-api-key=$MINIMAX_API_KEY")
-          fi
-          if [ -n "$ZAI_CODING_PLAN_API_KEY" ]; then
-            SECRET_ARGS+=("zai-coding-plan-api-key=$ZAI_CODING_PLAN_API_KEY")
+          if [ -n "$AZURE_API_KEY" ]; then
+            SECRET_ARGS+=("azure-api-key=$AZURE_API_KEY")
           fi
 
           if [ ${#SECRET_ARGS[@]} -eq 0 ]; then
@@ -178,12 +164,10 @@ jobs:
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
               configRevision="$CONFIG_REV" \
+              azureResourceName="$AZURE_RESOURCE_NAME" \
+              azureModel="$AZURE_MODEL" \
               opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
-              copilotOAuthToken="${{ secrets.COPILOT_OAUTH_TOKEN }}" \
-              openrouterApiKey="${{ secrets.OPENROUTER_API_KEY }}" \
-              openaiApiKey="${{ secrets.OPENAI_API_KEY }}" \
-              minimaxApiKey="${{ secrets.MINIMAX_API_KEY }}" \
-              zaiCodingPlanApiKey="${{ secrets.ZAI_CODING_PLAN_API_KEY }}"
+              azureApiKey="${{ secrets.AZURE_API_KEY }}"
 
       - name: Configure Easy Auth (Microsoft Entra ID)
         if: ${{ env.ENTRA_CLIENT_ID != '' && env.ENTRA_TENANT_ID != '' }}

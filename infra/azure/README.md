@@ -24,14 +24,13 @@ Required:
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 
-Optional (API keys for OpenCode providers):
+Optional:
 
 - `OPENCODE_API_KEY` (if your OpenCode server expects auth)
-- `COPILOT_OAUTH_TOKEN` (for GitHub Copilot provider auth)
-- `OPENROUTER_API_KEY` (for OpenRouter provider)
-- `OPENAI_API_KEY` (for OpenAI provider)
-- `MINIMAX_API_KEY` (for Minimax provider)
-- `ZAI_CODING_PLAN_API_KEY` (for ZAI Coding Plan provider)
+
+Required for Azure OpenAI / Foundry provider:
+
+- `AZURE_API_KEY`
 
 ## GitHub Actions Variables
 
@@ -44,6 +43,8 @@ Set these repository variables:
 - `AZURE_ENV_NAME`
 - `AZURE_LOG_ANALYTICS_NAME`
 - `AZURE_STORAGE_ACCOUNT_NAME` (globally unique, lowercase)
+- `AZURE_RESOURCE_NAME` (Azure OpenAI resource name)
+- `AZURE_MODEL` (default: `azure/gpt-5.2-chat`, must match deployed model/deployment name)
 
 Authentication (for Easy Auth with Entra ID):
 
@@ -71,26 +72,15 @@ az storage file upload \
   --source opencode-config/opencode/opencode.json \
   --path opencode.json
 
-# Upload commands directory
-az storage directory create \
-  --account-name <storage-account> \
-  --share-name <config-share> \
-  --name commands
-
-for file in opencode-config/opencode/commands/*.md; do
-  az storage file upload \
-    --account-name <storage-account> \
-    --share-name <config-share> \
-    --source "$file" \
-    --path "commands/$(basename "$file")"
-done
+# Upload full non-secret config tree (opencode.json + commands + agents + skills)
+bash scripts/upload-config-to-azure.sh <storage-account> <config-share>
 ```
 
-**Important**: Do NOT upload `auth.json` or token-bearing files like `github-copilot/hosts.json`. Provider credentials are configured via GitHub Secrets and passed as environment variables.
+**Important**: Do NOT upload `auth.json` or any token-bearing files. The upload script deletes legacy auth files from the share and uploads only non-secret config assets.
 
 ## Provider Keys
 
-OpenCode provider credentials are configured via GitHub Actions secrets (see above) and passed as environment variables to the container. This is more secure than storing them in mounted files.
+OpenCode Azure provider credentials are configured via GitHub Actions secrets and passed as environment variables to the container.
 
 If you need to update provider keys:
 

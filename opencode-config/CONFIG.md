@@ -6,17 +6,13 @@ This directory contains the OpenCode configuration for QuillBot, the content aut
 
 ## Configuration Files
 
-### `auth.json`
-
-Authentication and provider configuration. You've copied this from your existing instance.
-
 ### `opencode.json`
 
 Minimal, focused server and agent configuration.
 
 **Key Settings:**
 
-- **Model**: `github-copilot/gpt-5.2`
+- **Model**: `{env:AZURE_MODEL}` (for example `azure/gpt-5.2-chat`)
 - **Temperature**: 0.7 (balanced creativity/consistency)
 - **Server Port**: 9090
 - **Environment**: development
@@ -90,7 +86,7 @@ pnpm opencode
 
 This runs `start-opencode.sh` which:
 
-1. Validates auth.json exists
+1. Validates config exists
 2. Sets working directory to `data/projects/`
 3. Starts server on port 9090
 4. Loads commands from `commands/` directory
@@ -98,6 +94,6 @@ This runs `start-opencode.sh` which:
 ## Notes
 
 - All config files are **gitignored** (except README.md and CONFIG.md)
-- `auth.json` contains your credentials—keep it private
+- Provider credentials come from environment variables (`AZURE_API_KEY`, `AZURE_RESOURCE_NAME`)
 - Commands are markdown files with embedded system instructions
 - Commands are designed to integrate with the question tool for user interaction

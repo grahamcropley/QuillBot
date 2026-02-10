@@ -4,7 +4,6 @@ Place isolated OpenCode config files here for container use.
 
 Typical files:
 
-- `auth.json` - Provider authentication credentials
 - `opencode.json` - OpenCode configuration, including models, tools, permissions, and agents
 
 This folder is bind-mounted into the OpenCode container at
@@ -24,7 +23,7 @@ The **QuillBot** agent is configured as a primary agent specialized for content 
 - ❌ Task delegation: delegate, todo (not available)
 - ❌ Language Server: lsp (disabled)
 
-**Model:** `github-copilot/gpt-5.2`
+**Model:** `{env:AZURE_MODEL}` (for example `azure/gpt-5.2-chat`)
 
 **Configuration:** Defined in `opencode.json` under `agent.quillbot`
 
