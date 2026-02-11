@@ -58,6 +58,8 @@ Optional overrides:
 - `WEB_IMAGE_NAME` (default: `quillbot-web`)
 - `OPENCODE_IMAGE_NAME` (default: `quillbot-opencode`)
 - `OPENCODE_VERSION` (default: `1.1.56`)
+- `CUSTOM_DOMAIN` (e.g. `quillbot.cropley.info` - optional, omit for auto-generated domain)
+- `MANAGED_CERTIFICATE_NAME` (e.g. `quillbot-cropley-info` - required if using custom domain)
 
 ## Config Upload
 
@@ -87,7 +89,51 @@ If you need to update provider keys:
 1. Update the corresponding GitHub Actions secret
 2. Redeploy the application (push to main or trigger workflow manually)
 
-## Deployment Order
+## Custom Domain & SSL Certificate
+
+To use a custom domain with Azure-managed SSL certificate:
+
+### Prerequisites
+
+1. **DNS CNAME Record**: Point your domain to the Container App's FQDN
+
+   ```
+   quillbot.cropley.info CNAME quillbot.eastus.azurecontainerapps.io
+   ```
+
+2. **Existing Managed Certificate**: The certificate must already exist in the managed environment
+   - Certificate name format: `{domain-short-form}` (e.g., `quillbot-cropley-info`)
+   - Certificate status should be "Ready" in Azure Portal
+
+### GitHub Variables
+
+Set these repository variables:
+
+- `CUSTOM_DOMAIN` (e.g. `quillbot.cropley.info`)
+- `MANAGED_CERTIFICATE_NAME` (e.g. `quillbot-cropley-info` - certificate name in the managed environment)
+
+The Bicep template will automatically:
+
+1. Reference the managed certificate
+2. Add the custom domain binding with SNI enabled
+3. Use the existing certificate for HTTPS termination
+
+### If Certificate Doesn't Exist
+
+You can create a managed certificate via Azure CLI:
+
+```bash
+az containerapp env certificate create \
+  --resource-group <resource-group> \
+  --name <environment-name> \
+  --certificate-name <certificate-name> \
+  --domain-name <domain-name> \
+  --validation-method 'dns'
+```
+
+Then validate DNS ownership when prompted, and wait for certificate status to become "Ready".
+
+## Provider Keys
 
 The GitHub Actions workflow follows this sequence:
 

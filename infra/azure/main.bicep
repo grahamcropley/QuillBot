@@ -18,6 +18,8 @@ param azureResourceName string = ''
 param configRevision string = ''
 param minReplicas int = 0
 param maxReplicas int = 1
+param customDomain string = ''
+param managedCertificateName string = ''
 
 // NOTE: Authentication is configured via Azure Portal (Easy Auth)
 // Container Apps > Authentication > Add identity provider > Microsoft
@@ -103,6 +105,14 @@ resource configStorage 'Microsoft.App/managedEnvironments/storages@2023-05-01' =
 
 var acrCredentials = listCredentials(acr.id, '2023-07-01')
 
+resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' = if (managedCertificateName != '') {
+  name: '${environment.name}/${managedCertificateName}'
+  location: location
+  properties: {
+    domainName: customDomain
+  }
+}
+
 resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
   name: appName
   location: location
@@ -118,6 +128,13 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
         external: true
         targetPort: 3000
         transport: 'auto'
+        customDomains: customDomain != '' ? [
+          {
+            name: customDomain
+            bindingType: 'SniEnabled'
+            certificateId: managedCertificateName != '' ? resourceId('Microsoft.App/managedEnvironments/managedCertificates', environment.name, managedCertificateName) : null
+          }
+        ] : null
       }
       registries: [
         {
