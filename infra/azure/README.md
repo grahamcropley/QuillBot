@@ -3,7 +3,8 @@
 This setup deploys the WebUI + OpenCode as **two containers in one Azure
 Container App** for simple internal networking (`OPENCODE_API_URL` is
 `http://localhost:9090`). Both containers share Azure Files for `/app/data`,
-and OpenCode mounts `/app/.config/opencode` for isolated auth/config.
+and OpenCode mounts `/app/.config/opencode` for isolated auth/config and
+`/app/.local` for persistent session/message state.
 
 Note: both containers scale together. If you need independent scaling, split
 them into separate Container Apps.
@@ -55,6 +56,7 @@ Optional overrides:
 
 - `DATA_SHARE_NAME` (default: `quillbot-data`)
 - `CONFIG_SHARE_NAME` (default: `opencode-config`)
+- `STATE_SHARE_NAME` (default: `opencode-state`)
 - `WEB_IMAGE_NAME` (default: `quillbot-web`)
 - `OPENCODE_IMAGE_NAME` (default: `quillbot-opencode`)
 - `OPENCODE_VERSION` (default: `1.1.56`)

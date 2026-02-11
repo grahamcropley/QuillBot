@@ -9,6 +9,7 @@ param acrName string
 param storageAccountName string
 param dataShareName string = 'quillbot-data'
 param configShareName string = 'opencode-config'
+param stateShareName string = 'opencode-state'
 param webImage string = ''
 param opencodeImage string = ''
 param opencodeServerUsername string = ''
@@ -65,6 +66,10 @@ resource configShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023
   name: '${storage.name}/default/${configShareName}'
 }
 
+resource stateShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
+  name: '${storage.name}/default/${stateShareName}'
+}
+
 resource environment 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: environmentName
   location: location
@@ -103,6 +108,18 @@ resource configStorage 'Microsoft.App/managedEnvironments/storages@2023-05-01' =
   }
 }
 
+resource stateStorage 'Microsoft.App/managedEnvironments/storages@2023-05-01' = {
+  name: '${environment.name}/opencode-state'
+  properties: {
+    azureFile: {
+      accountName: storage.name
+      accountKey: listKeys(storage.id, '2023-01-01').keys[0].value
+      shareName: stateShareName
+      accessMode: 'ReadWrite'
+    }
+  }
+}
+
 var acrCredentials = listCredentials(acr.id, '2023-07-01')
 
 resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' = if (managedCertificateName != '') {
@@ -119,6 +136,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
   dependsOn: [
     dataStorage
     configStorage
+    stateStorage
   ]
   properties: {
     managedEnvironmentId: environment.id
@@ -278,30 +296,39 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
             cpu: json('0.5')
             memory: '1Gi'
           }
-          volumeMounts: [
-            {
-              volumeName: 'data'
-              mountPath: '/app/data'
-            }
-            {
-              volumeName: 'opencode-config'
-              mountPath: '/app/.config/opencode'
-            }
-          ]
+           volumeMounts: [
+             {
+               volumeName: 'data'
+               mountPath: '/app/data'
+             }
+             {
+               volumeName: 'opencode-config'
+               mountPath: '/app/.config/opencode'
+             }
+             {
+               volumeName: 'opencode-state'
+               mountPath: '/app/.local'
+             }
+           ]
         }
       ]
-      volumes: [
-        {
-          name: 'data'
-          storageType: 'AzureFile'
-          storageName: 'data'
-        }
-        {
-          name: 'opencode-config'
-          storageType: 'AzureFile'
-          storageName: 'opencode-config'
-        }
-      ]
+       volumes: [
+         {
+           name: 'data'
+           storageType: 'AzureFile'
+           storageName: 'data'
+         }
+         {
+           name: 'opencode-config'
+           storageType: 'AzureFile'
+           storageName: 'opencode-config'
+         }
+         {
+           name: 'opencode-state'
+           storageType: 'AzureFile'
+           storageName: 'opencode-state'
+         }
+       ]
       scale: {
         minReplicas: minReplicas
         maxReplicas: maxReplicas
