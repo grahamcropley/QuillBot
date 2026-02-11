@@ -126,7 +126,8 @@ resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificat
   name: '${environment.name}/${managedCertificateName}'
   location: location
   properties: {
-    domainName: customDomain
+    subjectName: customDomain
+    domainControlValidation: 'CNAME'
   }
 }
 
