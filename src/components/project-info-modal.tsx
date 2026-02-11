@@ -65,6 +65,7 @@ export function ProjectInfoModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form fields when modal opens with new values
     setName(initialValues.name);
     setContentType(initialValues.contentType);
     setWordCount(initialValues.wordCount);

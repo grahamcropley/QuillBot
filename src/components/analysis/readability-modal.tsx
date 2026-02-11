@@ -135,7 +135,7 @@ export function ReadabilityModal({
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
               We use <strong>industry-standard readability formulas</strong>{" "}
               with adjustments for business content. Proper nouns and technical
-              terms don't unfairly penalize your score.
+              terms don&apos;t unfairly penalize your score.
             </p>
           </div>
 

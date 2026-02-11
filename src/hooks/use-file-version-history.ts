@@ -137,6 +137,7 @@ export function useFileVersionHistory(options: {
     if (!activeKey) return;
 
     // Reset selection when switching files/projects.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on key change
     setSelectedVersionId(null);
     setSelectedVersionContent(null);
     setBaselineContent(null);

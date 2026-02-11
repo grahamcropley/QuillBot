@@ -30,7 +30,7 @@ export DOCKER_HOST="ssh://$REMOTE_HOST"
 
 ensure_remote_dirs() {
   log_info "Ensuring remote directories exist..."
-  ssh "$REMOTE_HOST" "mkdir -p $REMOTE_BASE/{data,opencode-config}"
+  ssh "$REMOTE_HOST" "mkdir -p $REMOTE_BASE/{data,opencode-config,opencode-state}"
   log_success "Remote directories ready"
 }
 

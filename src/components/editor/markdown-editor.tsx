@@ -592,8 +592,6 @@ export const MarkdownEditor = forwardRef<
   const themeRef = useRef(theme);
   const disabledRef = useRef(disabled);
 
-  themeRef.current = theme;
-  disabledRef.current = disabled;
   const [selectionState, setSelectionState] = useState<SelectionState>({
     hasSelection: false,
     selectionFrom: 0,
@@ -615,6 +613,14 @@ export const MarkdownEditor = forwardRef<
   useEffect(() => {
     onSelectionChangeRef.current = onSelectionChange;
   }, [onSelectionChange]);
+
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
 
   const updateSelectionState = useCallback((view: EditorView) => {
     const doc = view.state.doc;
@@ -740,6 +746,7 @@ export const MarkdownEditor = forwardRef<
     const view = createEditor();
     if (view) {
       editorRef.current = view;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize selection state on editor mount
       updateSelectionState(view);
     }
 

@@ -68,10 +68,10 @@ COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 
 # Create data directory with correct ownership
-RUN mkdir -p /app/data && chown -R node:node /app/data
+RUN mkdir -p /app/data
+RUN chown -R 1000:1000 /app
 
-# Switch to non-root user (node user is UID/GID 1000)
-USER node
+USER 1000:1000
 
 # Expose application port
 EXPOSE 3000

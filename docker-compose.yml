@@ -9,13 +9,15 @@ services:
     container_name: quillbot-opencode
     hostname: ${OPENCODE_HOSTNAME:-quillbot-opencode}
     domainname: ${OPENCODE_DOMAINNAME:-}
-    command: ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "9090"]
+#    command: ["bash", "-c", "echo", "STARTING", "&&", "opencode", "serve", "--hostname", "0.0.0.0", "--port", "9090"]
+    command: ["bash", "-c", "echo STARTING && chown -R 1000:1000 /app && ls -lah /app && opencode serve --hostname 0.0.0.0 --port 9090 --log-level DEBUG --print-logs"]
     working_dir: /app
     ports:
       - "9090:9090"
     environment:
       HOME: /app
       XDG_CONFIG_HOME: /app/.config
+      XDG_DATA_HOME: /app/.local
       # Runtime secrets (no defaults - must be provided)
       OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:?OPENCODE_SERVER_USERNAME is required}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?OPENCODE_SERVER_PASSWORD is required}
@@ -25,13 +27,13 @@ services:
       OPENCODE_ENABLE_EXA: ${OPENCODE_ENABLE_EXA:-1}
     volumes:
       - type: bind
-        source: ${DATA_PATH:-./data}
+        source: ${DATA_PATH:?DATA_PATH is required}
         target: /app/data
       - type: bind
-        source: ${OPENCODE_CONFIG_PATH:-./opencode-config/.config/opencode}
+        source: ${OPENCODE_CONFIG_PATH:?OPENCODE_CONFIG_PATH is required}
         target: /app/.config/opencode
       - type: bind
-        source: ${OPENCODE_STATE_PATH:-./data/opencode-state}
+        source: ${OPENCODE_STATE_PATH:?OPENCODE_STATE_PATH is required}
         target: /app/.local
     networks:
       - ${NETWORK_NAME:-default}
@@ -79,7 +81,7 @@ services:
         condition: service_healthy
     volumes:
       - type: bind
-        source: ${DATA_PATH:-./data}
+        source: ${DATA_PATH:?DATA_PATH is required}
         target: /app/data
     networks:
       - ${NETWORK_NAME:-default}

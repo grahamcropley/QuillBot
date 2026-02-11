@@ -447,6 +447,7 @@ export const MarkdownPreview = forwardRef<
     }
     pendingAutosaveContentRef.current = null;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external content prop into local editor state
     setEditContent(content);
     lastSyncedContentRef.current = content;
 
@@ -497,6 +498,7 @@ export const MarkdownPreview = forwardRef<
     }
 
     // Prevent a file load from being attributed as an AI edit.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset override state on document key change
     setExternalUpdateOverride("system");
     editorRef.current?.clearChangeHighlights?.();
     latestCachedContentRef.current = null;
@@ -567,6 +569,7 @@ export const MarkdownPreview = forwardRef<
 
   useEffect(() => {
     if (!isViewingLatest) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derived state sync from viewing mode
       setHasUnsavedChanges(false);
       return;
     }
@@ -595,6 +598,7 @@ export const MarkdownPreview = forwardRef<
 
     if (!wasViewingLatest && isViewingLatest) {
       // Prevent a full-doc swap from being classified as an AI edit.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync override state on version switch
       setExternalUpdateOverride("system");
       const handle = window.setTimeout(() => {
         setExternalUpdateOverride(null);
@@ -713,12 +717,15 @@ export const MarkdownPreview = forwardRef<
     inMarkedSection: false,
   });
 
-  const handleSelectionChange = useCallback((state: any) => {
-    setSelectionState({
-      hasSelection: state.hasSelection,
-      inMarkedSection: state.inMarkedSection,
-    });
-  }, []);
+  const handleSelectionChange = useCallback(
+    (state: { hasSelection: boolean; inMarkedSection: boolean }) => {
+      setSelectionState({
+        hasSelection: state.hasSelection,
+        inMarkedSection: state.inMarkedSection,
+      });
+    },
+    [],
+  );
 
   const handleMark = useCallback(() => {
     editorRef.current?.mark?.();
@@ -837,12 +844,15 @@ export const MarkdownPreview = forwardRef<
                     />
                   ),
                   code: ({
-                    node,
+                    node: _node,
                     inline,
                     className,
                     children,
                     ...props
-                  }: any) => (
+                  }: React.ComponentPropsWithoutRef<"code"> & {
+                    node?: unknown;
+                    inline?: boolean;
+                  }) => (
                     <code
                       {...props}
                       className={
