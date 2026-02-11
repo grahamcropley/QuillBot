@@ -122,13 +122,10 @@ resource stateStorage 'Microsoft.App/managedEnvironments/storages@2023-05-01' = 
 
 var acrCredentials = listCredentials(acr.id, '2023-07-01')
 
-resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' = if (managedCertificateName != '') {
+// Reference existing managed certificate (created out-of-band via Azure CLI/Portal)
+// The certificate must already exist in the managed environment before deployment.
+resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' existing = if (managedCertificateName != '') {
   name: '${environment.name}/${managedCertificateName}'
-  location: location
-  properties: {
-    subjectName: customDomain
-    domainControlValidation: 'CNAME'
-  }
 }
 
 resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {

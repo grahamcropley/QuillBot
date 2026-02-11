@@ -127,6 +127,26 @@ jobs:
             OPENCODE_VERSION=${{ env.OPENCODE_VERSION }}
           tags: ${{ steps.acr.outputs.loginServer }}/${{ env.OPENCODE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
+      - name: Resolve managed certificate name
+        id: cert
+        if: ${{ env.CUSTOM_DOMAIN != '' }}
+        run: |
+          # Look up the existing managed certificate by subject name (domain)
+          CERT_NAME=$(az containerapp env certificate list \
+            --name "$AZURE_ENV_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --managed-certificates-only \
+            --query "[?properties.subjectName=='${CUSTOM_DOMAIN}'].name | [0]" \
+            -o tsv 2>/dev/null || true)
+
+          if [ -n "$CERT_NAME" ] && [ "$CERT_NAME" != "None" ]; then
+            echo "Found existing managed certificate: $CERT_NAME"
+            echo "MANAGED_CERTIFICATE_NAME=$CERT_NAME" >> "$GITHUB_ENV"
+          else
+            echo "No existing managed certificate found for $CUSTOM_DOMAIN"
+            echo "Using configured name: $MANAGED_CERTIFICATE_NAME"
+          fi
+
       - name: Ensure infrastructure and file shares
         run: |
           az deployment group create \
