@@ -5,7 +5,7 @@ shopt -s globstar nullglob
 
 STORAGE_ACCOUNT="${1:-quillbotstoragedev}"
 CONFIG_SHARE="${2:-opencode-config}"
-CONFIG_ROOT="opencode-config/opencode"
+CONFIG_ROOT="opencode-config/.config/opencode"
 OPENCODE_CONFIG_FILE="$CONFIG_ROOT/opencode.json"
 
 upload_file() {
