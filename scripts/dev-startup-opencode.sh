@@ -8,10 +8,12 @@ printf "\033[0;34m╚═══════════════════�
 PROJECT_ROOT="/home/graham/github/QuillBot"
 DEV_CONFIG_DIR="$PROJECT_ROOT/dev/app/.config"
 DEV_DATA_DIR="$PROJECT_ROOT/dev/app/.local/share"
+DEV_LOCAL_DIR="$PROJECT_ROOT/dev/app/.local"
 
 # Ensure dev directories exist
 mkdir -p "$DEV_CONFIG_DIR"
 mkdir -p "$DEV_DATA_DIR"
+mkdir -p "$DEV_LOCAL_DIR"
 
 # Copy config from opencode-config/.config/* to dev/app/.config/ (recursive)
 echo "📋 Copying OpenCode configuration..."
@@ -24,6 +26,7 @@ cd "$PROJECT_ROOT/dev/app/data/projects"
 
 # Set environment variables
 export OPENCODE_API_URL=http://localhost:9090
+export HOME="$PROJECT_ROOT/dev/app"
 export XDG_DATA_HOME="$DEV_DATA_DIR"
 export XDG_CONFIG_HOME="$DEV_CONFIG_DIR"
 export OPENCODE_ENABLE_EXA=1
@@ -47,6 +50,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  OPENCODE_API_URL:            $OPENCODE_API_URL"
 echo "  OPENCODE_SERVER_USERNAME:    $OPENCODE_SERVER_USERNAME"
 echo "  OPENCODE_SERVER_PASSWORD:    ${OPENCODE_SERVER_PASSWORD:0:10}...${OPENCODE_SERVER_PASSWORD: -4}"
+echo "  HOME:                        $HOME"
 echo "  XDG_CONFIG_HOME:             $XDG_CONFIG_HOME"
 echo "  XDG_DATA_HOME:               $XDG_DATA_HOME"
 echo "  OPENCODE_ENABLE_EXA:         $OPENCODE_ENABLE_EXA"

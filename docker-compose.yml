@@ -30,6 +30,9 @@ services:
       - type: bind
         source: ${OPENCODE_CONFIG_PATH:-./opencode-config/.config/opencode}
         target: /app/.config/opencode
+      - type: bind
+        source: ${OPENCODE_STATE_PATH:-./data/opencode-state}
+        target: /app/.local
     networks:
       - ${NETWORK_NAME:-default}
     restart: unless-stopped
