@@ -11,7 +11,8 @@ param dataShareName string = 'quillbot-data'
 param configShareName string = 'opencode-config'
 param webImage string = ''
 param opencodeImage string = ''
-param opencodeApiKey string = ''
+param opencodeServerUsername string = ''
+param opencodeServerPassword string = ''
 param azureApiKey string = ''
 param azureResourceName string = ''
 param configRevision string = ''
@@ -132,10 +133,16 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
             value: acrCredentials.passwords[0].value
           }
         ],
-        opencodeApiKey != '' ? [
+        opencodeServerUsername != '' ? [
           {
-            name: 'opencode-api-key'
-            value: opencodeApiKey
+            name: 'opencode-server-username'
+            value: opencodeServerUsername
+          }
+        ] : [],
+        opencodeServerPassword != '' ? [
+          {
+            name: 'opencode-server-password'
+            value: opencodeServerPassword
           }
         ] : [],
         azureApiKey != '' ? [
@@ -166,10 +173,22 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                 value: azureResourceName
               }
             ],
-            opencodeApiKey != '' ? [
+            opencodeServerUsername != '' ? [
               {
-                name: 'OPENCODE_API_KEY'
-                secretRef: 'opencode-api-key'
+                name: 'OPENCODE_SERVER_USERNAME'
+                secretRef: 'opencode-server-username'
+              }
+            ] : [],
+            opencodeServerPassword != '' ? [
+              {
+                name: 'OPENCODE_SERVER_PASSWORD'
+                secretRef: 'opencode-server-password'
+              }
+            ] : [],
+            azureApiKey != '' ? [
+              {
+                name: 'AZURE_API_KEY'
+                secretRef: 'azure-api-key'
               }
             ] : []
           )
@@ -219,10 +238,16 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = if (deployApp) {
                  value: '1'
                }
              ],
-            opencodeApiKey != '' ? [
+            opencodeServerUsername != '' ? [
               {
-                name: 'OPENCODE_API_KEY'
-                secretRef: 'opencode-api-key'
+                name: 'OPENCODE_SERVER_USERNAME'
+                secretRef: 'opencode-server-username'
+              }
+            ] : [],
+            opencodeServerPassword != '' ? [
+              {
+                name: 'OPENCODE_SERVER_PASSWORD'
+                secretRef: 'opencode-server-password'
               }
             ] : [],
             azureApiKey != '' ? [

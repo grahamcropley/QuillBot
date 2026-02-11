@@ -112,6 +112,7 @@ function AgentChatContent({
   placeholder,
   className,
   directory,
+  showThinking = true,
   onMessagesChange,
   onStatusChange,
   contextItems,
@@ -127,6 +128,7 @@ function AgentChatContent({
     answerQuestion,
     rejectQuestion,
     addPseudoMessage,
+    interruptSession,
   } = useChat({
     sessionId,
     backendUrl,
@@ -138,7 +140,21 @@ function AgentChatContent({
   const { todoModal, closeTodoModal } = useTodoModal();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageCount = messages.length;
-  const renderItems = buildRenderMessageItems(messages);
+  const displayMessages = showThinking
+    ? messages
+    : messages
+        .map((msg) => ({
+          ...msg,
+          parts: msg.parts.filter((p) => p.type !== "reasoning"),
+        }))
+        .filter(
+          (msg) =>
+            msg.role === "user" ||
+            msg.parts.length > 0 ||
+            msg.error ||
+            !msg.completedAt,
+        );
+  const renderItems = buildRenderMessageItems(displayMessages);
   const contextItemsRef = useRef(contextItems);
   const onClearContextRef = useRef(onClearContext);
 
@@ -255,6 +271,7 @@ function AgentChatContent({
 
       <ChatInput
         onSend={handleSendMessage}
+        onInterrupt={interruptSession}
         isLoading={isBusy}
         placeholder={placeholder}
         contextItems={contextItems}

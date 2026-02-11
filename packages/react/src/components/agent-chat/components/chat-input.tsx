@@ -4,6 +4,7 @@ import type { ContextItem } from "../agent-chat.types";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
+  onInterrupt?: () => void;
   isLoading: boolean;
   placeholder?: string;
   contextItems?: ContextItem[];
@@ -12,12 +13,14 @@ interface ChatInputProps {
 
 export function ChatInput({
   onSend,
+  onInterrupt,
   isLoading,
   placeholder,
   contextItems,
   onClearContext,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [interruptArmed, setInterruptArmed] = useState(false);
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,6 +36,29 @@ export function ChatInput({
       onSend(input);
       setInput("");
     }
+  };
+
+  const handleSendButtonClick = () => {
+    if (isLoading) {
+      if (!onInterrupt) return;
+
+      if (!interruptArmed) {
+        setInterruptArmed(true);
+        return;
+      }
+
+      setInterruptArmed(false);
+      onInterrupt();
+      return;
+    }
+
+    if (interruptArmed) {
+      setInterruptArmed(false);
+    }
+
+    if (!input.trim()) return;
+    onSend(input);
+    setInput("");
   };
 
   const contextCount = contextItems?.length ?? 0;
@@ -66,7 +92,12 @@ export function ChatInput({
       <form onSubmit={handleSubmit} className="flex items-end gap-2 p-4">
         <textarea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            if (interruptArmed) {
+              setInterruptArmed(false);
+            }
+            setInput(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? "Type a message..."}
           rows={1}
@@ -78,19 +109,46 @@ export function ChatInput({
           )}
         />
         <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          aria-label="Send message"
+          type="button"
+          disabled={!isLoading && !input.trim()}
+          aria-label={
+            isLoading
+              ? interruptArmed
+                ? "Interrupt agent (confirm)"
+                : "Interrupt agent"
+              : "Send message"
+          }
+          onClick={handleSendButtonClick}
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-            "bg-blue-600 text-white transition-colors hover:bg-blue-700",
-            "disabled:opacity-50 disabled:hover:bg-blue-600",
+            isLoading && interruptArmed
+              ? "bg-red-600 text-white hover:bg-red-700"
+              : "bg-blue-600 text-white hover:bg-blue-700",
+            "transition-colors",
+            "disabled:opacity-50",
+            !isLoading && "disabled:hover:bg-blue-600",
+            isLoading && interruptArmed && "disabled:hover:bg-red-600",
           )}
         >
           {isLoading ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            interruptArmed ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <title>Stop</title>
+                <rect
+                  x="4"
+                  y="4"
+                  width="8"
+                  height="8"
+                  rx="1"
+                  fill="currentColor"
+                />
+              </svg>
+            ) : (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            )
           ) : (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <title>Send</title>
               <path
                 d="M1 8h14M9 2l6 6-6 6"
                 stroke="currentColor"

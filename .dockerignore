@@ -1,14 +1,88 @@
+# ============================================================================
+# Docker Build Context Exclusions
+# ============================================================================
+# Keep build context small and secure
+# ============================================================================
+
+# Dependencies (installed in container)
 node_modules
+packages/*/node_modules
+.pnpm-store
+**/node_modules
+
+# Build outputs (built in container)
 .next
+.turbo
+dist
+build
+out
+packages/*/dist
+packages/*/.next
+
+# Development files
 .git
-.DS_Store
-coverage
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment files (secrets should come from environment/vault)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.docker.example
+
+# Runtime data (bind-mounted)
 data
 opencode-config
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.env
-.env.*
+logs
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+**/__tests__
+**/__mocks__
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Documentation
+*.md
+!README.md
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Development tools
+.husky
+.prettierrc
+.eslintrc
+.eslintrc.*
+.editorconfig
+tsconfig.tsbuildinfo
+
+# Docker files (not needed in build)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Scripts (not needed in container)
+scripts
+dev-server.sh
+start-opencode.sh

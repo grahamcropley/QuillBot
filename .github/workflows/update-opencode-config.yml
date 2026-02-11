@@ -1,0 +1,105 @@
+name: Update OpenCode Config
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "opencode-config/opencode/**"
+
+concurrency:
+  group: deploy-quillbot
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_APP_NAME: ${{ vars.AZURE_APP_NAME }}
+  AZURE_STORAGE_ACCOUNT_NAME: ${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
+  CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
+
+jobs:
+  update-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload OpenCode config to Azure Files
+        run: |
+          echo "Uploading config files to Azure Files..."
+          chmod +x scripts/upload-config-to-azure.sh
+          ./scripts/upload-config-to-azure.sh "$AZURE_STORAGE_ACCOUNT_NAME" "$CONFIG_SHARE_NAME"
+
+      - name: Restart Container App
+        run: |
+          REVISION=$(az containerapp show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.latestRevisionName" -o tsv)
+
+          if [ -z "$REVISION" ]; then
+            echo "No active revision found; skipping restart"
+            exit 0
+          fi
+
+          echo "Restarting revision: $REVISION"
+          az containerapp revision restart \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --revision "$REVISION"
+
+      - name: Health check
+        run: |
+          FQDN=$(az containerapp show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+
+          if [ -z "$FQDN" ]; then
+            echo "No ingress FQDN found for container app"
+            exit 1
+          fi
+
+          for attempt in {1..10}; do
+            STATUS=$(az containerapp show \
+              --name "$AZURE_APP_NAME" \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --query "properties.runningStatus" -o tsv)
+            if [ "$STATUS" = "Running" ]; then
+              break
+            fi
+            echo "Waiting for Running status (attempt $attempt/10): $STATUS"
+            sleep 10
+          done
+
+          STATUS=$(az containerapp show \
+            --name "$AZURE_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.runningStatus" -o tsv)
+          if [ "$STATUS" != "Running" ]; then
+            echo "Container app is not Running (status: $STATUS)"
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -sS -L -o /dev/null -w "%{http_code}" "https://$FQDN")
+          case "$HTTP_CODE" in
+            200|302|401)
+              echo "Health probe returned HTTP $HTTP_CODE"
+              ;;
+            *)
+              echo "Unexpected health probe code: $HTTP_CODE"
+              exit 1
+              ;;
+          esac

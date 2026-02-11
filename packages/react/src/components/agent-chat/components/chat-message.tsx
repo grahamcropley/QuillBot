@@ -93,6 +93,12 @@ function isActivityPart(part: MessagePart): boolean {
   );
 }
 
+function isUnbubbledPart(part: MessagePart): boolean {
+  if (isActivityPart(part)) return true;
+  if (part.type === "reasoning" && !!part.text?.trim()) return true;
+  return false;
+}
+
 function isVisiblePart(part: MessagePart): boolean {
   if (isActivityPart(part)) return true;
   if (part.type === "text" || part.type === "reasoning") {
@@ -1213,6 +1219,37 @@ function StepPartView({ part }: { part: MessagePart }) {
   );
 }
 
+function ReasoningPartView({ part }: { part: MessagePart }) {
+  const [collapsed, setCollapsed] = useState(true);
+  const text = part.text ?? "";
+  const firstLine = text.split("\n")[0] ?? "";
+  const truncatedFirstLine =
+    firstLine.length > 120 ? `${firstLine.slice(0, 117)}...` : firstLine;
+
+  return (
+    <div className="mt-2 text-xs italic text-zinc-400 dark:text-zinc-500">
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full text-left"
+        aria-expanded={!collapsed}
+        aria-label={collapsed ? "Expand thinking" : "Collapse thinking"}
+      >
+        {collapsed ? (
+          <span className="block truncate">
+            <span className="font-bold not-italic tracking-wide">
+              Thinking:
+            </span>{" "}
+            {truncatedFirstLine}
+          </span>
+        ) : (
+          <span className="whitespace-pre-wrap break-words block">{text}</span>
+        )}
+      </button>
+    </div>
+  );
+}
+
 function PartView({
   part,
   role,
@@ -1241,11 +1278,7 @@ function PartView({
       return <ToolPartView part={part} />;
     case "reasoning":
       if (!part.text) return null;
-      return (
-        <p className="whitespace-pre-wrap break-words italic text-zinc-500 dark:text-zinc-400">
-          {part.text}
-        </p>
-      );
+      return <ReasoningPartView part={part} />;
     case "step-start":
     case "step-finish":
       return <StepPartView part={part} />;
@@ -1390,11 +1423,11 @@ function splitPartsByActivityBoundary(
   const groups: Array<{ isActivity: boolean; parts: MessagePart[] }> = [];
 
   for (const part of parts) {
-    const activity = isActivityPart(part);
+    const unbubbled = isUnbubbledPart(part);
     const prev = groups[groups.length - 1];
 
-    if (!prev || prev.isActivity !== activity) {
-      groups.push({ isActivity: activity, parts: [part] });
+    if (!prev || prev.isActivity !== unbubbled) {
+      groups.push({ isActivity: unbubbled, parts: [part] });
       continue;
     }
 
@@ -1461,13 +1494,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const isPseudo = message.pseudo;
   const hasQa = isPseudo && message.qaAnswers && message.qaAnswers.length > 0;
   const visibleParts = message.parts.filter((part) => isVisiblePart(part));
-  const hasActivityParts = visibleParts.some((part) => isActivityPart(part));
+  const hasUnbubbledParts = visibleParts.some((part) => isUnbubbledPart(part));
   const partSections = splitPartsByActivityBoundary(visibleParts);
   const isActivityOnly =
     !isUser &&
     !hasQa &&
     visibleParts.length > 0 &&
-    visibleParts.every((part) => isActivityPart(part));
+    visibleParts.every((part) => isUnbubbledPart(part));
 
   return (
     <div
@@ -1503,7 +1536,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </p>
           )}
         </div>
-      ) : hasActivityParts ? (
+      ) : hasUnbubbledParts ? (
         <div className="max-w-[95%] text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
           {partSections.map((section, index) => (
             <div

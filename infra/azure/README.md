@@ -24,9 +24,10 @@ Required:
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 
-Optional:
+Required for OpenCode HTTP Basic Auth:
 
-- `OPENCODE_API_KEY` (if your OpenCode server expects auth)
+- `OPENCODE_SERVER_USERNAME` (e.g. `quillbot-opencode-api`)
+- `OPENCODE_SERVER_PASSWORD` (secure random password)
 
 Required for Azure OpenAI / Foundry provider:
 
@@ -56,7 +57,7 @@ Optional overrides:
 - `CONFIG_SHARE_NAME` (default: `opencode-config`)
 - `WEB_IMAGE_NAME` (default: `quillbot-web`)
 - `OPENCODE_IMAGE_NAME` (default: `quillbot-opencode`)
-- `OPENCODE_VERSION` (default: `latest`)
+- `OPENCODE_VERSION` (default: `1.1.56`)
 
 ## Config Upload
 

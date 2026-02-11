@@ -36,8 +36,8 @@ importers:
         specifier: ^6.39.11
         version: 6.39.13
       '@opencode-ai/sdk':
-        specifier: ^1.1.47
-        version: 1.1.53
+        specifier: ^1.1.56
+        version: 1.1.56
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
@@ -176,8 +176,8 @@ importers:
   packages/server-core:
     dependencies:
       '@opencode-ai/sdk':
-        specifier: ^1.1.53
-        version: 1.1.53
+        specifier: ^1.1.56
+        version: 1.1.56
     devDependencies:
       tsup:
         specifier: ^8.5.0
@@ -972,8 +972,8 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@opencode-ai/sdk@1.1.53':
-    resolution: {integrity: sha512-RUIVnPOP1CyyU32FrOOYuE7Ge51lOBuhaFp2NSX98ncApT7ffoNetmwzqrhOiJQgZB1KrbCHLYOCK6AZfacxag==}
+  '@opencode-ai/sdk@1.1.56':
+    resolution: {integrity: sha512-VFIk4wS7chc1fbodMXstBHV6uj9z25g3c72SlwBYjzPZZLgtr9IUK+FyGMUYefXYeeXJ/l91CdmfjCjDZTmD1g==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -4336,7 +4336,7 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@opencode-ai/sdk@1.1.53': {}
+  '@opencode-ai/sdk@1.1.56': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 

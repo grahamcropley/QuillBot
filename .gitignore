@@ -32,6 +32,12 @@ yarn-error.log*
 .env
 .env*.local
 .env.production
+.env.opencode.local
+.env.opencode.lab
+.env.opencode.production
+.env.web.local
+.env.web.lab
+.env.web.production
 
 # vercel
 .vercel
@@ -63,3 +69,5 @@ data/projects/**/.quillbot/
 
 .agent-chat-versions
 .sisyphus/**/*.local.md
+
+dev/**

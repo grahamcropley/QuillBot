@@ -5,6 +5,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "*.md"
+      - "opencode-config/**"
+      - "docs/**"
+
+concurrency:
+  group: deploy-quillbot
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -23,7 +31,7 @@ env:
   CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
   WEB_IMAGE_NAME: ${{ vars.WEB_IMAGE_NAME || 'quillbot-web' }}
   OPENCODE_IMAGE_NAME: ${{ vars.OPENCODE_IMAGE_NAME || 'quillbot-opencode' }}
-  OPENCODE_VERSION: ${{ vars.OPENCODE_VERSION || 'latest' }}
+  OPENCODE_VERSION: ${{ vars.OPENCODE_VERSION || '1.1.56' }}
   IMAGE_TAG: ${{ github.sha }}
   # Easy Auth configuration (Microsoft Entra ID)
   ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
@@ -107,15 +115,10 @@ jobs:
               dataShareName="$DATA_SHARE_NAME" \
               configShareName="$CONFIG_SHARE_NAME"
 
-      - name: Upload OpenCode config to Azure Files
-        run: |
-          echo "Uploading config files to Azure Files..."
-          chmod +x scripts/upload-config-to-azure.sh
-          ./scripts/upload-config-to-azure.sh "$AZURE_STORAGE_ACCOUNT_NAME" "$CONFIG_SHARE_NAME"
-
       - name: Update Container App secrets
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_SERVER_USERNAME: ${{ secrets.OPENCODE_SERVER_USERNAME }}
+          OPENCODE_SERVER_PASSWORD: ${{ secrets.OPENCODE_SERVER_PASSWORD }}
           AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
         run: |
           if ! az containerapp show --name "$AZURE_APP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" > /dev/null 2>&1; then
@@ -124,8 +127,11 @@ jobs:
           fi
 
           SECRET_ARGS=()
-          if [ -n "$OPENCODE_API_KEY" ]; then
-            SECRET_ARGS+=("opencode-api-key=$OPENCODE_API_KEY")
+          if [ -n "$OPENCODE_SERVER_USERNAME" ]; then
+            SECRET_ARGS+=("opencode-server-username=$OPENCODE_SERVER_USERNAME")
+          fi
+          if [ -n "$OPENCODE_SERVER_PASSWORD" ]; then
+            SECRET_ARGS+=("opencode-server-password=$OPENCODE_SERVER_PASSWORD")
           fi
           if [ -n "$AZURE_API_KEY" ]; then
             SECRET_ARGS+=("azure-api-key=$AZURE_API_KEY")
@@ -164,7 +170,8 @@ jobs:
               opencodeImage="$OPENCODE_IMAGE" \
               configRevision="$CONFIG_REV" \
               azureResourceName="$AZURE_RESOURCE_NAME" \
-              opencodeApiKey="${{ secrets.OPENCODE_API_KEY }}" \
+              opencodeServerUsername="${{ secrets.OPENCODE_SERVER_USERNAME }}" \
+              opencodeServerPassword="${{ secrets.OPENCODE_SERVER_PASSWORD }}" \
               azureApiKey="${{ secrets.AZURE_API_KEY }}"
 
       - name: Configure Easy Auth (Microsoft Entra ID)

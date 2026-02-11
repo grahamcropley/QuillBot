@@ -19,7 +19,11 @@ pnpm add @agent-chat/server-core
 
 ## Environment
 
-- `OPENCODE_API_URL` (optional): defaults to `http://localhost:4096`
+- `OPENCODE_API_URL` (optional): defaults to `http://localhost:9090`
+- `OPENCODE_SERVER_USERNAME` (optional): HTTP Basic Auth username
+- `OPENCODE_SERVER_PASSWORD` (optional): HTTP Basic Auth password
+
+When both `OPENCODE_SERVER_USERNAME` and `OPENCODE_SERVER_PASSWORD` are set, the client will automatically add HTTP Basic Authentication headers to all requests.
 
 ## Basic usage (adapter authors)
 

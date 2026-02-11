@@ -132,6 +132,7 @@ export default function ProjectPage() {
     null,
   );
   const [isNavigationModalOpen, setIsNavigationModalOpen] = useState(false);
+  const [showThinking, setShowThinking] = useState(true);
   const hasInitialized = useRef<Set<string>>(new Set());
   const initialWidthSetRef = useRef(false);
 
@@ -917,9 +918,33 @@ export default function ProjectPage() {
         >
           <Card className="flex flex-1 flex-col overflow-hidden h-full">
             <CardHeader className="flex-shrink-0 pb-2">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Conversation
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Conversation
+                </h3>
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                    Thinking
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showThinking}
+                    onClick={() => setShowThinking((v) => !v)}
+                    className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
+                      showThinking
+                        ? "bg-blue-600"
+                        : "bg-gray-300 dark:bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${
+                        showThinking ? "translate-x-3.5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </label>
+              </div>
             </CardHeader>
             <div className="flex-1 overflow-hidden" data-preserve-selection>
               <PanelErrorBoundary panelName="conversation">
@@ -930,6 +955,7 @@ export default function ProjectPage() {
                   directory={currentProject.directoryPath}
                   placeholder="Ask the agent anything..."
                   className="quill-agent-chat h-full"
+                  showThinking={showThinking}
                   onStatusChange={handleChatStatusChange}
                   contextItems={contextItems}
                   onClearContext={handleClearContext}

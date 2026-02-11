@@ -1,46 +1,100 @@
 services:
-  opencode:
-    image: ${OPENCODE_IMAGE:-ghcr.io/ohmyopencode/opencode:latest}
-    command: ["opencode", "serve", "--host", "0.0.0.0", "--port", "9090"]
+  quillbot-opencode:
+    image: ${OPENCODE_IMAGE:-quillbot-opencode:latest}
+    build:
+      context: .
+      dockerfile: containers/opencode/Dockerfile
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-1.1.56}
+    container_name: quillbot-opencode
+    hostname: ${OPENCODE_HOSTNAME:-quillbot-opencode}
+    domainname: ${OPENCODE_DOMAINNAME:-}
+    command: ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "9090"]
     working_dir: /app
     ports:
       - "9090:9090"
     environment:
       HOME: /app
       XDG_CONFIG_HOME: /app/.config
-      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
-      AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME:-}
-      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      # Runtime secrets (no defaults - must be provided)
+      OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:?OPENCODE_SERVER_USERNAME is required}
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?OPENCODE_SERVER_PASSWORD is required}
+      AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME:?AZURE_RESOURCE_NAME is required}
+      AZURE_API_KEY: ${AZURE_API_KEY:?AZURE_API_KEY is required}
+      # Optional configs
       OPENCODE_ENABLE_EXA: ${OPENCODE_ENABLE_EXA:-1}
     volumes:
       - type: bind
-        source: ./data
+        source: ${DATA_PATH:-./data}
         target: /app/data
       - type: bind
-        source: ./opencode-config
+        source: ${OPENCODE_CONFIG_PATH:-./opencode-config/.config/opencode}
         target: /app/.config/opencode
-      - type: bind
-        source: ./.opencode
-        target: /app/.opencode
-        read_only: true
-      - type: bind
-        source: ./AGENTS.md
-        target: /app/AGENTS.md
-        read_only: true
+    networks:
+      - ${NETWORK_NAME:-default}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          'node -e "const http = require(''http''); const auth = Buffer.from(''$$OPENCODE_SERVER_USERNAME:$$OPENCODE_SERVER_PASSWORD'').toString(''base64''); const opts = {hostname: ''localhost'', port: 9090, path: ''/health'', headers: {''Authorization'': ''Basic '' + auth}}; http.get(opts, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on(''error'', () => process.exit(1));"',
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
 
-  web:
+  quillbot-web:
     build:
       context: .
       dockerfile: containers/web/Dockerfile
+    image: ${WEB_IMAGE:-quillbot-web:latest}
+    container_name: quillbot-web
+    hostname: ${WEB_HOSTNAME:-quillbot-web}
+    domainname: ${WEB_DOMAINNAME:-}
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      OPENCODE_API_URL: http://opencode:9090
-      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      # Service discovery
+      OPENCODE_API_URL: ${OPENCODE_API_URL:-http://quillbot-opencode:9090}
+      # Runtime secrets (no defaults - must be provided)
+      OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:?OPENCODE_SERVER_USERNAME is required}
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?OPENCODE_SERVER_PASSWORD is required}
+      AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME:?AZURE_RESOURCE_NAME is required}
+      AZURE_API_KEY: ${AZURE_API_KEY:?AZURE_API_KEY is required}
+      # Optional configs
+      EASY_AUTH_DEV_USER: ${EASY_AUTH_DEV_USER:-}
+      # Lab/Prod specific (nginx-proxy integration)
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-}
+      VIRTUAL_PORT: ${VIRTUAL_PORT:-}
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-}
     depends_on:
-      - opencode
+      quillbot-opencode:
+        condition: service_healthy
     volumes:
       - type: bind
-        source: ./data
+        source: ${DATA_PATH:-./data}
         target: /app/data
+    networks:
+      - ${NETWORK_NAME:-default}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+networks:
+  default:
+  containers:
+    external: true

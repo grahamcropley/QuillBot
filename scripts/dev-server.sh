@@ -11,13 +11,11 @@
 
 set -e
 
-# Configuration
 SESSION_NAME="quillbot-dev"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENCODE_PORT=9090
 NEXTJS_PORT=3000
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -25,25 +23,21 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Logging functions
 log_info() { echo -e "${BLUE}ℹ ${1}${NC}"; }
 log_success() { echo -e "${GREEN}✓ ${1}${NC}"; }
 log_warn() { echo -e "${YELLOW}⚠ ${1}${NC}"; }
 log_error() { echo -e "${RED}✗ ${1}${NC}"; }
 
-# Helper: Check if port is listening
 is_port_listening() {
     local port=$1
     nc -z localhost "$port" 2>/dev/null && return 0 || return 1
 }
 
-# Helper: Check if process is running by name
 is_process_running() {
     local pattern=$1
     pgrep -f "$pattern" > /dev/null 2>&1 && return 0 || return 1
 }
 
-# Command: START
 cmd_start() {
     echo ""
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -51,20 +45,17 @@ cmd_start() {
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
-    # Check if session already exists
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
         log_warn "Session '$SESSION_NAME' already exists"
         log_info "Use './dev-server.sh attach' to connect"
         return 0
     fi
 
-    # Create new detached tmux session with OpenCode window
     tmux new-session -d -s "$SESSION_NAME" -n "OpenCode"
-    tmux send-keys -t "$SESSION_NAME:0" "exec bash '$SCRIPT_DIR/.dev-startup-opencode.sh'" C-m
+    tmux send-keys -t "$SESSION_NAME:0" "exec bash '$SCRIPT_DIR/dev-startup-opencode.sh'" C-m
 
-    # Create Next.js window in same session
     tmux new-window -t "$SESSION_NAME" -n "Next.js"
-    tmux send-keys -t "$SESSION_NAME:1" "exec bash '$SCRIPT_DIR/.dev-startup-nextjs.sh'" C-m
+    tmux send-keys -t "$SESSION_NAME:1" "exec bash '$SCRIPT_DIR/dev-startup-nextjs.sh'" C-m
 
     log_success "Development environment started (detached)"
     echo ""
@@ -77,6 +68,10 @@ cmd_start() {
     echo -e "${CYAN}URLs:${NC}"
     echo "  Web UI:       http://localhost:3000"
     echo "  OpenCode API: http://localhost:9090"
+    echo ""
+    echo -e "${CYAN}Config Location:${NC}"
+    echo "  Dev Config:   ./dev/app/.config/opencode/"
+    echo "  Dev Data:     ./dev/app/.local/share/"
     echo ""
     echo -e "${CYAN}Useful commands:${NC}"
     echo "  ./dev-server.sh attach   - Attach to session"
@@ -92,7 +87,6 @@ cmd_start() {
     echo ""
 }
 
-# Command: STOP
 cmd_stop() {
     echo ""
     log_info "Stopping development environment..."
@@ -106,13 +100,11 @@ cmd_stop() {
     echo ""
 }
 
-# Command: STATUS
 cmd_status() {
     echo ""
     echo -e "${BLUE}Development Environment Status${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
-    # Check tmux session
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
         log_success "tmux session '$SESSION_NAME' is running"
     else
@@ -121,7 +113,6 @@ cmd_status() {
         return 1
     fi
     
-    # Check OpenCode
     echo ""
     echo -e "${CYAN}OpenCode Server (Port $OPENCODE_PORT):${NC}"
     if is_port_listening $OPENCODE_PORT; then
@@ -130,7 +121,6 @@ cmd_status() {
         log_error "Port $OPENCODE_PORT is NOT listening"
     fi
     
-    # Check Next.js
     echo ""
     echo -e "${CYAN}Next.js Dev Server (Port $NEXTJS_PORT):${NC}"
     if is_port_listening $NEXTJS_PORT; then
@@ -142,7 +132,6 @@ cmd_status() {
     echo ""
 }
 
-# Command: ATTACH
 cmd_attach() {
     if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
         log_error "Session '$SESSION_NAME' is not running"
@@ -153,7 +142,6 @@ cmd_attach() {
     tmux attach-session -t "$SESSION_NAME"
 }
 
-# Main dispatcher
 case "${1:-}" in
     start)
         cmd_start

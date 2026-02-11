@@ -1,4 +1,5 @@
 const nextConfig = {
+  output: "standalone",
   turbopack: {},
   transpilePackages: [
     "@agent-chat/react",

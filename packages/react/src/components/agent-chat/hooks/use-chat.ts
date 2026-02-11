@@ -511,6 +511,72 @@ export function useChat({
     setIsLoading(false);
   }, []);
 
+  const interruptSession = useCallback(async () => {
+    if (!sessionId) return;
+
+    abortRef.current?.abort();
+    setIsLoading(false);
+    setError(null);
+    setPendingQuestion(null);
+
+    try {
+      const abortUrl = new URL(
+        `${backendUrl}/api/sessions/${encodeURIComponent(sessionId)}/abort`,
+        window.location.origin,
+      );
+      if (directory) {
+        abortUrl.searchParams.set("directory", directory);
+      }
+
+      const res = await fetch(abortUrl.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Interrupt failed: ${res.status}`);
+      }
+
+      const now = Date.now();
+      const pseudoMessage: Message = {
+        id: `pseudo-stop-${now}`,
+        sessionId,
+        role: "assistant",
+        createdAt: now,
+        completedAt: now,
+        pseudo: true,
+        parts: [
+          {
+            id: `pseudo-stop-part-${now}`,
+            type: "tool",
+            tool: "stop",
+            toolStatus: "completed",
+            toolTitle: "Interrupted",
+          },
+        ],
+      };
+
+      pseudoMessagesRef.current = mergeUniquePseudoMessages([
+        ...pseudoMessagesRef.current,
+        pseudoMessage,
+      ]);
+      writePseudoMessagesToStorage(sessionId, pseudoMessagesRef.current);
+
+      setMessages((prev) => {
+        const serverMessages = prev.filter((m) => !m.pseudo);
+        const merged = [...serverMessages, ...pseudoMessagesRef.current];
+        merged.sort((a, b) => a.createdAt - b.createdAt);
+        onMessagesChangeRef.current?.(merged);
+        return merged;
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to interrupt session";
+      setError(message);
+    }
+  }, [sessionId, backendUrl, directory]);
+
   return {
     messages,
     status,
@@ -522,5 +588,6 @@ export function useChat({
     rejectQuestion,
     addPseudoMessage,
     cancelRequest,
+    interruptSession,
   };
 }

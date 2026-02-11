@@ -122,7 +122,7 @@ export function QuestionModal({
   const currentQuestion = !isConfirmStep ? questions[currentStep] : null;
 
   return (
-    <div className="mx-4 flex max-h-[90%] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10">
+    <div className="relative mx-4 flex max-h-[90%] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10">
       {/* Header / Progress */}
       {isMultiStep && (
         <div className="flex w-full items-center border-b border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -133,6 +133,7 @@ export function QuestionModal({
             {questions.map((q, idx) => (
               <div key={idx} className="flex items-center">
                 <button
+                  type="button"
                   onClick={() => idx <= maxVisited && setCurrentStep(idx)}
                   className={cn(
                     "text-xs font-medium transition-colors",
@@ -153,6 +154,7 @@ export function QuestionModal({
               </div>
             ))}
             <button
+              type="button"
               onClick={() =>
                 maxVisited >= questions.length &&
                 setCurrentStep(questions.length)
@@ -171,6 +173,7 @@ export function QuestionModal({
             </button>
           </div>
           <button
+            type="button"
             onClick={onCancel}
             className="ml-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
           >
@@ -181,6 +184,7 @@ export function QuestionModal({
 
       {!isMultiStep && (
         <button
+          type="button"
           onClick={onCancel}
           className="absolute right-4 top-4 z-10 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
         >
@@ -248,6 +252,7 @@ export function QuestionModal({
                   const isSelected = answers[currentStep].includes(opt.label);
                   return (
                     <button
+                      type="button"
                       key={opt.label}
                       onClick={() => handleOptionToggle(currentStep, opt.label)}
                       className={cn(
@@ -315,6 +320,7 @@ export function QuestionModal({
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
         <button
+          type="button"
           onClick={handleBack}
           disabled={currentStep === 0}
           className={cn(
@@ -327,6 +333,7 @@ export function QuestionModal({
           Back
         </button>
         <button
+          type="button"
           onClick={handleNext}
           disabled={!isCurrentStepValid()}
           className={cn(

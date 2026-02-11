@@ -68,18 +68,36 @@ Open [http://localhost:3000](http://localhost:3000) to access the application.
 
 ### Environment Variables
 
-Create a `.env.local` file in the root directory:
+This project uses **service-specific environment files** for clean separation between containers:
+
+**OpenCode Server** (`.env.opencode.local`):
+
+```env
+OPENCODE_SERVER_USERNAME=quillbot-opencode-api
+OPENCODE_SERVER_PASSWORD=0M3ed8tRJI2pPasg6qH939WU
+AZURE_RESOURCE_NAME=
+AZURE_API_KEY=
+OPENCODE_ENABLE_EXA=1
+```
+
+**Next.js Web Server** (`.env.web.local`):
 
 ```env
 OPENCODE_API_URL=http://localhost:9090
-OPENCODE_API_KEY=                    # Optional
+OPENCODE_SERVER_USERNAME=quillbot-opencode-api
+OPENCODE_SERVER_PASSWORD=0M3ed8tRJI2pPasg6qH939WU
+EASY_AUTH_DEV_USER=your.email@company.com|Your Name
 AZURE_RESOURCE_NAME=
 AZURE_API_KEY=
-
-# Simulate Azure Easy Auth user for local development
-# Format: email|display_name
-EASY_AUTH_DEV_USER=your.email@company.com|Your Name
 ```
+
+**Setup:**
+
+1. Copy `.env.opencode.example` → `.env.opencode.local`
+2. Copy `.env.web.example` → `.env.web.local`
+3. Fill in your credentials (both files need matching auth credentials)
+
+**Note:** Credentials must match between OpenCode server and web client for authentication to work.
 
 ## Docker Deployment
 

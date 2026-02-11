@@ -1,6 +1,13 @@
 export interface MessagePart {
   id: string;
-  type: "text" | "tool" | "reasoning" | "file" | "step-start" | "step-finish" | string;
+  type:
+    | "text"
+    | "tool"
+    | "reasoning"
+    | "file"
+    | "step-start"
+    | "step-finish"
+    | string;
   text?: string;
   tool?: string;
   toolStatus?: "pending" | "running" | "completed" | "error";
@@ -63,6 +70,7 @@ export interface AgentChatProps {
   placeholder?: string;
   className?: string;
   directory?: string;
+  showThinking?: boolean;
   onMessagesChange?: (messages: Message[]) => void;
   onStatusChange?: (status: SessionStatus) => void;
   contextItems?: ContextItem[];
