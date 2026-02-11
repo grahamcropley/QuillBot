@@ -29,9 +29,12 @@ env:
   AZURE_RESOURCE_NAME: ${{ vars.AZURE_RESOURCE_NAME }}
   DATA_SHARE_NAME: ${{ vars.DATA_SHARE_NAME || 'quillbot-data' }}
   CONFIG_SHARE_NAME: ${{ vars.CONFIG_SHARE_NAME || 'opencode-config' }}
+  STATE_SHARE_NAME: ${{ vars.STATE_SHARE_NAME || 'opencode-state' }}
   WEB_IMAGE_NAME: ${{ vars.WEB_IMAGE_NAME || 'quillbot-web' }}
   OPENCODE_IMAGE_NAME: ${{ vars.OPENCODE_IMAGE_NAME || 'quillbot-opencode' }}
   OPENCODE_VERSION: ${{ vars.OPENCODE_VERSION || '1.1.56' }}
+  CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN || '' }}
+  MANAGED_CERTIFICATE_NAME: ${{ vars.MANAGED_CERTIFICATE_NAME || '' }}
   IMAGE_TAG: ${{ github.sha }}
   # Easy Auth configuration (Microsoft Entra ID)
   ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
@@ -43,6 +46,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test -- --run
+
+      - name: Build
+        run: pnpm build
 
       - name: Azure Login
         uses: azure/login@v2
@@ -113,7 +143,10 @@ jobs:
               acrName="$AZURE_ACR_NAME" \
               storageAccountName="$AZURE_STORAGE_ACCOUNT_NAME" \
               dataShareName="$DATA_SHARE_NAME" \
-              configShareName="$CONFIG_SHARE_NAME"
+              configShareName="$CONFIG_SHARE_NAME" \
+              stateShareName="$STATE_SHARE_NAME" \
+              customDomain="$CUSTOM_DOMAIN" \
+              managedCertificateName="$MANAGED_CERTIFICATE_NAME"
 
       - name: Update Container App secrets
         env:
@@ -166,9 +199,12 @@ jobs:
               storageAccountName="$AZURE_STORAGE_ACCOUNT_NAME" \
               dataShareName="$DATA_SHARE_NAME" \
               configShareName="$CONFIG_SHARE_NAME" \
+              stateShareName="$STATE_SHARE_NAME" \
               webImage="$WEB_IMAGE" \
               opencodeImage="$OPENCODE_IMAGE" \
               configRevision="$CONFIG_REV" \
+              customDomain="$CUSTOM_DOMAIN" \
+              managedCertificateName="$MANAGED_CERTIFICATE_NAME" \
               azureResourceName="$AZURE_RESOURCE_NAME" \
               opencodeServerUsername="${{ secrets.OPENCODE_SERVER_USERNAME }}" \
               opencodeServerPassword="${{ secrets.OPENCODE_SERVER_PASSWORD }}" \
